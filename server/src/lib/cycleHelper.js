@@ -1,39 +1,38 @@
-function daysInMonth(year, month) {
-  // month is 0-indexed; new Date(year, month+1, 0) gives last day of the month
-  return new Date(year, month + 1, 0).getDate();
+function daysInMonthUTC(year, month) {
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 }
 
-function effectiveDay(salaryDay, year, month) {
-  return Math.min(salaryDay, daysInMonth(year, month));
+function effectiveDayUTC(salaryDay, year, month) {
+  return Math.min(salaryDay, daysInMonthUTC(year, month));
 }
 
 export function getCycleRange(salaryDay, referenceDate = new Date()) {
   const ref = new Date(referenceDate);
-  ref.setHours(0, 0, 0, 0);
 
-  let startYear = ref.getFullYear();
-  let startMonth = ref.getMonth();
+  const refYear  = ref.getUTCFullYear();
+  const refMonth = ref.getUTCMonth();
+  const refDay   = ref.getUTCDate();
 
-  // The effective start day this calendar month (capped to actual days in month)
-  const thisMonthStartDay = effectiveDay(salaryDay, startYear, startMonth);
+  let startYear  = refYear;
+  let startMonth = refMonth;
 
-  if (ref.getDate() < thisMonthStartDay) {
-    // Cycle started last month
+  const thisMonthStartDay = effectiveDayUTC(salaryDay, startYear, startMonth);
+
+  if (refDay < thisMonthStartDay) {
     startMonth -= 1;
     if (startMonth < 0) { startMonth = 11; startYear -= 1; }
   }
 
-  const startDay = effectiveDay(salaryDay, startYear, startMonth);
-  const cycleStart = new Date(startYear, startMonth, startDay, 0, 0, 0, 0);
+  const startDay   = effectiveDayUTC(salaryDay, startYear, startMonth);
+  const cycleStart = new Date(Date.UTC(startYear, startMonth, startDay, 0, 0, 0, 0));
 
-  // Next cycle starts the following month on the effective day
-  let nextYear = startYear;
+  let nextYear  = startYear;
   let nextMonth = startMonth + 1;
   if (nextMonth > 11) { nextMonth = 0; nextYear += 1; }
-  const nextStartDay = effectiveDay(salaryDay, nextYear, nextMonth);
-  const nextCycleStart = new Date(nextYear, nextMonth, nextStartDay, 0, 0, 0, 0);
 
-  // Current cycle ends 1ms before next cycle starts
+  const nextStartDay  = effectiveDayUTC(salaryDay, nextYear, nextMonth);
+  const nextCycleStart = new Date(Date.UTC(nextYear, nextMonth, nextStartDay, 0, 0, 0, 0));
+
   const cycleEnd = new Date(nextCycleStart.getTime() - 1);
 
   return { cycleStart, cycleEnd };
