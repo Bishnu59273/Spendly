@@ -1,32 +1,88 @@
-import { LogOut, Settings, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Search, Moon, Sun, Plus, Menu, LogOut } from "lucide-react";
 import { useLogout } from "../api/auth.js";
+import ExpenseForm from "./ExpenseForm.jsx";
+import NotificationPanel from "./NotificationPanel.jsx";
 
-export default function TopBar({ user }) {
+const TITLES = {
+  "/dashboard":  { eyebrow: "Overview",          title: "Dashboard" },
+  "/expenses":   { eyebrow: "This pay cycle",     title: "Expenses" },
+  "/categories": { eyebrow: "Budget allocation",  title: "Categories" },
+  "/goals":      { eyebrow: "Saving toward",      title: "Goals" },
+  "/tags":       { eyebrow: "Organise",           title: "Tags" },
+  "/settings":   { eyebrow: "Account",            title: "Settings" },
+};
+
+function getInitials(name = "") {
+  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+}
+
+export default function TopBar({ user, pathname, onMenu, addOpen, setAddOpen }) {
   const logout = useLogout();
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  const t = Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] || TITLES["/dashboard"];
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
-      <Link to="/dashboard" className="flex items-center gap-2">
-        <span className="text-xl font-bold text-indigo-600">Spendly</span>
-      </Link>
-      <div className="flex items-center gap-2">
-        <Link to="/settings" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
-          <Settings size={18} />
-        </Link>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800">
-          <User size={16} className="text-indigo-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block">
-            {user?.name}
-          </span>
-        </div>
-        <button
-          onClick={() => logout.mutate()}
-          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
-        >
-          <LogOut size={18} />
+    <>
+      <header className="sp-topbar">
+        <button className="sp-icon-btn sp-menu-btn" style={{ display: "none" }} onClick={onMenu}>
+          <Menu style={{ width: 20, height: 20 }} />
         </button>
-      </div>
-    </header>
+
+        <div className="sp-topbar-titles">
+          <div className="sp-topbar-eyebrow">{t.eyebrow}</div>
+          <div className="sp-topbar-title">{t.title}</div>
+        </div>
+
+        <div className="sp-topbar-spacer" />
+
+        <div className="sp-topbar-right">
+          <div className="sp-search">
+            <Search style={{ width: 17, height: 17 }} />
+            <input placeholder="Search…" />
+          </div>
+
+          <button
+            className="sp-icon-btn"
+            onClick={() => setDark((d) => !d)}
+            aria-label="Toggle theme"
+          >
+            {dark
+              ? <Sun style={{ width: 18, height: 18 }} />
+              : <Moon style={{ width: 18, height: 18 }} />
+            }
+          </button>
+
+          <NotificationPanel currency={user?.currency} />
+
+          <button className="sp-btn sp-btn-primary" onClick={() => setAddOpen(true)}>
+            <Plus style={{ width: 17, height: 17 }} />
+            Add expense
+          </button>
+
+          <div className="sp-user-chip">
+            <div className="sp-avatar">{getInitials(user?.name)}</div>
+            <span className="sp-uname">{user?.name?.split(" ")[0]}</span>
+          </div>
+
+          <button
+            className="sp-icon-btn"
+            onClick={() => logout.mutate()}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut style={{ width: 17, height: 17 }} />
+          </button>
+        </div>
+      </header>
+
+      <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
+    </>
   );
 }

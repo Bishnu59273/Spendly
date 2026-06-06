@@ -1,54 +1,94 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Receipt, Tags, FolderOpen } from "lucide-react";
+import {
+  LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings, Wallet, ChevronRight,
+} from "lucide-react";
 import TopBar from "./TopBar.jsx";
 
-const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/expenses", icon: Receipt, label: "Expenses" },
-  { to: "/categories", icon: FolderOpen, label: "Categories" },
-  { to: "/tags", icon: Tags, label: "Tags" },
+const NAV = [
+  { to: "/dashboard",  icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/expenses",   icon: Receipt,          label: "Expenses" },
+  { to: "/categories", icon: FolderOpen,       label: "Categories" },
+  { to: "/goals",      icon: Target,           label: "Goals" },
+  { to: "/tags",       icon: Tag,              label: "Tags" },
+  { to: "/settings",   icon: Settings,         label: "Settings" },
 ];
 
 export default function Layout({ user, children }) {
   const { pathname } = useLocation();
+  const [menu, setMenu] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <TopBar user={user} />
-      <div className="flex">
-        <nav className="hidden md:flex flex-col w-56 min-h-[calc(100vh-57px)] border-r border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 gap-1">
-          {navItems.map(({ to, icon: Icon, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                pathname.startsWith(to)
-                  ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-              }`}
-            >
-              <Icon size={18} />
-              {label}
-            </Link>
-          ))}
+    <div className="sp-app" data-menu={menu}>
+      {/* Sidebar */}
+      <aside className="sp-sidebar">
+        <div className="sp-brand">
+          <div className="sp-brand-mark">
+            <Wallet style={{ width: 20, height: 20 }} />
+          </div>
+          <div className="sp-brand-name">Spendly</div>
+        </div>
+
+        <nav className="sp-nav">
+          {NAV.map(({ to, icon: Icon, label }) => {
+            const active = pathname === to || (to !== "/" && pathname.startsWith(to));
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`sp-nav-item${active ? " active" : ""}`}
+                onClick={() => setMenu(false)}
+              >
+                <Icon />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">{children}</main>
+
+        <div className="sp-sidebar-foot">
+          <div className="sp-upsell">
+            <div className="sp-upsell-title">Track your goals 🌱</div>
+            <div className="sp-upsell-desc">Stay on budget this cycle to hit your savings goal faster.</div>
+            <Link to="/goals" className="sp-upsell-btn" onClick={() => setMenu(false)}>
+              View goals <ChevronRight style={{ width: 14, height: 14 }} />
+            </Link>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="sp-main">
+        <TopBar
+          user={user}
+          pathname={pathname}
+          onAdd={() => setAddOpen(true)}
+          onMenu={() => setMenu((m) => !m)}
+          addOpen={addOpen}
+          setAddOpen={setAddOpen}
+        />
+        <div className="sp-content">
+          <div className="sp-content-inner">
+            {typeof children === "function" ? children({ addOpen, setAddOpen }) : children}
+          </div>
+        </div>
       </div>
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-around py-2 z-20">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <Link
-            key={to}
-            to={to}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs ${
-              pathname.startsWith(to) ? "text-indigo-600" : "text-gray-400"
-            }`}
-          >
-            <Icon size={20} />
-            {label}
-          </Link>
-        ))}
-      </nav>
+
+      {/* FAB */}
+      <button className="sp-fab" onClick={() => setAddOpen(true)} aria-label="Add expense">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+
+      {/* Mobile menu scrim */}
+      {menu && (
+        <div
+          onClick={() => setMenu(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 94, background: "rgba(0,0,0,0.3)" }}
+        />
+      )}
     </div>
   );
 }

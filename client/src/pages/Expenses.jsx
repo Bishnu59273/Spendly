@@ -1,163 +1,167 @@
 import { useState } from "react";
-import { Download, Search, Edit2, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Edit2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useExpenses, useDeleteExpense } from "../api/expenses.js";
 import { useCategories } from "../api/categories.js";
-import { useTags } from "../api/tags.js";
 import ExpenseForm from "../components/ExpenseForm.jsx";
-import Pill from "../components/Pill.jsx";
-import { ExpenseSkeleton } from "../components/Skeleton.jsx";
-import { formatCurrency, formatDate, groupByDate } from "../utils/format.js";
+import ConfirmDelete from "../components/ConfirmDelete.jsx";
+import { formatCurrency, formatDate } from "../utils/format.js";
 import { getCycleRange, formatCycleLabel, prevCycleRef, nextCycleRef } from "../utils/cycle.js";
-import api from "../api/client.js";
 
 export default function Expenses({ user }) {
-  const [showForm, setShowForm] = useState(false);
   const [editExpense, setEditExpense] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, label }
   const [cycleRef, setCycleRef] = useState(new Date());
-  const [categoryId, setCategoryId] = useState("");
-  const [tagId, setTagId] = useState("");
+  const [categoryId, setCategoryId] = useState("all");
   const [search, setSearch] = useState("");
 
   const { cycleStart, cycleEnd } = getCycleRange(user.salaryDay, cycleRef);
   const cycleStartParam = cycleStart.toISOString();
 
   const params = { cycleStart: cycleStartParam };
-  if (categoryId) params.categoryId = categoryId;
-  if (tagId) params.tagId = tagId;
+  if (categoryId !== "all") params.categoryId = categoryId;
   if (search) params.search = search;
 
   const { data: expenses = [], isLoading } = useExpenses(params);
   const { data: categories = [] } = useCategories();
-  const { data: tags = [] } = useTags();
   const deleteExpense = useDeleteExpense();
 
-  const groups = groupByDate(expenses);
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
 
-  const handleExport = () => {
-    const url = `/api/expenses/export?cycleStart=${cycleStartParam}`;
-    window.open(url, "_blank");
-  };
+  const openEdit = (e) => { setEditExpense(e); setEditOpen(true); };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this expense?")) return;
-    await deleteExpense.mutateAsync(id);
+  const confirmDelete = async () => {
+    await deleteExpense.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expenses</h1>
-        <div className="flex gap-2">
-          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-            <Download size={15} /> CSV
-          </button>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-            <Plus size={15} /> Add
-          </button>
-        </div>
-      </div>
-
-      {/* Cycle nav */}
-      <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-        <button onClick={() => setCycleRef(prevCycleRef(cycleStart, user.salaryDay))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-          <ChevronLeft size={16} />
+    <div>
+      {/* Cycle switcher */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, marginBottom: 20 }}>
+        <button className="sp-icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCycleRef(prevCycleRef(cycleStart, user.salaryDay))}>
+          <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{formatCycleLabel(cycleStart, cycleEnd)}</span>
-        <button onClick={() => setCycleRef(nextCycleRef(cycleStart, user.salaryDay))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-          <ChevronRight size={16} />
+        <div style={{ textAlign: "center", minWidth: 220 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 2 }}>Pay Cycle</div>
+          <div className="sp-display" style={{ fontSize: 18, fontWeight: 700 }}>{formatCycleLabel(cycleStart, cycleEnd)}</div>
+        </div>
+        <button className="sp-icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCycleRef(nextCycleRef(cycleStart, user.salaryDay))}>
+          <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by note..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+      {/* Filter bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <div className="sp-search" style={{ flex: 1, minWidth: 220, height: 44 }}>
+          <Search style={{ width: 17, height: 17 }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search transactions…" />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-            ))}
-          </select>
-          <select
-            value={tagId}
-            onChange={(e) => setTagId(e.target.value)}
-            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">All tags</option>
-            {tags.map((t) => (
-              <option key={t.id} value={t.id}>{t.icon} {t.name}</option>
-            ))}
-          </select>
+        <div className="sp-seg">
+          <button className={categoryId === "all" ? "active" : ""} onClick={() => setCategoryId("all")}>All</button>
+          {categories.slice(0, 4).map((c) => (
+            <button key={c.id} className={categoryId === c.id ? "active" : ""} onClick={() => setCategoryId(c.id)}>
+              {c.icon} {c.name}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Expense list */}
-      {isLoading ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm">
-          {Array.from({ length: 8 }).map((_, i) => <ExpenseSkeleton key={i} />)}
+      {/* Table */}
+      <div className="sp-card" style={{ overflow: "hidden" }}>
+        <div style={{
+          display: "grid", gridTemplateColumns: "2.4fr 1.2fr 1.4fr 1fr 44px",
+          gap: 12, padding: "13px 22px",
+          background: "var(--surface-2)", borderBottom: "1px solid var(--line)",
+          fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--ink-3)",
+        }}>
+          <div>Transaction</div><div>Category</div><div>Date</div>
+          <div style={{ textAlign: "right" }}>Amount</div><div />
         </div>
-      ) : groups.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-12 shadow-sm text-center text-gray-400">
-          No expenses found
-        </div>
-      ) : (
-        groups.map(([date, items]) => (
-          <div key={date} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{formatDate(date)}</span>
-            </div>
-            <div className="divide-y divide-gray-50 dark:divide-gray-800">
-              {items.map((e) => (
-                <div key={e.id} className="flex items-center gap-3 px-4 py-3">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0"
-                    style={{ backgroundColor: e.category.color + "22" }}
-                  >
-                    {e.category.icon}
+
+        {isLoading ? (
+          <div style={{ padding: "48px 22px", textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
+        ) : expenses.length === 0 ? (
+          <div style={{ padding: "52px 22px", textAlign: "center", color: "var(--ink-3)" }}>
+            <Search style={{ width: 26, height: 26, margin: "0 auto 12px", opacity: 0.4 }} />
+            <div style={{ fontWeight: 600, color: "var(--ink-2)", fontSize: 14 }}>No transactions found</div>
+          </div>
+        ) : (
+          expenses.map((e, i) => (
+            <div key={e.id}
+              style={{
+                display: "grid", gridTemplateColumns: "2.4fr 1.2fr 1.4fr 1fr 44px",
+                gap: 12, alignItems: "center", padding: "13px 22px",
+                borderTop: i === 0 ? "none" : "1px solid var(--line)",
+                transition: "background var(--d1) var(--e)",
+              }}
+              onMouseEnter={(ev) => (ev.currentTarget.style.background = "var(--surface-2)")}
+              onMouseLeave={(ev) => (ev.currentTarget.style.background = "transparent")}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                <span style={{ width: 38, height: 38, borderRadius: 11, display: "grid", placeItems: "center", background: (e.category?.color || "#888") + "22", fontSize: 17, flex: "none" }}>
+                  {e.category?.icon || "💸"}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {e.note || e.category?.name || "Expense"}
+                    {e.isRecurring && <span style={{ marginLeft: 6, fontSize: 11, color: "var(--ink-3)", fontWeight: 500 }}>↻</span>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{e.note || e.category.name}</p>
-                    <div className="flex gap-1 mt-0.5 flex-wrap">
-                      <Pill label={e.category.name} color={e.category.color} />
+                  {e.tags?.length > 0 && (
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
                       {e.tags.map((t) => (
-                        <Pill key={t.tagId} icon={t.tag.icon} label={t.tag.name} color={t.tag.color} />
+                        <span key={t.tagId} className="sp-pill sp-pill-muted" style={{ height: 20, fontSize: 11 }}>#{t.tag?.name}</span>
                       ))}
                     </div>
-                  </div>
-                  <span className="font-semibold text-gray-900 dark:text-white text-sm">{formatCurrency(e.amount, user.currency)}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => setEditExpense(e)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-indigo-500">
-                      <Edit2 size={14} />
-                    </button>
-                    <button onClick={() => handleDelete(e.id)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-400 hover:text-red-500">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                  )}
                 </div>
-              ))}
+              </div>
+              <div>
+                <span className="sp-pill" style={{ background: (e.category?.color || "#888") + "22", color: e.category?.color || "#888" }}>
+                  <span className="sp-dot" style={{ background: e.category?.color || "#888" }} />
+                  {e.category?.name}
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{formatDate(e.date)}</div>
+              <div className="sp-num" style={{ textAlign: "right", fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+                −{formatCurrency(e.amount, user.currency)}
+              </div>
+              <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                <button className="sp-icon-btn" style={{ width: 30, height: 30, background: "transparent", border: "none" }} onClick={() => openEdit(e)} title="Edit">
+                  <Edit2 style={{ width: 14, height: 14 }} />
+                </button>
+                <button
+                  className="sp-icon-btn"
+                  style={{ width: 30, height: 30, background: "transparent", border: "none" }}
+                  onClick={() => setDeleteTarget({ id: e.id, label: e.note || e.category?.name || "expense" })}
+                  title="Delete"
+                >
+                  <Trash2 style={{ width: 14, height: 14, color: "var(--neg)" }} />
+                </button>
+              </div>
             </div>
+          ))
+        )}
+
+        {expenses.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: "1px solid var(--line)", background: "var(--surface-2)" }}>
+            <span style={{ fontSize: 13, color: "var(--ink-2)" }}><b style={{ color: "var(--ink)" }}>{expenses.length}</b> transactions</span>
+            <span className="sp-num" style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Total −{formatCurrency(total, user.currency)}</span>
           </div>
-        ))
+        )}
+      </div>
+
+      {editExpense && (
+        <ExpenseForm open={editOpen} onClose={() => { setEditOpen(false); setEditExpense(null); }} expense={editExpense} />
       )}
 
-      <ExpenseForm open={showForm} onClose={() => setShowForm(false)} />
-      {editExpense && (
-        <ExpenseForm open={!!editExpense} onClose={() => setEditExpense(null)} expense={editExpense} />
-      )}
+      <ConfirmDelete
+        open={!!deleteTarget}
+        label={deleteTarget?.label}
+        loading={deleteExpense.isPending}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

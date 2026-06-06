@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Expenses from "./pages/Expenses.jsx";
 import Categories from "./pages/Categories.jsx";
 import Tags from "./pages/Tags.jsx";
+import Goals from "./pages/Goals.jsx";
 import Settings from "./pages/Settings.jsx";
 
 function AuthGuard({ children }) {
@@ -21,7 +22,7 @@ function AuthGuard({ children }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
         <Spinner />
       </div>
     );
@@ -31,7 +32,7 @@ function AuthGuard({ children }) {
 
   return (
     <Layout user={user}>
-      {children(user)}
+      {({ addOpen, setAddOpen }) => children(user, addOpen, setAddOpen)}
     </Layout>
   );
 }
@@ -56,7 +57,11 @@ export default function App() {
         />
         <Route
           path="/tags"
-          element={<AuthGuard>{() => <Tags />}</AuthGuard>}
+          element={<AuthGuard>{(user) => <Tags user={user} />}</AuthGuard>}
+        />
+        <Route
+          path="/goals"
+          element={<AuthGuard>{(user) => <Goals user={user} />}</AuthGuard>}
         />
         <Route
           path="/settings"

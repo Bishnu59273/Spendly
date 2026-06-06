@@ -1,158 +1,152 @@
 import { useState } from "react";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from "../api/tags.js";
+import { useExpenses } from "../api/expenses.js";
 import Modal from "../components/Modal.jsx";
+import ConfirmDelete from "../components/ConfirmDelete.jsx";
 import ColorPicker from "../components/ColorPicker.jsx";
 import EmojiPicker from "../components/EmojiPicker.jsx";
-import { Skeleton } from "../components/Skeleton.jsx";
+import { formatCurrency } from "../utils/format.js";
+import { getCycleRange } from "../utils/cycle.js";
+
+const inputStyle = {
+  width: "100%", height: 44, padding: "0 14px",
+  borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
+  background: "var(--surface-2)", color: "var(--ink)", fontSize: 14.5, outline: "none",
+};
 
 function TagForm({ tag = null, onClose }) {
   const create = useCreateTag();
   const update = useUpdateTag();
-  const [form, setForm] = useState({ name: tag?.name || "", color: tag?.color || "#6366f1", icon: tag?.icon || "😀" });
-  const [error, setError] = useState("");
+  const [form, setForm] = useState({ name: tag?.name || "", color: tag?.color || "#6366f1", icon: tag?.icon || "🏷️" });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    if (!form.name.trim()) { setError("Name is required"); return; }
-    try {
-      if (tag) {
-        await update.mutateAsync({ id: tag.id, ...form });
-      } else {
-        await create.mutateAsync(form);
-      }
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
-    }
+  const save = async () => {
+    if (!form.name.trim()) return;
+    if (tag) await update.mutateAsync({ id: tag.id, ...form });
+    else await create.mutateAsync(form);
+    onClose();
   };
 
-  const isPending = create.isPending || update.isPending;
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">{error}</p>}
-
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div>
-        <label className="block text-sm text-gray-500 mb-1">Name</label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={(e) => set("name", e.target.value)}
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+        <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7 }}>Name</label>
+        <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. essentials" style={inputStyle} />
       </div>
-
       <div>
-        <label className="block text-sm text-gray-500 mb-2">Icon</label>
+        <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7 }}>Icon</label>
         <EmojiPicker value={form.icon} onChange={(v) => set("icon", v)} />
       </div>
-
       <div>
-        <label className="block text-sm text-gray-500 mb-2">Color</label>
+        <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7 }}>Color</label>
         <ColorPicker value={form.color} onChange={(v) => set("color", v)} />
       </div>
-
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Preview</label>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-          style={{ backgroundColor: form.color + "22", color: form.color }}
-        >
-          {form.icon} {form.name || "Tag name"}
-        </span>
+      <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+        <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+        <button className="sp-btn sp-btn-primary" style={{ flex: 1.4 }} onClick={save} disabled={!form.name.trim()}>
+          {tag ? "Save changes" : "Create tag"}
+        </button>
       </div>
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 transition-colors disabled:opacity-60"
-      >
-        {isPending ? "Saving..." : tag ? "Update Tag" : "Create Tag"}
-      </button>
-    </form>
+    </div>
   );
 }
 
-export default function Tags() {
-  const { data: tags = [], isLoading } = useTags();
+export default function Tags({ user }) {
+  const { data: tags = [] } = useTags();
+  const cycleStart = getCycleRange(user?.salaryDay || 1, new Date()).cycleStart.toISOString();
+  const { data: expenses = [] } = useExpenses({ cycleStart });
   const deleteTag = useDeleteTag();
   const [showCreate, setShowCreate] = useState(false);
   const [editTag, setEditTag] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this tag?")) return;
-    await deleteTag.mutateAsync(id);
-  };
+  const tagTotals = {};
+  expenses.forEach((e) => {
+    e.tags?.forEach((t) => {
+      if (!tagTotals[t.tag?.name]) tagTotals[t.tag?.name] = { total: 0, count: 0 };
+      tagTotals[t.tag?.name].total += e.amount;
+      tagTotals[t.tag?.name].count += 1;
+    });
+  });
+
+  const tagsWithTotals = tags
+    .map((t) => ({ ...t, total: tagTotals[t.name]?.total || 0, count: tagTotals[t.name]?.count || 0 }))
+    .sort((a, b) => b.total - a.total);
+
+  const maxTotal = Math.max(...tagsWithTotals.map((t) => t.total), 1);
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tags</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
-        >
-          <Plus size={16} /> New Tag
-        </button>
+    <div>
+      <div className="sp-card sp-card-pad">
+        <div className="sp-card-head">
+          <div>
+            <div className="sp-card-title">All tags</div>
+            <div className="sp-card-sub">{tags.length} tags total</div>
+          </div>
+          <button className="sp-btn sp-btn-ghost" style={{ height: 38 }} onClick={() => setShowCreate(true)}>
+            <Plus style={{ width: 16, height: 16 }} /> New tag
+          </button>
+        </div>
+
+        {tags.length === 0 ? (
+          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>
+            No tags yet. Create your first tag to organize expenses.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {tagsWithTotals.map((t, i) => (
+              <div key={t.id} style={{
+                display: "grid", gridTemplateColumns: "200px 1fr 130px 72px",
+                gap: 16, alignItems: "center",
+                padding: "14px 4px", borderTop: i === 0 ? "none" : "1px solid var(--line)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="sp-pill sp-pill-muted" style={{ fontSize: 13 }}>{t.icon} #{t.name}</span>
+                  {t.count > 0 && <span className="sp-num" style={{ fontSize: 12, color: "var(--ink-3)" }}>{t.count}×</span>}
+                </div>
+                <div style={{ height: 9, borderRadius: 99, background: "var(--surface-sunken)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(t.total / maxTotal) * 100}%`, borderRadius: 99, background: t.color || "var(--brand)", transition: "width 600ms var(--e)" }} />
+                </div>
+                <div className="sp-num" style={{ textAlign: "right", fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+                  {t.total > 0 ? formatCurrency(t.total, user?.currency) : "—"}
+                </div>
+                <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                  <button className="sp-icon-btn" style={{ width: 30, height: 30, background: "transparent", border: "none" }} onClick={() => setEditTag(t)} title="Edit">
+                    <Edit2 style={{ width: 14, height: 14 }} />
+                  </button>
+                  <button
+                    className="sp-icon-btn"
+                    style={{ width: 30, height: 30, background: "transparent", border: "none" }}
+                    onClick={() => setDeleteTarget({ id: t.id, label: `#${t.name} tag` })}
+                    title="Delete"
+                  >
+                    <Trash2 style={{ width: 14, height: 14, color: "var(--neg)" }} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-2xl" />
-          ))}
-        </div>
-      ) : tags.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-12 shadow-sm text-center text-gray-400">
-          <p>No tags yet. Create your first tag to organize expenses.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {tags.map((tag) => (
-            <div
-              key={tag.id}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm flex flex-col gap-2"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{tag.icon}</span>
-                <span
-                  className="text-sm font-semibold rounded-full px-2 py-0.5"
-                  style={{ backgroundColor: tag.color + "22", color: tag.color }}
-                >
-                  {tag.name}
-                </span>
-              </div>
-              <div className="flex gap-1 mt-auto">
-                <button
-                  onClick={() => setEditTag(tag)}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-indigo-500 text-xs"
-                >
-                  <Edit2 size={13} /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(tag.id)}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 text-xs"
-                >
-                  <Trash2 size={13} /> Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Tag">
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New tag">
         <TagForm onClose={() => setShowCreate(false)} />
       </Modal>
       {editTag && (
-        <Modal open={!!editTag} onClose={() => setEditTag(null)} title="Edit Tag">
+        <Modal open={!!editTag} onClose={() => setEditTag(null)} title="Edit tag">
           <TagForm tag={editTag} onClose={() => setEditTag(null)} />
         </Modal>
       )}
+
+      <ConfirmDelete
+        open={!!deleteTarget}
+        label={deleteTarget?.label}
+        loading={deleteTag.isPending}
+        onConfirm={async () => { await deleteTag.mutateAsync(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

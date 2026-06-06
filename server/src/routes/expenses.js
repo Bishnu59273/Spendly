@@ -17,6 +17,22 @@ const expenseSchema = z.object({
   recurringDay: z.number().int().min(1).max(31).optional().nullable(),
 });
 
+// Last N expenses by createdAt — used for notifications
+router.get("/recent", async (req, res, next) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 5, 20);
+    const expenses = await prisma.expense.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: { category: true, tags: { include: { tag: true } } },
+    });
+    res.json(expenses);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/", async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });

@@ -9,18 +9,19 @@ datasource db {
 }
 
 model User {
-  id             String     @id @default(dbgenerated("concat('u_', (gen_random_uuid())::text)"))
-  email          String     @unique
-  password       String
-  name           String
-  salaryDay      Int        @default(1) @map("salary_day")
-  currency       String     @default("INR")
-  monthlyBudget  Float?     @map("monthly_budget")
-  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  budgets        Budget[]
-  categories     Category[]
-  expenses       Expense[]
-  tags           Tag[]
+  id            String     @id @default(dbgenerated("concat('u_', (gen_random_uuid())::text)"))
+  email         String     @unique
+  password      String
+  name          String
+  salaryDay     Int        @default(1) @map("salary_day")
+  currency      String     @default("INR")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  monthlyBudget Float?     @map("monthly_budget")
+  budgets       Budget[]
+  categories    Category[]
+  expenses      Expense[]
+  goals         Goal[]
+  tags          Tag[]
 
   @@map("users")
 }
@@ -98,4 +99,21 @@ model Budget {
   @@unique([userId, categoryId, month, year])
   @@index([userId, month, year], map: "idx_budgets_user")
   @@map("budgets")
+}
+
+model Goal {
+  id        String   @id @default(dbgenerated("concat('goal_', (gen_random_uuid())::text)"))
+  userId    String   @map("user_id")
+  name      String
+  icon      String   @default("🎯")
+  color     String   @default("#1d6b51")
+  target    Float
+  saved     Float    @default(0)
+  monthly   Float    @default(0)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_goals_user")
+  @@map("goals")
 }

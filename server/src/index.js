@@ -9,6 +9,7 @@ import categoriesRouter from "./routes/categories.js";
 import tagsRouter from "./routes/tags.js";
 import expensesRouter from "./routes/expenses.js";
 import summaryRouter from "./routes/summary.js";
+import goalsRouter from "./routes/goals.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import prisma from "./lib/prisma.js";
 import { getCycleRange } from "./lib/cycleHelper.js";
@@ -24,6 +25,7 @@ app.use("/api/categories", categoriesRouter);
 app.use("/api/tags", tagsRouter);
 app.use("/api/expenses", expensesRouter);
 app.use("/api/summary", summaryRouter);
+app.use("/api/goals", goalsRouter);
 
 app.use(errorHandler);
 

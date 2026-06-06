@@ -5,6 +5,16 @@ import { formatCurrency } from "../utils/format.js";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"];
 
+const inp = {
+  width: "100%", height: 44, padding: "0 14px",
+  borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
+  background: "var(--surface-2)", color: "var(--ink)", fontSize: 14, outline: "none",
+};
+const lbl = {
+  display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
+  textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7,
+};
+
 export default function Settings({ user }) {
   const update = useUpdateProfile();
   const [form, setForm] = useState({
@@ -13,7 +23,9 @@ export default function Settings({ user }) {
     currency: user.currency,
     monthlyBudget: user.monthlyBudget?.toString() || "",
   });
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
+  const [darkMode, setDarkMode] = useState(() =>
+    document.documentElement.classList.contains("dark"),
+  );
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,139 +55,151 @@ export default function Settings({ user }) {
     }
   };
 
-  const clearBudget = async () => {
-    set("monthlyBudget", "");
-    await update.mutateAsync({ monthlyBudget: null });
-  };
-
   return (
-    <div className="space-y-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm space-y-5">
-        <h2 className="font-semibold text-gray-900 dark:text-white">Profile</h2>
-
-        {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">{error}</p>}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-          <input
-            type="text"
-            required
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>
+      {/* Left — Profile form */}
+      <form onSubmit={handleSubmit} className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="sp-card-head" style={{ padding: 0 }}>
+          <div>
+            <div className="sp-card-title">Profile</div>
+            <div className="sp-card-sub">Update your name, cycle day, currency, and budget</div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {error && (
+          <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label style={lbl}>Name</label>
+          <input type="text" required value={form.name} onChange={(e) => set("name", e.target.value)} style={inp} />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Budget Start Day</label>
+            <label style={lbl}>Budget Start Day</label>
             <input
-              type="number"
-              min="1"
-              max="31"
-              required
+              type="number" min="1" max="31" required
               value={form.salaryDay}
               onChange={(e) => set("salaryDay", e.target.value)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={inp}
             />
-            <p className="text-xs text-gray-400 mt-1">Day 1–31. Auto-caps if the month is shorter.</p>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>Day 1–31. Auto-caps if the month is shorter.</div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
-            <select
-              value={form.currency}
-              onChange={(e) => set("currency", e.target.value)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            <label style={lbl}>Currency</label>
+            <select value={form.currency} onChange={(e) => set("currency", e.target.value)} style={{ ...inp, cursor: "pointer" }}>
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* Monthly Budget */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Monthly Budget
-          </label>
-          <div className="relative">
-            <Wallet size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <label style={lbl}>Monthly Budget</label>
+          <div style={{ position: "relative" }}>
+            <Wallet size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)", pointerEvents: "none" }} />
             <input
-              type="number"
-              min="0"
-              step="1"
+              type="number" min="0" step="1"
               value={form.monthlyBudget}
               onChange={(e) => set("monthlyBudget", e.target.value)}
               placeholder="e.g. 30000"
-              className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{ ...inp, paddingLeft: 40, paddingRight: form.monthlyBudget ? 40 : 14 }}
             />
             {form.monthlyBudget && (
               <button
                 type="button"
                 onClick={() => set("monthlyBudget", "")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", display: "grid", placeItems: "center" }}
               >
                 <X size={14} />
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-1">
+          <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
             Your total spending limit per cycle. Shows as "Remaining Budget" on the dashboard.
             {user.monthlyBudget && (
-              <span className="ml-1 text-indigo-500 font-medium">
+              <span style={{ marginLeft: 6, color: "var(--brand)", fontWeight: 600 }}>
                 Current: {formatCurrency(user.monthlyBudget, form.currency)}
               </span>
             )}
-          </p>
+          </div>
         </div>
 
-        {/* Live preview */}
         {form.monthlyBudget && (
-          <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm text-indigo-700 dark:text-indigo-300">Monthly Budget</span>
-            <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+          <div style={{ borderRadius: "var(--r-sm)", background: "var(--brand-soft)", padding: "13px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 13, color: "var(--brand)", fontWeight: 500 }}>Monthly Budget</span>
+            <span className="sp-num" style={{ fontSize: 18, fontWeight: 700, color: "var(--brand)" }}>
               {formatCurrency(parseFloat(form.monthlyBudget) || 0, form.currency)}
             </span>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={update.isPending}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors disabled:opacity-60"
-        >
-          <Save size={16} />
-          {saved ? "Saved!" : update.isPending ? "Saving..." : "Save Changes"}
-        </button>
-      </form>
-
-      {/* Appearance */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Appearance</h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Dark Mode</p>
-            <p className="text-xs text-gray-400 mt-0.5">Switch between light and dark theme</p>
-          </div>
-          <button
-            onClick={toggleDark}
-            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-              darkMode ? "bg-indigo-600" : "bg-gray-200"
-            }`}
-          >
-            <span className={`inline-flex h-6 w-6 transform items-center justify-center rounded-full bg-white shadow transition-transform ${darkMode ? "translate-x-7" : "translate-x-1"}`}>
-              {darkMode ? <Moon size={12} className="text-indigo-600" /> : <Sun size={12} className="text-amber-500" />}
-            </span>
+        <div>
+          <button type="submit" disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ gap: 8 }}>
+            <Save size={15} />
+            {saved ? "Saved!" : update.isPending ? "Saving…" : "Save changes"}
           </button>
         </div>
-      </div>
+      </form>
 
-      {/* Account */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Account</h2>
-        <p className="text-sm text-gray-500">{user.email}</p>
-        <p className="text-xs text-gray-400 mt-1">Member since {new Date(user.createdAt).toLocaleDateString()}</p>
+      {/* Right column */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Appearance */}
+        <div className="sp-card sp-card-pad">
+          <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
+            <div className="sp-card-title">Appearance</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Dark mode</div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3 }}>Switch between light and dark theme</div>
+            </div>
+            <button
+              type="button"
+              onClick={toggleDark}
+              style={{
+                position: "relative", width: 52, height: 30, borderRadius: 99, border: "none", cursor: "pointer",
+                background: darkMode ? "var(--brand)" : "var(--line)",
+                transition: "background var(--d1) var(--e)", flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: "absolute", top: 3, left: darkMode ? 25 : 3,
+                width: 24, height: 24, borderRadius: "50%", background: "var(--surface)",
+                display: "grid", placeItems: "center",
+                transition: "left var(--d1) var(--e)",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+              }}>
+                {darkMode
+                  ? <Moon size={11} style={{ color: "var(--brand)" }} />
+                  : <Sun size={11} style={{ color: "#f59e0b" }} />}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Account */}
+        <div className="sp-card sp-card-pad">
+          <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
+            <div className="sp-card-title">Account</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div className="sp-avatar" style={{ width: 48, height: 48, fontSize: 18, flexShrink: 0 }}>
+              {user.name?.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>{user.name}</div>
+              <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 2 }}>{user.email}</div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
+                Member since {new Date(user.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -11,17 +11,30 @@ export default function Modal({ open, onClose, title, children }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-6 m-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-            <X size={20} />
+    <>
+      <div className="sp-scrim open" onClick={onClose} />
+      <div style={{
+        position: "fixed", zIndex: 91, left: "50%", top: "50%",
+        transform: "translate(-50%,-50%)",
+        width: "100%", maxWidth: 480,
+        background: "var(--surface)", borderRadius: "var(--r-xl)",
+        boxShadow: "var(--sh-lg)", border: "1px solid var(--line)",
+        overflow: "hidden", margin: "0 16px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 0" }}>
+          <div className="sp-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>{title}</div>
+          <button
+            onClick={onClose}
+            style={{ width: 32, height: 32, borderRadius: 99, display: "grid", placeItems: "center",
+              background: "var(--surface-sunken)", border: "none", color: "var(--ink-2)" }}
+          >
+            <X style={{ width: 17, height: 17 }} />
           </button>
         </div>
-        {children}
+        <div style={{ padding: "20px 24px 24px", maxHeight: "80vh", overflowY: "auto" }}>
+          {children}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

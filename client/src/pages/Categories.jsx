@@ -1,353 +1,155 @@
 import { useState } from "react";
-import { Plus, Edit2, Trash2, Tag, DollarSign, X, Check } from "lucide-react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "../api/categories.js";
-import { useCreateTag } from "../api/tags.js";
+import { useCycleSummary } from "../api/summary.js";
 import Modal from "../components/Modal.jsx";
+import ConfirmDelete from "../components/ConfirmDelete.jsx";
 import ColorPicker from "../components/ColorPicker.jsx";
 import EmojiPicker from "../components/EmojiPicker.jsx";
-import { Skeleton } from "../components/Skeleton.jsx";
+import Progress from "../components/Progress.jsx";
 import { formatCurrency } from "../utils/format.js";
+import { getCycleRange } from "../utils/cycle.js";
 
-// Inline budget editor on a category card
-function BudgetEditor({ category, currency, onSave }) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(category.budgetLimit?.toString() || "");
+function CategoryForm({ onClose, initial }) {
+  const create = useCreateCategory();
+  const update = useUpdateCategory();
+  const [name, setName] = useState(initial?.name || "");
+  const [icon, setIcon] = useState(initial?.icon || "📁");
+  const [color, setColor] = useState(initial?.color || "#6366f1");
+  const [budget, setBudget] = useState(initial?.budgetLimit?.toString() || "");
 
-  const commit = async () => {
-    await onSave(category.id, value === "" ? null : parseFloat(value));
-    setEditing(false);
+  const save = async () => {
+    const payload = { name, icon, color, budgetLimit: budget ? parseFloat(budget) : null };
+    if (initial) await update.mutateAsync({ id: initial.id, ...payload });
+    else await create.mutateAsync(payload);
+    onClose();
   };
 
-  if (!editing) {
-    return (
-      <button
-        onClick={() => setEditing(true)}
-        className="flex items-center gap-1 text-xs text-gray-400 hover:text-indigo-500 transition-colors"
-      >
-        <DollarSign size={12} />
-        {category.budgetLimit
-          ? `Budget: ${formatCurrency(category.budgetLimit, currency)}`
-          : "Set budget"}
-      </button>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-1">
-      <input
-        type="number"
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Amount"
-        className="w-24 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-      />
-      <button onClick={commit} className="text-green-500 hover:text-green-600">
-        <Check size={14} />
-      </button>
-      <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600">
-        <X size={14} />
-      </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <div>
+        <label style={lbl}>Name</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Housing" style={inp} />
+      </div>
+      <div>
+        <label style={lbl}>Monthly budget (optional)</label>
+        <input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="0" style={inp} />
+      </div>
+      <div>
+        <label style={lbl}>Icon</label>
+        <EmojiPicker value={icon} onChange={setIcon} />
+      </div>
+      <div>
+        <label style={lbl}>Color</label>
+        <ColorPicker value={color} onChange={setColor} />
+      </div>
+      <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+        <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+        <button className="sp-btn sp-btn-primary" style={{ flex: 1.4 }} onClick={save} disabled={!name.trim()}>
+          {initial ? "Save changes" : "Create category"}
+        </button>
+      </div>
     </div>
   );
 }
 
-// Category form used for create/edit
-function CategoryForm({ category = null, onClose }) {
-  const create = useCreateCategory();
-  const update = useUpdateCategory();
-  const [form, setForm] = useState({
-    name: category?.name || "",
-    color: category?.color || "#6366f1",
-    icon: category?.icon || "📁",
-    budgetLimit: category?.budgetLimit?.toString() || "",
-  });
-  const [error, setError] = useState("");
-
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    if (!form.name.trim()) { setError("Name is required"); return; }
-    const payload = {
-      name: form.name.trim(),
-      color: form.color,
-      icon: form.icon,
-      budgetLimit: form.budgetLimit ? parseFloat(form.budgetLimit) : null,
-    };
-    try {
-      if (category) {
-        await update.mutateAsync({ id: category.id, ...payload });
-      } else {
-        await create.mutateAsync(payload);
-      }
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
-    }
-  };
-
-  const isPending = create.isPending || update.isPending;
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">{error}</p>}
-
-      <div>
-        <label className="block text-sm text-gray-500 mb-1">Name</label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={(e) => set("name", e.target.value)}
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Icon</label>
-        <EmojiPicker value={form.icon} onChange={(v) => set("icon", v)} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Color</label>
-        <ColorPicker value={form.color} onChange={(v) => set("color", v)} />
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-500 mb-1">Monthly Budget Limit (optional)</label>
-        <input
-          type="number"
-          min="0"
-          step="1"
-          value={form.budgetLimit}
-          onChange={(e) => set("budgetLimit", e.target.value)}
-          placeholder="Leave blank for no limit"
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Preview</label>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-          style={{ backgroundColor: form.color + "22", color: form.color }}
-        >
-          {form.icon} {form.name || "Category name"}
-        </span>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 transition-colors disabled:opacity-60"
-      >
-        {isPending ? "Saving..." : category ? "Update Category" : "Create Category"}
-      </button>
-    </form>
-  );
-}
-
-// Quick-add tag modal (same as Tags page TagForm, inlined for convenience)
-function QuickTagForm({ onClose }) {
-  const create = useCreateTag();
-  const [form, setForm] = useState({ name: "", color: "#6366f1", icon: "😀" });
-  const [error, setError] = useState("");
-
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) { setError("Name is required"); return; }
-    try {
-      await create.mutateAsync(form);
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">{error}</p>}
-      <div>
-        <label className="block text-sm text-gray-500 mb-1">Tag Name</label>
-        <input
-          type="text"
-          autoFocus
-          value={form.name}
-          onChange={(e) => set("name", e.target.value)}
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Icon</label>
-        <EmojiPicker value={form.icon} onChange={(v) => set("icon", v)} />
-      </div>
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Color</label>
-        <ColorPicker value={form.color} onChange={(v) => set("color", v)} />
-      </div>
-      <div>
-        <label className="block text-sm text-gray-500 mb-2">Preview</label>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-          style={{ backgroundColor: form.color + "22", color: form.color }}
-        >
-          {form.icon} {form.name || "Tag name"}
-        </span>
-      </div>
-      <button
-        type="submit"
-        disabled={create.isPending}
-        className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 transition-colors disabled:opacity-60"
-      >
-        {create.isPending ? "Creating..." : "Create Tag"}
-      </button>
-    </form>
-  );
-}
+const inp = { width: "100%", height: 44, padding: "0 14px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 14.5, outline: "none" };
+const lbl = { display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7 };
 
 export default function Categories({ user }) {
-  const { data: categories = [], isLoading } = useCategories();
-  const updateCategory = useUpdateCategory();
+  const { data: categories = [] } = useCategories();
+  const { data: summary } = useCycleSummary({ cycleStart: getCycleRange(user.salaryDay, new Date()).cycleStart.toISOString() });
   const deleteCategory = useDeleteCategory();
+  const [showForm, setShowForm] = useState(false);
+  const [editCat, setEditCat] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [editCategory, setEditCategory] = useState(null);
-  const [showQuickTag, setShowQuickTag] = useState(false);
-
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this category? Expenses using it won't be deleted.")) return;
-    await deleteCategory.mutateAsync(id);
-  };
-
-  const handleBudgetSave = async (id, budgetLimit) => {
-    await updateCategory.mutateAsync({ id, budgetLimit });
-  };
-
+  const byCategory = summary?.byCategory || [];
   const totalBudget = categories.reduce((s, c) => s + (c.budgetLimit || 0), 0);
+  const spentFor = (id) => byCategory.find((c) => c.id === id)?.spent || 0;
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Categories</h1>
-          {totalBudget > 0 && (
-            <p className="text-sm text-gray-500 mt-0.5">
-              Total monthly budget: <span className="font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(totalBudget, user.currency)}</span>
-            </p>
-          )}
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div className="sp-num" style={{ fontSize: 14, color: "var(--ink-2)" }}>
+          Total allocated{" "}
+          <b className="sp-display" style={{ fontSize: 17 }}>{formatCurrency(totalBudget, user.currency)}</b>
+          {" "}<span style={{ color: "var(--ink-3)" }}>/ cycle</span>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowQuickTag(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-          >
-            <Tag size={15} /> Quick Add Tag
-          </button>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
-          >
-            <Plus size={16} /> New Category
-          </button>
-        </div>
+        <button className="sp-btn sp-btn-ghost" style={{ height: 38 }} onClick={() => setShowForm(true)}>
+          <Plus style={{ width: 16, height: 16 }} /> New category
+        </button>
       </div>
 
-      {/* Budget tip */}
-      <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl px-4 py-3 text-sm text-indigo-700 dark:text-indigo-300">
-        Click <strong>"Set budget"</strong> on any category to set its monthly spending limit. The total shows on your dashboard with a progress bar.
-      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {categories.map((c) => {
+          const spent = spentFor(c.id);
+          const budget = c.budgetLimit || 0;
+          const pct = budget > 0 ? Math.round((spent / budget) * 100) : null;
+          const over = budget > 0 && spent > budget;
+          const left = budget - spent;
 
-      {/* Category grid */}
-      {isLoading ? (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
-        </div>
-      ) : categories.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-12 shadow-sm text-center text-gray-400">
-          No categories yet.
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm flex flex-col gap-3"
-            >
-              {/* Category identity */}
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ backgroundColor: cat.color + "22" }}
-                >
-                  {cat.icon}
+          return (
+            <div key={c.id} className="sp-card sp-card-pad">
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                <span style={{ width: 46, height: 46, borderRadius: 14, display: "grid", placeItems: "center", background: (c.color || "#888") + "22", fontSize: 22, flex: "none" }}>
+                  {c.icon}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div className="sp-display" style={{ fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em" }}>{c.name}</div>
+                  {pct !== null && <div className="sp-num" style={{ fontSize: 12, color: "var(--ink-3)" }}>{pct}% used</div>}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-white truncate">{cat.name}</p>
-                  {cat.isDefault && (
-                    <span className="text-xs text-gray-400">Default</span>
-                  )}
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button className="sp-icon-btn" style={{ width: 30, height: 30, background: "transparent", border: "none" }} onClick={() => setEditCat(c)} title="Edit">
+                    <Edit2 style={{ width: 14, height: 14 }} />
+                  </button>
+                  <button
+                    className="sp-icon-btn"
+                    style={{ width: 30, height: 30, background: "transparent", border: "none" }}
+                    onClick={() => setDeleteTarget({ id: c.id, label: `${c.name} category` })}
+                    title="Delete"
+                  >
+                    <Trash2 style={{ width: 14, height: 14, color: "var(--neg)" }} />
+                  </button>
                 </div>
-                <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                />
               </div>
 
-              {/* Budget row */}
-              <BudgetEditor
-                category={cat}
-                currency={user.currency}
-                onSave={handleBudgetSave}
-              />
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 9 }}>
+                <span className="sp-display sp-num" style={{ fontSize: 22, fontWeight: 700 }}>{formatCurrency(spent, user.currency)}</span>
+                {budget > 0 && <span className="sp-num" style={{ fontSize: 12.5, color: "var(--ink-3)" }}>of {formatCurrency(budget, user.currency)}</span>}
+              </div>
 
-              {/* Budget bar if set */}
-              {cat.budgetLimit && (
-                <div className="h-1 rounded-full bg-gray-100 dark:bg-gray-800">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: "0%", backgroundColor: cat.color }}
-                  />
-                </div>
-              )}
+              {budget > 0 && <Progress value={spent} max={budget} color={c.color} />}
 
-              {/* Actions */}
-              <div className="flex gap-1 pt-1 border-t border-gray-50 dark:border-gray-800">
-                <button
-                  onClick={() => setEditCategory(cat)}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-indigo-500 text-xs transition-colors"
-                >
-                  <Edit2 size={13} /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(cat.id)}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 text-xs transition-colors"
-                >
-                  <Trash2 size={13} /> Delete
-                </button>
+              <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                {budget > 0 ? (
+                  over
+                    ? <span className="sp-pill sp-pill-neg">Over by {formatCurrency(-left, user.currency)}</span>
+                    : <span className="sp-pill sp-pill-pos">{formatCurrency(left, user.currency)} left</span>
+                ) : (
+                  <button className="sp-pill sp-pill-muted" style={{ cursor: "pointer" }} onClick={() => setEditCat(c)}>Set budget</button>
+                )}
+                {budget > 0 && <span className="sp-num" style={{ fontSize: 12, color: "var(--ink-3)" }}>{formatCurrency(Math.round(budget / 30), user.currency)}/day</span>}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
-      {/* Modals */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Category">
-        <CategoryForm onClose={() => setShowCreate(false)} />
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="New category">
+        <CategoryForm onClose={() => setShowForm(false)} />
+      </Modal>
+      <Modal open={!!editCat} onClose={() => setEditCat(null)} title="Edit category">
+        <CategoryForm onClose={() => setEditCat(null)} initial={editCat} />
       </Modal>
 
-      {editCategory && (
-        <Modal open={!!editCategory} onClose={() => setEditCategory(null)} title="Edit Category">
-          <CategoryForm category={editCategory} onClose={() => setEditCategory(null)} />
-        </Modal>
-      )}
-
-      <Modal open={showQuickTag} onClose={() => setShowQuickTag(false)} title="Quick Add Tag">
-        <QuickTagForm onClose={() => setShowQuickTag(false)} />
-      </Modal>
+      <ConfirmDelete
+        open={!!deleteTarget}
+        label={deleteTarget?.label}
+        loading={deleteCategory.isPending}
+        onConfirm={async () => { await deleteCategory.mutateAsync(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

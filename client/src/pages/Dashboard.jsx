@@ -1,223 +1,288 @@
 import { useState } from "react";
-import { Plus, ChevronLeft, ChevronRight, TrendingUp, Wallet, Clock, Tag } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
-import { useCycleSummary, useChartData, useTrend } from "../api/summary.js";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Wallet, TrendingUp, Clock, Sparkles, ArrowDown } from "lucide-react";
+import { useCycleSummary, useTrend } from "../api/summary.js";
 import { useExpenses } from "../api/expenses.js";
-import { CardSkeleton, ExpenseSkeleton } from "../components/Skeleton.jsx";
-import ExpenseForm from "../components/ExpenseForm.jsx";
-import Pill from "../components/Pill.jsx";
+import { useGoals } from "../api/goals.js";
 import { formatCurrency, formatDate } from "../utils/format.js";
 import { getCycleRange, formatCycleLabel, prevCycleRef, nextCycleRef } from "../utils/cycle.js";
+import Donut from "../components/Donut.jsx";
+import Progress from "../components/Progress.jsx";
+import SavingsGoal from "../components/SavingsGoal.jsx";
 
-function SummaryCard({ label, value, icon: Icon, color = "indigo" }) {
-  const colors = {
-    indigo: "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600",
-    green: "bg-green-50 dark:bg-green-900/20 text-green-600",
-    amber: "bg-amber-50 dark:bg-amber-900/20 text-amber-600",
-    red: "bg-red-50 dark:bg-red-900/20 text-red-600",
-  };
+function StatCard({ icon: Icon, tint, label, value, sub }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm flex items-start gap-4">
-      <div className={`p-3 rounded-xl ${colors[color]}`}>
-        <Icon size={20} />
+    <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, display: "grid", placeItems: "center",
+          background: `color-mix(in srgb, ${tint} 14%, transparent)`, color: tint }}>
+          <Icon style={{ width: 20, height: 20 }} />
+        </div>
+        {sub}
       </div>
       <div>
-        <p className="text-xs text-gray-500 font-medium">{label}</p>
-        <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
+        <div style={{ fontSize: 12.5, color: "var(--ink-3)", fontWeight: 500, marginBottom: 3 }}>{label}</div>
+        <div className="sp-display sp-num" style={{ fontSize: 28, fontWeight: 700, color: "var(--ink)", lineHeight: 1 }}>{value}</div>
       </div>
     </div>
   );
 }
 
-function BudgetBar({ category, currency }) {
-  if (!category.budget) return null;
-  const pct = Math.min((category.spent / category.budget) * 100, 100);
-  const over = category.spent > category.budget;
+function RecentTxns({ expenses, currency, onViewAll }) {
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span className="text-gray-600 dark:text-gray-300">{category.icon} {category.name}</span>
-        <span className={over ? "text-red-500 font-semibold" : "text-gray-500"}>
-          {formatCurrency(category.spent, currency)} / {formatCurrency(category.budget, currency)}
-        </span>
+    <div className="sp-card" style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div className="sp-card-head" style={{ padding: "22px 22px 0" }}>
+        <div>
+          <div className="sp-card-title">Recent transactions</div>
+          <div className="sp-card-sub">{expenses.length} most recent</div>
+        </div>
+        <button className="sp-btn sp-btn-soft sp-btn-sm" onClick={onViewAll}>View all</button>
       </div>
-      <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800">
-        <div
-          className={`h-full rounded-full transition-all ${over ? "bg-red-500" : pct > 80 ? "bg-amber-500" : "bg-indigo-500"}`}
-          style={{ width: `${pct}%` }}
-        />
+      <div style={{ marginTop: 8 }}>
+        {expenses.length === 0 && (
+          <div style={{ padding: "40px 22px", textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>
+            No expenses yet this cycle
+          </div>
+        )}
+        {expenses.map((e, i) => (
+          <div
+            key={e.id}
+            style={{
+              display: "flex", alignItems: "center", gap: 13, padding: "11px 22px",
+              borderTop: i === 0 ? "none" : "1px solid var(--line)",
+              transition: "background var(--d1) var(--e)",
+            }}
+            onMouseEnter={(ev) => (ev.currentTarget.style.background = "var(--surface-2)")}
+            onMouseLeave={(ev) => (ev.currentTarget.style.background = "transparent")}
+          >
+            <span style={{
+              width: 38, height: 38, borderRadius: 11, display: "grid", placeItems: "center",
+              background: (e.category?.color || "#888") + "22",
+              fontSize: 18, flex: "none",
+            }}>
+              {e.category?.icon || "💸"}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {e.note || e.category?.name || "Expense"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                {e.category?.name} · {formatDate(e.date)}
+              </div>
+            </div>
+            <div className="sp-num" style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+              −{formatCurrency(e.amount, currency)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 export default function Dashboard({ user }) {
-  const [showForm, setShowForm] = useState(false);
+  const navigate = useNavigate();
   const [cycleRef, setCycleRef] = useState(new Date());
+  const [hoverCat, setHoverCat] = useState(null);
+  const { data: goals = [] } = useGoals();
+  const goal = goals.find((g) => g.isPrimary) || null;
 
   const { cycleStart, cycleEnd } = getCycleRange(user.salaryDay, cycleRef);
   const cycleStartParam = cycleStart.toISOString();
 
-  const { data: summary, isLoading: summaryLoading } = useCycleSummary({ cycleStart: cycleStartParam });
-  const { data: chartData, isLoading: chartLoading } = useChartData({ cycleStart: cycleStartParam });
-  const { data: trend } = useTrend();
-  const { data: expenses = [], isLoading: expLoading } = useExpenses({ cycleStart: cycleStartParam });
+  const { data: summary } = useCycleSummary({ cycleStart: cycleStartParam });
+  const { data: expenses = [] } = useExpenses({ cycleStart: cycleStartParam });
 
-  const remaining = summary ? summary.remaining : 0;
-  const remainingPct = summary?.totalBudget ? (remaining / summary.totalBudget) * 100 : null;
-  const remainingColor = remainingPct === null ? "indigo" : remainingPct > 50 ? "green" : remainingPct > 20 ? "amber" : "red";
+  const byCategory = summary?.byCategory || [];
+  const totalSpent = summary?.totalSpent || 0;
+  const totalBudget = summary?.totalBudget || 0;
+  const remaining = summary?.remaining ?? (totalBudget - totalSpent);
+  const daysLeft = summary?.daysLeft ?? "—";
+  const topCategory = [...byCategory].sort((a, b) => b.spent - a.spent)[0];
+  const pctUsed = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : null;
 
-  const topCategory = summary?.byCategory?.sort((a, b) => b.spent - a.spent)[0];
+  const donutData = byCategory
+    .filter((c) => c.spent > 0)
+    .map((c) => ({ id: c.id, value: c.spent, color: c.color || "#888", name: c.name }));
+
+  const activeCat = hoverCat ? byCategory.find((c) => c.id === hoverCat) : null;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Cycle navigation */}
-      <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-2xl px-5 py-4 shadow-sm">
+    <div>
+      {/* Cycle switcher */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, marginBottom: 24 }}>
         <button
+          className="sp-icon-btn"
+          style={{ width: 38, height: 38 }}
           onClick={() => setCycleRef(prevCycleRef(cycleStart, user.salaryDay))}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <div className="text-center">
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Pay Cycle</p>
-          <p className="font-semibold text-gray-900 dark:text-white">{formatCycleLabel(cycleStart, cycleEnd)}</p>
+        <div style={{ textAlign: "center", minWidth: 230 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 2 }}>
+            Pay Cycle
+          </div>
+          <div className="sp-display" style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em" }}>
+            {formatCycleLabel(cycleStart, cycleEnd)}
+          </div>
         </div>
         <button
+          className="sp-icon-btn"
+          style={{ width: 38, height: 38 }}
           onClick={() => setCycleRef(nextCycleRef(cycleStart, user.salaryDay))}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
         >
-          <ChevronRight size={18} />
+          <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {summaryLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
-        ) : (
-          <>
-            <SummaryCard label="Total Spent" value={formatCurrency(summary?.totalSpent || 0, user.currency)} icon={Wallet} color="indigo" />
-            <SummaryCard
-              label={summary?.totalBudget ? "Remaining Budget" : "Monthly Budget"}
-              value={
-                summary?.totalBudget
-                  ? formatCurrency(remaining, user.currency)
-                  : <span className="text-sm text-gray-400 font-normal">Not set — go to Settings</span>
-              }
-              icon={TrendingUp}
-              color={remainingColor}
-            />
-            <SummaryCard label="Days Left" value={`${summary?.daysLeft ?? "—"} days`} icon={Clock} color="amber" />
-            <SummaryCard
-              label="Top Category"
-              value={topCategory ? `${topCategory.icon} ${topCategory.name}` : "—"}
-              icon={Tag}
-              color="indigo"
-            />
-          </>
-        )}
+      {/* KPI cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
+        <StatCard
+          icon={Wallet}
+          tint="var(--cat-1)"
+          label="Total spent"
+          value={formatCurrency(totalSpent, user.currency)}
+          sub={pctUsed !== null && <span className="sp-pill sp-pill-muted sp-num">{pctUsed}% used</span>}
+        />
+        <StatCard
+          icon={TrendingUp}
+          tint="var(--brand)"
+          label="Remaining budget"
+          value={totalBudget > 0 ? formatCurrency(remaining, user.currency) : "No budget set"}
+          sub={<span className="sp-pill sp-pill-pos"><ArrowDown style={{ width: 12, height: 12 }} />On track</span>}
+        />
+        <StatCard
+          icon={Clock}
+          tint="var(--cat-2)"
+          label="Days left"
+          value={`${daysLeft} days`}
+          sub={<span className="sp-pill sp-pill-muted sp-num">of 30</span>}
+        />
+        <StatCard
+          icon={Sparkles}
+          tint="var(--cat-5)"
+          label="Top category"
+          value={topCategory ? topCategory.name : "—"}
+          sub={topCategory && <span className="sp-pill sp-pill-muted sp-num">{formatCurrency(topCategory.spent, user.currency)}</span>}
+        />
       </div>
 
-      {/* Charts */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Pie chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Spending by Category</h3>
-          {chartLoading ? (
-            <div className="h-48 flex items-center justify-center"><div className="animate-pulse w-36 h-36 rounded-full bg-gray-200 dark:bg-gray-700" /></div>
-          ) : (chartData?.pieData?.length || 0) === 0 ? (
-            <p className="text-gray-400 text-center py-10 text-sm">No expenses this cycle</p>
+      {/* Donut + Recent transactions */}
+      <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 14, marginBottom: 16 }}>
+        {/* Donut */}
+        <div className="sp-card sp-card-pad">
+          <div className="sp-card-head">
+            <div>
+              <div className="sp-card-title">Spending by category</div>
+              <div className="sp-card-sub">This pay cycle</div>
+            </div>
+          </div>
+          {donutData.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "32px 0", color: "var(--ink-3)", fontSize: 13 }}>
+              No expenses yet this cycle
+            </div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={chartData.pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name">
-                  {chartData.pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => formatCurrency(v, user.currency)} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Bar chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Last 6 Cycles</h3>
-          {!trend ? (
-            <div className="h-48 animate-pulse bg-gray-100 dark:bg-gray-800 rounded-xl" />
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={trend.barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => formatCurrency(v, user.currency)} />
-                <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Budget bars */}
-      {summary?.byCategory?.some((c) => c.budget) && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm space-y-3">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Budget Progress</h3>
-          {summary.byCategory.filter((c) => c.budget).map((c) => (
-            <BudgetBar key={c.id} category={c} currency={user.currency} />
-          ))}
-        </div>
-      )}
-
-      {/* Recent expenses */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm">
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Recent Expenses</h3>
-        {expLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <ExpenseSkeleton key={i} />)
-        ) : expenses.length === 0 ? (
-          <p className="text-gray-400 text-center py-8 text-sm">No expenses yet this cycle</p>
-        ) : (
-          <div className="divide-y divide-gray-50 dark:divide-gray-800">
-            {expenses.slice(0, 10).map((e) => (
-              <div key={e.id} className="flex items-center gap-3 py-3">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0"
-                  style={{ backgroundColor: e.category.color + "22" }}
-                >
-                  {e.category.icon}
+            <>
+              <div style={{ position: "relative", display: "grid", placeItems: "center", marginBottom: 18 }}>
+                <Donut data={donutData} size={208} stroke={28} active={hoverCat} onHover={setHoverCat} />
+                <div style={{ position: "absolute", textAlign: "center", pointerEvents: "none" }}>
+                  {activeCat ? (
+                    <>
+                      <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 600 }}>{activeCat.name}</div>
+                      <div className="sp-display sp-num" style={{ fontSize: 24, fontWeight: 700 }}>{formatCurrency(activeCat.spent, user.currency)}</div>
+                      <div className="sp-num" style={{ fontSize: 12, color: activeCat.color, fontWeight: 700 }}>
+                        {totalSpent > 0 ? Math.round((activeCat.spent / totalSpent) * 100) : 0}%
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 600 }}>Total spent</div>
+                      <div className="sp-display sp-num" style={{ fontSize: 26, fontWeight: 700 }}>{formatCurrency(totalSpent, user.currency)}</div>
+                    </>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {e.note || e.category.name}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                    <span className="text-xs text-gray-400">{formatDate(e.date)}</span>
-                    {e.tags.map((t) => (
-                      <Pill key={t.tagId} icon={t.tag.icon} label={t.tag.name} color={t.tag.color} />
-                    ))}
-                  </div>
-                </div>
-                <span className="font-semibold text-gray-900 dark:text-white text-sm ml-2">
-                  {formatCurrency(e.amount, user.currency)}
-                </span>
               </div>
-            ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {donutData.map((d) => (
+                  <div
+                    key={d.id}
+                    onMouseEnter={() => setHoverCat(d.id)}
+                    onMouseLeave={() => setHoverCat(null)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                      opacity: hoverCat && hoverCat !== d.id ? 0.5 : 1,
+                      transition: "opacity var(--d1) var(--e)" }}
+                  >
+                    <span className="sp-swatch" style={{ background: d.color }} />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-2)", flex: 1 }}>{d.name}</span>
+                    <span className="sp-num" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
+                      {formatCurrency(d.value, user.currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Recent transactions */}
+        <RecentTxns
+          expenses={expenses.slice(0, 6)}
+          currency={user.currency}
+          onViewAll={() => navigate("/expenses")}
+        />
+      </div>
+
+      {/* Savings goal + Budget by category */}
+      <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 14 }}>
+        {goal ? (
+          <SavingsGoal goal={goal} currency={user.currency} />
+        ) : (
+          <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 180 }}>
+            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>No savings goal set</div>
+            <a href="/goals" style={{ fontSize: 13, color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>Set a goal →</a>
           </div>
         )}
+
+        {/* Budget by category */}
+        <div className="sp-card sp-card-pad">
+          <div className="sp-card-head">
+            <div>
+              <div className="sp-card-title">Budget by category</div>
+              <div className="sp-card-sub">
+                {formatCurrency(totalSpent, user.currency)} of {formatCurrency(totalBudget, user.currency)} used
+              </div>
+            </div>
+          </div>
+          {byCategory.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "32px 0", color: "var(--ink-3)", fontSize: 13 }}>
+              No categories with budgets yet
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 17 }}>
+              {byCategory.filter((c) => c.budget).map((c) => {
+                const over = c.spent > c.budget;
+                return (
+                  <div key={c.id}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ width: 28, height: 28, borderRadius: 8, display: "grid", placeItems: "center",
+                        background: (c.color || "#888") + "22", fontSize: 14, flex: "none" }}>
+                        {c.icon}
+                      </span>
+                      <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", flex: 1 }}>{c.name}</span>
+                      <span className="sp-num" style={{ fontSize: 12.5, color: "var(--ink-2)", fontWeight: 500 }}>
+                        {formatCurrency(c.spent, user.currency)}{" "}
+                        <span style={{ color: "var(--ink-3)" }}>/ {formatCurrency(c.budget, user.currency)}</span>
+                      </span>
+                      {over && <span className="sp-pill sp-pill-neg" style={{ height: 22, fontSize: 11 }}>Over</span>}
+                    </div>
+                    <Progress value={c.spent} max={c.budget} color={c.color} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* FAB */}
-      <button
-        onClick={() => setShowForm(true)}
-        className="fixed bottom-20 md:bottom-8 right-6 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg flex items-center justify-center transition-colors z-10"
-      >
-        <Plus size={24} />
-      </button>
-
-      <ExpenseForm open={showForm} onClose={() => setShowForm(false)} />
     </div>
   );
 }
