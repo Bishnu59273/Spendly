@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "./client.js";
 
+function saveToken(data) {
+  if (data?.token) localStorage.setItem("spendly_token", data.token);
+}
+
 export function useMe() {
   return useQuery({
     queryKey: ["me"],
@@ -13,7 +17,10 @@ export function useLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) => api.post("/auth/login", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
+    onSuccess: (data) => {
+      saveToken(data);
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
   });
 }
 
@@ -21,7 +28,10 @@ export function useRegister() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) => api.post("/auth/register", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
+    onSuccess: (data) => {
+      saveToken(data);
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
   });
 }
 
@@ -30,6 +40,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => api.post("/auth/logout"),
     onSuccess: () => {
+      localStorage.removeItem("spendly_token");
       qc.clear();
       window.location.href = "/login";
     },
