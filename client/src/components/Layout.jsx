@@ -146,22 +146,6 @@ export default function Layout({ user, children }) {
               </div>
             </button>
 
-            {/* Sign out */}
-            <button
-              onClick={() => logout.mutate()}
-              style={{
-                display: "flex", alignItems: "center", gap: 12, width: "100%",
-                height: 42, padding: "0 14px",
-                borderRadius: "var(--r-sm)", color: "var(--ink-3)",
-                fontSize: 14, fontWeight: 500,
-                transition: "background var(--d1) var(--e), color var(--d1) var(--e)",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--neg) 10%, transparent)"; e.currentTarget.style.color = "var(--neg)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--ink-3)"; }}
-            >
-              <LogOut style={{ width: 18, height: 18 }} />
-              Sign out
-            </button>
           </div>
 
           {/* Desktop upsell card */}
@@ -171,6 +155,28 @@ export default function Layout({ user, children }) {
             <Link to="/goals" className="sp-upsell-btn" onClick={() => setMenu(false)}>
               View goals <ChevronRight style={{ width: 14, height: 14 }} />
             </Link>
+          </div>
+
+          {/* Sign out — always visible */}
+          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 10, marginTop: 6 }}>
+            <button
+              onClick={() => logout.mutate()}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%",
+                height: 44, padding: "0 14px",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--line)",
+                background: "var(--surface-2)",
+                color: "var(--ink-2)",
+                fontSize: 14, fontWeight: 600,
+                transition: "background var(--d1) var(--e), color var(--d1) var(--e), border-color var(--d1) var(--e)",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--neg) 10%, transparent)"; e.currentTarget.style.color = "var(--neg)"; e.currentTarget.style.borderColor = "var(--neg)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface-2)"; e.currentTarget.style.color = "var(--ink-2)"; e.currentTarget.style.borderColor = "var(--line)"; }}
+            >
+              <LogOut style={{ width: 16, height: 16 }} />
+              Sign out
+            </button>
           </div>
         </div>
       </aside>
