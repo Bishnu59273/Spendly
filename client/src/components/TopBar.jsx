@@ -1,7 +1,4 @@
-import { useState, useEffect } from "react";
-import { Search, Moon, Sun, Plus, Menu, LogOut } from "lucide-react";
-import { useLogout } from "../api/auth.js";
-import ExpenseForm from "./ExpenseForm.jsx";
+import { Menu, Moon, Sun, Plus } from "lucide-react";
 import NotificationPanel from "./NotificationPanel.jsx";
 
 const TITLES = {
@@ -13,76 +10,67 @@ const TITLES = {
   "/settings":   { eyebrow: "Account",            title: "Settings" },
 };
 
+const ADD_LABELS = {
+  "/categories": "New category",
+  "/goals":      "New goal",
+  "/tags":       "New tag",
+};
+
+function getAddLabel(pathname) {
+  for (const [prefix, label] of Object.entries(ADD_LABELS)) {
+    if (pathname.startsWith(prefix)) return label;
+  }
+  return "Add expense";
+}
+
 function getInitials(name = "") {
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export default function TopBar({ user, pathname, onMenu, addOpen, setAddOpen }) {
-  const logout = useLogout();
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  }, [dark]);
-
+export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, setAddOpen }) {
   const t = Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] || TITLES["/dashboard"];
+  const addLabel = getAddLabel(pathname);
 
   return (
-    <>
-      <header className="sp-topbar">
-        <button className="sp-icon-btn sp-menu-btn" style={{ display: "none" }} onClick={onMenu}>
-          <Menu style={{ width: 20, height: 20 }} />
+    <header className="sp-topbar">
+      {/* Hamburger — mobile only */}
+      <button className="sp-icon-btn sp-menu-btn" style={{ display: "none" }} onClick={onMenu}>
+        <Menu style={{ width: 20, height: 20 }} />
+      </button>
+
+      {/* Page title */}
+      <div className="sp-topbar-titles">
+        <div className="sp-topbar-eyebrow">{t.eyebrow}</div>
+        <div className="sp-topbar-title">{t.title}</div>
+      </div>
+
+      <div className="sp-topbar-spacer" />
+
+      {/* Desktop-only right section */}
+      <div className="sp-topbar-right sp-hide-mobile">
+        <NotificationPanel currency={user?.currency} />
+
+        <button
+          className="sp-icon-btn"
+          onClick={onToggleDark}
+          aria-label="Toggle theme"
+        >
+          {dark
+            ? <Sun style={{ width: 18, height: 18 }} />
+            : <Moon style={{ width: 18, height: 18 }} />
+          }
         </button>
 
-        <div className="sp-topbar-titles">
-          <div className="sp-topbar-eyebrow">{t.eyebrow}</div>
-          <div className="sp-topbar-title">{t.title}</div>
+        <button className="sp-btn sp-btn-primary" onClick={() => setAddOpen(true)}>
+          <Plus style={{ width: 17, height: 17 }} />
+          {addLabel}
+        </button>
+
+        <div className="sp-user-chip">
+          <div className="sp-avatar">{getInitials(user?.name)}</div>
+          <span className="sp-uname">{user?.name?.split(" ")[0]}</span>
         </div>
-
-        <div className="sp-topbar-spacer" />
-
-        <div className="sp-topbar-right">
-          <div className="sp-search">
-            <Search style={{ width: 17, height: 17 }} />
-            <input placeholder="Search…" />
-          </div>
-
-          <button
-            className="sp-icon-btn"
-            onClick={() => setDark((d) => !d)}
-            aria-label="Toggle theme"
-          >
-            {dark
-              ? <Sun style={{ width: 18, height: 18 }} />
-              : <Moon style={{ width: 18, height: 18 }} />
-            }
-          </button>
-
-          <NotificationPanel currency={user?.currency} />
-
-          <button className="sp-btn sp-btn-primary" onClick={() => setAddOpen(true)}>
-            <Plus style={{ width: 17, height: 17 }} />
-            Add expense
-          </button>
-
-          <div className="sp-user-chip">
-            <div className="sp-avatar">{getInitials(user?.name)}</div>
-            <span className="sp-uname">{user?.name?.split(" ")[0]}</span>
-          </div>
-
-          <button
-            className="sp-icon-btn"
-            onClick={() => logout.mutate()}
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut style={{ width: 17, height: 17 }} />
-          </button>
-        </div>
-      </header>
-
-      <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
-    </>
+      </div>
+    </header>
   );
 }

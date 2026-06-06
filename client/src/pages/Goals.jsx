@@ -132,7 +132,7 @@ export default function Goals({ user }) {
   return (
     <div>
       {/* Main savings goal + Cycle history */}
-      <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 16, marginBottom: 16 }}>
+      <div className="sp-grid-5-7" style={{ marginBottom: 16 }}>
         <div>
           {editGoal?.isPrimary ? (
             <GoalForm initial={editGoal} onSave={handleUpdate} onCancel={() => setEditGoal(null)} isPrimarySlot />
@@ -191,7 +191,7 @@ export default function Goals({ user }) {
             No other goals yet. Add one above.
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginTop: showOtherForm ? 16 : 0 }}>
+          <div className="sp-grid-thirds" style={{ marginTop: showOtherForm ? 16 : 0 }}>
             {otherGoals.map((g) => {
               if (editGoal?.id === g.id) {
                 return (

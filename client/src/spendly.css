@@ -316,6 +316,11 @@ input, select, textarea { font: inherit; }
 .sp-search svg { width: 17px; height: 17px; flex: none; }
 .sp-search input { border: none; background: none; outline: none; flex: 1; color: var(--ink); font-size: 13.5px; min-width: 0; }
 .sp-search input:focus-visible { box-shadow: none; border-radius: 0; }
+
+/* Hide number input spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .sp-search input::placeholder { color: var(--ink-3); }
 
 .sp-icon-btn {
@@ -451,6 +456,15 @@ input, select, textarea { font: inherit; }
 }
 .sp-fab:hover { transform: scale(1.06) rotate(90deg); background: var(--brand-strong); }
 .sp-fab svg { width: 24px; height: 24px; }
+body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !important; transform: scale(0.8) !important; }
+
+/* ============================================================
+   Layout utility classes (responsive-aware)
+   ============================================================ */
+.sp-kpi-grid  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.sp-grid-5-7  { display: grid; grid-template-columns: 5fr 7fr; gap: 14px; }
+.sp-grid-halves { display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start; }
+.sp-grid-thirds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
 /* ============================================================
    Responsive
@@ -458,18 +472,104 @@ input, select, textarea { font: inherit; }
 @media (max-width: 1080px) {
   .sp-content, .sp-topbar { padding-left: 24px; padding-right: 24px; }
 }
+
 .sp-menu-btn { display: none; }
+.sp-hide-mobile {}
+.sp-sidebar-close { display: none; }
+.sp-sidebar-mobile-only { display: none; }
+.sp-sidebar-desktop-only {}
+
+/* ---- Tablet / large phone (≤860px) ---- */
 @media (max-width: 860px) {
+  /* Shell — sidebar leaves the grid entirely */
   .sp-menu-btn { display: grid !important; }
-  .sp-app { grid-template-columns: 0 1fr; }
+  .sp-app { grid-template-columns: 1fr; }
   .sp-sidebar {
     position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); z-index: 95;
     transform: translateX(-100%); transition: transform var(--d2) var(--e);
     box-shadow: var(--sh-lg);
   }
   .sp-app[data-menu='true'] .sp-sidebar { transform: translateX(0); }
-  .sp-search { min-width: 0; width: 42px; padding: 0; justify-content: center; }
-  .sp-search input { display: none; }
+  .sp-main { grid-column: 1; width: 100%; }
+
+  /* Sidebar: show mobile controls, hide desktop upsell */
+  .sp-sidebar-close { display: grid !important; }
+  .sp-sidebar-mobile-only { display: block; margin-bottom: 12px; }
+  .sp-sidebar-desktop-only { display: none; }
+
+  /* Topbar */
+  .sp-topbar { padding-left: 16px; padding-right: 16px; height: 60px; gap: 10px; }
+  .sp-topbar-spacer { display: none; }
+  .sp-topbar-titles { flex: 1; min-width: 0; overflow: hidden; }
+  .sp-topbar-eyebrow { display: none; }
+  .sp-topbar-title { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sp-hide-mobile { display: none !important; }
+
+  /* Content */
+  .sp-content { padding: 16px 16px 90px; }
+
+  /* Layout grids stack */
+  .sp-kpi-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .sp-grid-5-7  { grid-template-columns: 1fr; }
+  .sp-grid-halves { grid-template-columns: 1fr; }
+  .sp-grid-thirds { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  /* Expenses filter bar: scroll horizontally */
+  .sp-filter-bar { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sp-filter-bar .sp-seg { flex-shrink: 0; }
+}
+
+/* ---- Small phone (≤480px) ---- */
+@media (max-width: 480px) {
+  .sp-kpi-grid  { gap: 8px; }
+  .sp-card-pad  { padding: 16px; }
+  .sp-grid-thirds { grid-template-columns: 1fr; }
+
+  /* Expenses: table → card rows */
+  .sp-exp-header { display: none !important; }
+  .sp-exp-row {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto auto !important;
+    grid-template-areas: "txn amt" "txn act" !important;
+    gap: 0 12px !important;
+    align-items: start !important;
+  }
+  .sp-exp-txn  { grid-area: txn; }
+  .sp-exp-cat  { display: none !important; }
+  .sp-exp-date { display: none !important; }
+  .sp-exp-amt  { grid-area: amt; text-align: right !important; align-self: end !important; padding-top: 14px !important; }
+  .sp-exp-act  { grid-area: act; justify-content: flex-end !important; }
+
+  /* Tags: drop bar column */
+  .sp-tag-row      { grid-template-columns: 1fr 110px 72px !important; }
+  .sp-tag-bar-col  { display: none !important; }
+}
+
+/* Modal: bottom sheet on phones */
+@media (max-width: 640px) {
+  .sp-modal-sheet {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 90vh !important;
+    border-radius: var(--r-xl) var(--r-xl) 0 0 !important;
+    transform: translateY(24px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .sp-modal-sheet.sp-modal-open {
+    transform: translateY(0) !important;
+  }
+  .sp-modal-fields {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+  .sp-cat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .sp-sheet-handle { display: flex !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

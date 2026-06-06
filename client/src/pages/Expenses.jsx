@@ -4,7 +4,7 @@ import { useExpenses, useDeleteExpense } from "../api/expenses.js";
 import { useCategories } from "../api/categories.js";
 import ExpenseForm from "../components/ExpenseForm.jsx";
 import ConfirmDelete from "../components/ConfirmDelete.jsx";
-import { formatCurrency, formatDate } from "../utils/format.js";
+import { formatCurrency, formatDate, formatTime } from "../utils/format.js";
 import { getCycleRange, formatCycleLabel, prevCycleRef, nextCycleRef } from "../utils/cycle.js";
 
 export default function Expenses({ user }) {
@@ -52,7 +52,7 @@ export default function Expenses({ user }) {
       </div>
 
       {/* Filter bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+      <div className="sp-filter-bar" style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <div className="sp-search" style={{ flex: 1, minWidth: 220, height: 44 }}>
           <Search style={{ width: 17, height: 17 }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search transactions…" />
@@ -69,7 +69,7 @@ export default function Expenses({ user }) {
 
       {/* Table */}
       <div className="sp-card" style={{ overflow: "hidden" }}>
-        <div style={{
+        <div className="sp-exp-header" style={{
           display: "grid", gridTemplateColumns: "2.4fr 1.2fr 1.4fr 1fr 44px",
           gap: 12, padding: "13px 22px",
           background: "var(--surface-2)", borderBottom: "1px solid var(--line)",
@@ -89,6 +89,7 @@ export default function Expenses({ user }) {
         ) : (
           expenses.map((e, i) => (
             <div key={e.id}
+              className="sp-exp-row"
               style={{
                 display: "grid", gridTemplateColumns: "2.4fr 1.2fr 1.4fr 1fr 44px",
                 gap: 12, alignItems: "center", padding: "13px 22px",
@@ -98,7 +99,7 @@ export default function Expenses({ user }) {
               onMouseEnter={(ev) => (ev.currentTarget.style.background = "var(--surface-2)")}
               onMouseLeave={(ev) => (ev.currentTarget.style.background = "transparent")}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              <div className="sp-exp-txn" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                 <span style={{ width: 38, height: 38, borderRadius: 11, display: "grid", placeItems: "center", background: (e.category?.color || "#888") + "22", fontSize: 17, flex: "none" }}>
                   {e.category?.icon || "💸"}
                 </span>
@@ -116,17 +117,20 @@ export default function Expenses({ user }) {
                   )}
                 </div>
               </div>
-              <div>
+              <div className="sp-exp-cat">
                 <span className="sp-pill" style={{ background: (e.category?.color || "#888") + "22", color: e.category?.color || "#888" }}>
                   <span className="sp-dot" style={{ background: e.category?.color || "#888" }} />
                   {e.category?.name}
                 </span>
               </div>
-              <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{formatDate(e.date)}</div>
-              <div className="sp-num" style={{ textAlign: "right", fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+              <div>
+                <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{formatDate(e.date)}</div>
+                <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>{formatTime(e.date)}</div>
+              </div>
+              <div className="sp-exp-amt sp-num" style={{ textAlign: "right", fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
                 −{formatCurrency(e.amount, user.currency)}
               </div>
-              <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+              <div className="sp-exp-act" style={{ display: "flex", gap: 4, justifyContent: "center" }}>
                 <button className="sp-icon-btn" style={{ width: 30, height: 30, background: "transparent", border: "none" }} onClick={() => openEdit(e)} title="Edit">
                   <Edit2 style={{ width: 14, height: 14 }} />
                 </button>

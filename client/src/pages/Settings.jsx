@@ -56,7 +56,7 @@ export default function Settings({ user }) {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 16, alignItems: "start" }}>
+    <div className="sp-grid-halves">
       {/* Left — Profile form */}
       <form onSubmit={handleSubmit} className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div className="sp-card-head" style={{ padding: 0 }}>

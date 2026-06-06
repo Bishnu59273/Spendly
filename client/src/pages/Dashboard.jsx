@@ -136,7 +136,7 @@ export default function Dashboard({ user }) {
       </div>
 
       {/* KPI cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
+      <div className="sp-kpi-grid" style={{ marginBottom: 16 }}>
         <StatCard
           icon={Wallet}
           tint="var(--cat-1)"
@@ -168,7 +168,7 @@ export default function Dashboard({ user }) {
       </div>
 
       {/* Donut + Recent transactions */}
-      <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 14, marginBottom: 16 }}>
+      <div className="sp-grid-5-7" style={{ marginBottom: 16 }}>
         {/* Donut */}
         <div className="sp-card sp-card-pad">
           <div className="sp-card-head">
@@ -233,7 +233,7 @@ export default function Dashboard({ user }) {
       </div>
 
       {/* Savings goal + Budget by category */}
-      <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 14 }}>
+      <div className="sp-grid-5-7">
         {goal ? (
           <SavingsGoal goal={goal} currency={user.currency} />
         ) : (

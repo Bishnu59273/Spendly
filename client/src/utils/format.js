@@ -6,6 +6,10 @@ export function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+export function formatTime(dateStr) {
+  return new Date(dateStr).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
 export function groupByDate(expenses) {
   const groups = {};
   for (const e of expenses) {
