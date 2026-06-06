@@ -4,6 +4,17 @@ import { useRegister } from "../api/auth.js";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"];
 
+const inp = {
+  width: "100%", height: 46, padding: "0 14px",
+  borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
+  background: "var(--surface-2)", color: "var(--ink)", fontSize: 14.5, outline: "none",
+  fontFamily: "var(--body)",
+};
+const lbl = {
+  display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em",
+  textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7,
+};
+
 export default function Register() {
   const navigate = useNavigate();
   const register = useRegister();
@@ -26,94 +37,86 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-950 dark:to-gray-900 p-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-indigo-600">Join Spendly</h1>
-          <p className="text-gray-500 mt-1">Set up your expense tracker</p>
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--bg)", padding: 24,
+    }}>
+      <div style={{ width: "100%", maxWidth: 460 }}>
+        {/* Brand mark */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, background: "var(--brand)",
+            display: "grid", placeItems: "center", margin: "0 auto 16px",
+            boxShadow: "0 4px 16px color-mix(in srgb, var(--brand) 30%, transparent)",
+          }}>
+            <span style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: "#f4efe6", lineHeight: 1 }}>S</span>
+          </div>
+          <div className="sp-display" style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.03em", marginBottom: 6 }}>
+            Create your account
+          </div>
+          <div style={{ fontSize: 14, color: "var(--ink-3)" }}>Start tracking your spending in minutes</div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Card */}
+        <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">{error}</p>
+            <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+              {error}
+            </div>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => set("email", e.target.value)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={form.password}
-              onChange={(e) => set("password", e.target.value)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Budget Start Day
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="31"
-                required
-                value={form.salaryDay}
-                onChange={(e) => set("salaryDay", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <label style={lbl}>Full name</label>
+              <input type="text" required autoComplete="name" value={form.name} onChange={(e) => set("name", e.target.value)} style={inp} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
-              <select
-                value={form.currency}
-                onChange={(e) => set("currency", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <label style={lbl}>Email</label>
+              <input type="email" required autoComplete="email" value={form.email} onChange={(e) => set("email", e.target.value)} style={inp} />
             </div>
-          </div>
+            <div>
+              <label style={lbl}>Password</label>
+              <input type="password" required minLength={6} autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} style={inp} />
+            </div>
 
-          <p className="text-xs text-gray-400">
-            The day each month your budget cycle begins — e.g. 1 for the 1st, 25 if you get paid on the 25th. For months with fewer days, the last available day is used automatically.
-          </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <label style={lbl}>Budget start day</label>
+                <input
+                  type="number" min="1" max="31" required
+                  value={form.salaryDay}
+                  onChange={(e) => set("salaryDay", e.target.value)}
+                  style={inp}
+                />
+              </div>
+              <div>
+                <label style={lbl}>Currency</label>
+                <select value={form.currency} onChange={(e) => set("currency", e.target.value)} style={{ ...inp, cursor: "pointer" }}>
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={register.isPending}
-            className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 mt-2 transition-colors disabled:opacity-60"
-          >
-            {register.isPending ? "Creating account..." : "Create Account"}
-          </button>
-        </form>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
+              The day each month your budget cycle begins — e.g. 1 for the 1st, 25 if you get paid on the 25th.
+            </div>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+            <button
+              type="submit"
+              disabled={register.isPending}
+              className="sp-btn sp-btn-primary"
+              style={{ width: "100%", height: 48, justifyContent: "center", fontSize: 15, marginTop: 4 }}
+            >
+              {register.isPending ? "Creating account…" : "Create account"}
+            </button>
+          </form>
+        </div>
+
+        <p style={{ textAlign: "center", fontSize: 13.5, color: "var(--ink-3)", marginTop: 20 }}>
           Already have an account?{" "}
-          <Link to="/login" className="text-indigo-600 font-medium hover:underline">
+          <Link to="/login" style={{ color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>
             Sign in
           </Link>
         </p>
