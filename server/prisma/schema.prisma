@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String     @id @default(dbgenerated("concat('u_', (gen_random_uuid())::text)"))
+  email          String     @unique
+  password       String
+  name           String
+  salaryDay      Int        @default(1) @map("salary_day")
+  currency       String     @default("INR")
+  monthlyBudget  Float?     @map("monthly_budget")
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  budgets        Budget[]
+  categories     Category[]
+  expenses       Expense[]
+  tags           Tag[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(dbgenerated("concat('cat_', (gen_random_uuid())::text)"))
+  name        String
+  color       String
+  icon        String
+  budgetLimit Float?    @map("budget_limit")
+  isDefault   Boolean   @default(false) @map("is_default")
+  userId      String    @map("user_id")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  budgets     Budget[]
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  expenses    Expense[]
+
+  @@index([userId], map: "idx_categories_user")
+  @@map("categories")
+}
+
+model Tag {
+  id        String       @id @default(dbgenerated("concat('tag_', (gen_random_uuid())::text)"))
+  name      String
+  color     String
+  icon      String
+  userId    String       @map("user_id")
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  expenses  ExpenseTag[]
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_tags_user")
+  @@map("tags")
+}
+
+model Expense {
+  id           String       @id @default(dbgenerated("concat('exp_', (gen_random_uuid())::text)"))
+  amount       Float
+  note         String?
+  date         DateTime     @db.Timestamptz(6)
+  isRecurring  Boolean      @default(false) @map("is_recurring")
+  recurringDay Int?         @map("recurring_day")
+  categoryId   String       @map("category_id")
+  userId       String       @map("user_id")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  tags         ExpenseTag[]
+  category     Category     @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, date], map: "idx_expenses_user_date")
+  @@map("expenses")
+}
+
+model ExpenseTag {
+  expenseId String  @map("expense_id")
+  tagId     String  @map("tag_id")
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([expenseId, tagId])
+  @@map("expense_tags")
+}
+
+model Budget {
+  id         String   @id @default(dbgenerated("concat('bud_', (gen_random_uuid())::text)"))
+  userId     String   @map("user_id")
+  categoryId String   @map("category_id")
+  month      Int
+  year       Int
+  cap        Float
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, month, year], map: "idx_budgets_user")
+  @@map("budgets")
+}

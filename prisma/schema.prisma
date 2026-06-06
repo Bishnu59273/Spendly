@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  password   String
+  name       String
+  salaryDay  Int        @default(1) @map("salary_day")
+  currency   String     @default("INR")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  categories Category[]
+  tags       Tag[]
+  expenses   Expense[]
+  budgets    Budget[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  color       String
+  icon        String
+  budgetLimit Float?    @map("budget_limit")
+  isDefault   Boolean   @default(false) @map("is_default")
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses    Expense[]
+  budgets     Budget[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String       @id @default(cuid())
+  name      String
+  color     String
+  icon      String
+  userId    String       @map("user_id")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses  ExpenseTag[]
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@map("tags")
+}
+
+model Expense {
+  id           String       @id @default(cuid())
+  amount       Float
+  note         String?
+  date         DateTime
+  isRecurring  Boolean      @default(false) @map("is_recurring")
+  recurringDay Int?         @map("recurring_day")
+  categoryId   String       @map("category_id")
+  category     Category     @relation(fields: [categoryId], references: [id])
+  userId       String       @map("user_id")
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags         ExpenseTag[]
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@map("expenses")
+}
+
+model ExpenseTag {
+  expenseId String  @map("expense_id")
+  tagId     String  @map("tag_id")
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([expenseId, tagId])
+  @@map("expense_tags")
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  categoryId String   @map("category_id")
+  month      Int
+  year       Int
+  cap        Float
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, categoryId, month, year])
+  @@map("budgets")
+}

@@ -1,0 +1,75 @@
+import "dotenv/config";
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import cron from "node-cron";
+
+import authRouter from "./routes/auth.js";
+import categoriesRouter from "./routes/categories.js";
+import tagsRouter from "./routes/tags.js";
+import expensesRouter from "./routes/expenses.js";
+import summaryRouter from "./routes/summary.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import prisma from "./lib/prisma.js";
+import { getCycleRange } from "./lib/cycleHelper.js";
+
+const app = express();
+
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+app.use("/api/auth", authRouter);
+app.use("/api/categories", categoriesRouter);
+app.use("/api/tags", tagsRouter);
+app.use("/api/expenses", expensesRouter);
+app.use("/api/summary", summaryRouter);
+
+app.use(errorHandler);
+
+// Daily cron: auto-insert recurring expenses
+cron.schedule("0 0 * * *", async () => {
+  console.log("[cron] Checking recurring expenses...");
+  try {
+    const today = new Date();
+    const todayDay = today.getDate();
+
+    const recurringExpenses = await prisma.expense.findMany({
+      where: { isRecurring: true, recurringDay: todayDay },
+      include: { user: true },
+    });
+
+    for (const exp of recurringExpenses) {
+      const { cycleStart, cycleEnd } = getCycleRange(exp.user.salaryDay);
+      const exists = await prisma.expense.findFirst({
+        where: {
+          userId: exp.userId,
+          categoryId: exp.categoryId,
+          amount: exp.amount,
+          recurringDay: todayDay,
+          date: { gte: cycleStart, lte: cycleEnd },
+        },
+      });
+
+      if (!exists) {
+        await prisma.expense.create({
+          data: {
+            amount: exp.amount,
+            note: exp.note,
+            date: today,
+            isRecurring: true,
+            recurringDay: todayDay,
+            categoryId: exp.categoryId,
+            userId: exp.userId,
+          },
+        });
+        console.log(`[cron] Created recurring expense for user ${exp.userId}`);
+      }
+    }
+  } catch (err) {
+    console.error("[cron] Error:", err);
+  }
+});
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
