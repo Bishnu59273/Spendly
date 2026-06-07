@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sun, Save, Wallet, X } from "lucide-react";
+import { Moon, Sun, Save, Wallet, X, Download, CheckCircle } from "lucide-react";
 import { useUpdateProfile } from "../api/auth.js";
 import { formatCurrency } from "../utils/format.js";
 
@@ -28,6 +28,9 @@ export default function Settings({ user }) {
   );
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [installed, setInstalled] = useState(false);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+  const canInstall = !isStandalone && !!window.__pwaPrompt;
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -200,6 +203,53 @@ export default function Settings({ user }) {
             </div>
           </div>
         </div>
+
+        {/* Install app */}
+        {(canInstall || isStandalone) && (
+          <div className="sp-card sp-card-pad">
+            <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
+              <div className="sp-card-title">Install App</div>
+            </div>
+            {isStandalone || installed ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <CheckCircle size={18} style={{ color: "var(--brand)", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>App installed</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>Spendly is running as an installed app</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Add to home screen</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>Install Spendly for instant access, works offline</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.__pwaPrompt) return;
+                    window.__pwaPrompt.prompt();
+                    const { outcome } = await window.__pwaPrompt.userChoice;
+                    if (outcome === "accepted") {
+                      setInstalled(true);
+                      window.__pwaPrompt = null;
+                    }
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    height: 38, padding: "0 16px",
+                    borderRadius: "var(--r-sm)", border: "1px solid var(--brand)",
+                    background: "var(--brand-soft)", color: "var(--brand)",
+                    fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0,
+                  }}
+                >
+                  <Download size={14} />
+                  Install
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

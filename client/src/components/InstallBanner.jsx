@@ -11,8 +11,16 @@ export default function InstallBanner() {
     if (sessionStorage.getItem(DISMISSED_KEY)) return;
     if (window.matchMedia("(display-mode: standalone)").matches) return;
 
+    // Event may have fired before React mounted — check the global capture
+    if (window.__pwaPrompt) {
+      setPrompt(window.__pwaPrompt);
+      setVisible(true);
+      return;
+    }
+
     const handler = (e) => {
       e.preventDefault();
+      window.__pwaPrompt = e;
       setPrompt(e);
       setVisible(true);
     };
@@ -25,6 +33,7 @@ export default function InstallBanner() {
     if (!prompt) return;
     prompt.prompt();
     await prompt.userChoice;
+    window.__pwaPrompt = null;
     setVisible(false);
     setPrompt(null);
   };
