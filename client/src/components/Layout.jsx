@@ -7,6 +7,7 @@ import {
 import { useLogout } from "../api/auth.js";
 import TopBar from "./TopBar.jsx";
 import SmartAddModal from "./SmartAddModal.jsx";
+import InstallBanner from "./InstallBanner.jsx";
 
 const FORM_TYPE = {
   "/categories": "category",
@@ -214,6 +215,8 @@ export default function Layout({ user, children }) {
           style={{ position: "fixed", inset: 0, zIndex: 94, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
         />
       )}
+
+      <InstallBanner />
     </div>
   );
 }
