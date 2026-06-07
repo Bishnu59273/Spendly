@@ -2,9 +2,11 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
-  Wallet, ChevronRight, LogOut, Moon, Sun, X,
+  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle,
 } from "lucide-react";
 import { useLogout } from "../api/auth.js";
+import { useGoals, useUpdateGoal } from "../api/goals.js";
+import { formatCurrency } from "../utils/format.js";
 import TopBar from "./TopBar.jsx";
 import SmartAddModal from "./SmartAddModal.jsx";
 import InstallBanner from "./InstallBanner.jsx";
@@ -48,6 +50,49 @@ export default function Layout({ user, children }) {
   const [addOpen, setAddOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const logout = useLogout();
+
+  const { data: goals = [] } = useGoals();
+  const updateGoal = useUpdateGoal();
+  const primaryGoal = goals.find((g) => g.isPrimary);
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("sp_savings_reminder") || "{}");
+      return v.month === currentMonth;
+    } catch { return false; }
+  });
+  const [bannerAmount, setBannerAmount] = useState("");
+  const [bannerAdding, setBannerAdding] = useState(false);
+  const [bannerSuccess, setBannerSuccess] = useState(null);
+
+  const showBanner = !!primaryGoal && !bannerDismissed && !pathname.startsWith("/settings");
+
+  const dismissBanner = () => {
+    localStorage.setItem("sp_savings_reminder", JSON.stringify({ month: currentMonth }));
+    setBannerDismissed(true);
+  };
+
+  const handleBannerAddSavings = async () => {
+    const amount = parseFloat(bannerAmount);
+    if (!amount || amount <= 0 || !primaryGoal) return;
+    setBannerAdding(true);
+    try {
+      const newSaved = (primaryGoal.saved || 0) + amount;
+      await updateGoal.mutateAsync({ id: primaryGoal.id, saved: newSaved });
+      const newPct = Math.min(Math.round((newSaved / primaryGoal.target) * 100), 100);
+      const left = Math.max(primaryGoal.target - newSaved, 0);
+      const monthsLeft = primaryGoal.monthly > 0 ? Math.ceil(left / primaryGoal.monthly) : null;
+      setBannerSuccess({ added: amount, newPct, monthsLeft });
+      setBannerAmount("");
+      setTimeout(() => {
+        dismissBanner();
+        setBannerSuccess(null);
+      }, 3500);
+    } finally {
+      setBannerAdding(false);
+    }
+  };
 
   const toggleDark = () => {
     const next = !dark;
@@ -194,6 +239,61 @@ export default function Layout({ user, children }) {
         />
         <div className="sp-content">
           <div className="sp-content-inner">
+            {showBanner && (
+              <div style={{
+                marginBottom: 16, borderRadius: "var(--r-md)",
+                border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
+                background: "var(--brand-soft)", padding: "14px 16px",
+                display: "flex", flexDirection: "column", gap: 10, position: "relative",
+              }}>
+                <button
+                  onClick={dismissBanner}
+                  style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", display: "grid", placeItems: "center", padding: 4 }}
+                >
+                  <X size={14} />
+                </button>
+
+                {!bannerSuccess ? (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 24 }}>
+                      <span style={{ fontSize: 20 }}>🐖</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>Time to log this month's savings</div>
+                        <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
+                          You're {Math.min(Math.round(((primaryGoal.saved || 0) / primaryGoal.target) * 100), 100)}% toward <strong>{primaryGoal.name}</strong>.
+                          {primaryGoal.monthly > 0 && ` Add your ${formatCurrency(primaryGoal.monthly, user.currency)} contribution.`}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder={primaryGoal.monthly > 0 ? `e.g. ${primaryGoal.monthly}` : "Amount saved"}
+                        value={bannerAmount}
+                        onChange={(e) => setBannerAmount(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleBannerAddSavings()}
+                        style={{ flex: 1, height: 36, padding: "0 10px", borderRadius: "var(--r-sm)", border: "1px solid color-mix(in srgb, var(--brand) 50%, transparent)", background: "var(--surface)", color: "var(--ink)", fontSize: 14, outline: "none" }}
+                      />
+                      <button onClick={handleBannerAddSavings} disabled={bannerAdding} className="sp-btn sp-btn-primary" style={{ height: 36, padding: "0 16px", fontSize: 13 }}>
+                        {bannerAdding ? "…" : "Add savings"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 28 }}>🎉</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "var(--brand)" }}>You're now {bannerSuccess.newPct}% funded!</div>
+                      <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3 }}>
+                        {formatCurrency(bannerSuccess.added, user.currency)} added to {primaryGoal.name}.
+                        {bannerSuccess.monthsLeft != null && ` Just ${bannerSuccess.monthsLeft} month${bannerSuccess.monthsLeft !== 1 ? "s" : ""} to go 🚀`}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {typeof children === "function" ? children({ addOpen, setAddOpen }) : children}
           </div>
         </div>
