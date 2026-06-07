@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Pencil } from "lucide-react";
+import { Plus, X, Pencil, Star, PlusCircle } from "lucide-react";
 import ConfirmDelete from "../components/ConfirmDelete.jsx";
 import EmojiPicker from "../components/EmojiPicker.jsx";
 import { useTrend } from "../api/summary.js";
@@ -133,6 +133,9 @@ export default function Goals({ user }) {
   const [showOtherForm, setShowOtherForm] = useState(false);
   const [editGoal, setEditGoal] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [promotingId, setPromotingId] = useState(null);
+  const [addSavingsGoalId, setAddSavingsGoalId] = useState(null);
+  const [savingsAmount, setSavingsAmount] = useState("");
 
   const primaryGoal = goals.find((g) => g.isPrimary);
   const otherGoals = goals.filter((g) => !g.isPrimary);
@@ -148,6 +151,23 @@ export default function Goals({ user }) {
   const handleUpdate = async (data) => {
     await update.mutateAsync({ id: editGoal.id, ...data });
     setEditGoal(null);
+  };
+
+  const handleSetPrimary = async (id) => {
+    setPromotingId(id);
+    try {
+      await update.mutateAsync({ id, isPrimary: true });
+    } finally {
+      setPromotingId(null);
+    }
+  };
+
+  const handleAddSavings = async (goal) => {
+    const amount = parseFloat(savingsAmount);
+    if (!amount || amount <= 0) return;
+    await update.mutateAsync({ id: goal.id, saved: (goal.saved || 0) + amount });
+    setAddSavingsGoalId(null);
+    setSavingsAmount("");
   };
 
   const confirmDelete = async () => {
@@ -166,8 +186,32 @@ export default function Goals({ user }) {
             <GoalForm onSave={handleCreate} onCancel={() => setShowPrimaryForm(false)} isPrimarySlot />
           ) : primaryGoal ? (
             <div style={{ position: "relative" }}>
-              <SavingsGoal goal={primaryGoal} currency={user.currency} />
+              <SavingsGoal goal={primaryGoal} currency={user.currency}>
+                {addSavingsGoalId === primaryGoal.id && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
+                    <input
+                      type="number"
+                      min="0"
+                      autoFocus
+                      placeholder="Amount saved"
+                      value={savingsAmount}
+                      onChange={(e) => setSavingsAmount(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddSavings(primaryGoal)}
+                      style={{ flex: 1, height: 34, padding: "0 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 14, outline: "none" }}
+                    />
+                    <button onClick={() => handleAddSavings(primaryGoal)} disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ height: 34, padding: "0 14px", fontSize: 13 }}>
+                      {update.isPending ? "…" : "Add"}
+                    </button>
+                    <button onClick={() => { setAddSavingsGoalId(null); setSavingsAmount(""); }} className="sp-btn sp-btn-ghost" style={{ height: 34, padding: "0 10px", fontSize: 13 }}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </SavingsGoal>
               <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
+                <button className="sp-icon-btn" style={{ width: 28, height: 28 }} title="Add savings" onClick={() => { setAddSavingsGoalId(primaryGoal.id); setSavingsAmount(""); }}>
+                  <PlusCircle style={{ width: 13, height: 13 }} />
+                </button>
                 <button className="sp-icon-btn" style={{ width: 28, height: 28 }} onClick={() => setEditGoal(primaryGoal)}>
                   <Pencil style={{ width: 13, height: 13 }} />
                 </button>
@@ -252,6 +296,62 @@ export default function Goals({ user }) {
                   <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>
                     {formatCurrency(left, user.currency)} left of {formatCurrency(g.target, user.currency)}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => { setAddSavingsGoalId(g.id); setSavingsAmount(""); }}
+                    style={{
+                      marginTop: 12, width: "100%", height: 30,
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                      borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
+                      background: "transparent", color: "var(--ink-3)", fontSize: 12, fontWeight: 600,
+                      cursor: "pointer", transition: "all var(--d1) var(--e)",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.background = "var(--brand-soft)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.color = "var(--ink-3)"; e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <PlusCircle size={12} /> Add savings
+                  </button>
+                  {addSavingsGoalId === g.id && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        autoFocus
+                        placeholder="Amount saved"
+                        value={savingsAmount}
+                        onChange={(e) => setSavingsAmount(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddSavings(g)}
+                        style={{ flex: 1, height: 32, padding: "0 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 13, outline: "none" }}
+                      />
+                      <button onClick={() => handleAddSavings(g)} disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ height: 32, padding: "0 12px", fontSize: 12 }}>
+                        {update.isPending ? "…" : "Add"}
+                      </button>
+                      <button onClick={() => { setAddSavingsGoalId(null); setSavingsAmount(""); }} className="sp-btn sp-btn-ghost" style={{ height: 32, padding: "0 8px", fontSize: 12 }}>
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrimary(g.id)}
+                    disabled={!!promotingId}
+                    style={{
+                      marginTop: 8, width: "100%", height: 30,
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      borderRadius: "var(--r-sm)",
+                      border: "1px solid var(--line)",
+                      background: "transparent",
+                      color: "var(--ink-3)", fontSize: 12, fontWeight: 600,
+                      cursor: promotingId ? "default" : "pointer",
+                      transition: "all var(--d1) var(--e)",
+                      opacity: promotingId && promotingId !== g.id ? 0.4 : 1,
+                    }}
+                    onMouseEnter={(e) => { if (!promotingId) { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.background = "var(--brand-soft)"; } }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.color = "var(--ink-3)"; e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Star size={12} />
+                    {promotingId === g.id ? "Setting…" : "Set as primary"}
+                  </button>
                 </div>
               );
             })}

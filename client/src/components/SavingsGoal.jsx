@@ -24,7 +24,7 @@ function Mini({ label, value }) {
   );
 }
 
-export default function SavingsGoal({ goal, currency = "INR" }) {
+export default function SavingsGoal({ goal, currency = "INR", children }) {
   const saved = goal.saved ?? goal.current ?? 0;
   const target = goal.target ?? goal.goal ?? 0;
   const pct =
@@ -132,6 +132,7 @@ export default function SavingsGoal({ goal, currency = "INR" }) {
           </div>
         </div>
       </div>
+      {children}
     </div>
   );
 }
