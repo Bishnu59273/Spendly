@@ -54,3 +54,9 @@ export function useUpdateProfile() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
   });
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data) => api.patch("/auth/password", data).then((r) => r.data),
+  });
+}

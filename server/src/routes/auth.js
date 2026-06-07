@@ -114,6 +114,26 @@ router.patch("/me", authMiddleware, async (req, res, next) => {
   }
 });
 
+router.patch("/password", authMiddleware, async (req, res, next) => {
+  try {
+    const schema = z.object({
+      currentPassword: z.string(),
+      newPassword: z.string().min(6),
+    });
+    const { currentPassword, newPassword } = schema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(400).json({ error: "Current password is incorrect" });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: req.userId }, data: { password: hashed } });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/logout", (req, res) => {
   res.clearCookie("token");
   res.json({ ok: true });

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Moon, Sun, Save, Wallet, X, Download, CheckCircle } from "lucide-react";
-import { useUpdateProfile } from "../api/auth.js";
+import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
+import { useUpdateProfile, useChangePassword } from "../api/auth.js";
 import { formatCurrency } from "../utils/format.js";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"];
@@ -17,6 +17,7 @@ const lbl = {
 
 export default function Settings({ user }) {
   const update = useUpdateProfile();
+  const changePw = useChangePassword();
   const [form, setForm] = useState({
     name: user.name,
     salaryDay: user.salaryDay,
@@ -28,6 +29,10 @@ export default function Settings({ user }) {
   );
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
+  const [pwError, setPwError] = useState("");
+  const [pwSaved, setPwSaved] = useState(false);
+  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [installed, setInstalled] = useState(false);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
   const canInstall = !isStandalone && !!window.__pwaPrompt;
@@ -55,6 +60,23 @@ export default function Settings({ user }) {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to save");
+    }
+  };
+
+  const handleChangePw = async (e) => {
+    e.preventDefault();
+    setPwError("");
+    if (pwForm.newPassword !== pwForm.confirm) {
+      setPwError("New passwords do not match");
+      return;
+    }
+    try {
+      await changePw.mutateAsync({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      setPwSaved(true);
+      setPwForm({ currentPassword: "", newPassword: "", confirm: "" });
+      setTimeout(() => setPwSaved(false), 2500);
+    } catch (err) {
+      setPwError(err.response?.data?.error || "Failed to change password");
     }
   };
 
@@ -203,6 +225,58 @@ export default function Settings({ user }) {
             </div>
           </div>
         </div>
+
+        {/* Change Password */}
+        <form onSubmit={handleChangePw} className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="sp-card-head" style={{ padding: 0, marginBottom: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Lock size={15} style={{ color: "var(--ink-3)" }} />
+              <div className="sp-card-title">Change Password</div>
+            </div>
+          </div>
+
+          {pwError && (
+            <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+              {pwError}
+            </div>
+          )}
+          {pwSaved && (
+            <div style={{ fontSize: 13, color: "var(--brand)", background: "var(--brand-soft)", borderRadius: "var(--r-sm)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+              <CheckCircle size={14} /> Password changed successfully
+            </div>
+          )}
+
+          {[
+            { key: "current", label: "Current Password", field: "currentPassword" },
+            { key: "next", label: "New Password", field: "newPassword" },
+            { key: "confirm", label: "Confirm New Password", field: "confirm" },
+          ].map(({ key, label, field }) => (
+            <div key={key}>
+              <label style={lbl}>{label}</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPw[key] ? "text" : "password"}
+                  required
+                  value={pwForm[field]}
+                  onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
+                  style={{ ...inp, paddingRight: 42 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((s) => ({ ...s, [key]: !s[key] }))}
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", display: "grid", placeItems: "center" }}
+                >
+                  {showPw[key] ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <button type="submit" disabled={changePw.isPending} className="sp-btn sp-btn-primary" style={{ gap: 8 }}>
+            <Lock size={14} />
+            {changePw.isPending ? "Saving…" : "Update Password"}
+          </button>
+        </form>
 
         {/* Install app */}
         {(canInstall || isStandalone) && (
