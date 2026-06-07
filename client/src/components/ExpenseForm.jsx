@@ -1,8 +1,14 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { X, Check } from "lucide-react";
-import { useCategories } from "../api/categories.js";
-import { useTags } from "../api/tags.js";
+import { useCategories, useCreateCategory } from "../api/categories.js";
+import { useTags, useCreateTag } from "../api/tags.js";
 import { useCreateExpense, useUpdateExpense } from "../api/expenses.js";
+import EmojiPicker from "./EmojiPicker.jsx";
+
+const CAT_COLORS = [
+  "#F97316","#3B82F6","#8B5CF6","#EF4444","#EC4899",
+  "#F59E0B","#10B981","#6B7280","#14B8A6","#F43F5E","#84CC16","#0EA5E9",
+];
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -50,6 +56,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const { data: tags = [] } = useTags();
   const create = useCreateExpense();
   const update = useUpdateExpense();
+  const createCategory = useCreateCategory();
 
   const [form, setForm] = useState({
     amount: "", categoryId: "", date: today(), note: "",
@@ -58,6 +65,16 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   });
   const [error, setError] = useState("");
   const [invalidField, setInvalidField] = useState("");
+  const [quickAdd, setQuickAdd] = useState(false);
+  const [quickForm, setQuickForm] = useState({ name: "", color: "#6366f1", icon: "📁" });
+  const [quickError, setQuickError] = useState("");
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showAllCats, setShowAllCats] = useState(false);
+  const createTag = useCreateTag();
+  const [quickAddTag, setQuickAddTag] = useState(false);
+  const [quickTagForm, setQuickTagForm] = useState({ name: "", color: "#6366f1", icon: "🏷️" });
+  const [quickTagError, setQuickTagError] = useState("");
+  const [showTagIconPicker, setShowTagIconPicker] = useState(false);
   const amountRef = useRef(null);
   const dateRef = useRef(null);
   const categoryRef = useRef(null);
@@ -76,6 +93,15 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
         hour: t.hour, minute: t.minute, period: t.period,
       });
       setError("");
+      setQuickAdd(false);
+      setQuickForm({ name: "", color: "#6366f1", icon: "📁" });
+      setQuickError("");
+      setShowIconPicker(false);
+      setShowAllCats(false);
+      setQuickAddTag(false);
+      setQuickTagForm({ name: "", color: "#6366f1", icon: "🏷️" });
+      setQuickTagError("");
+      setShowTagIconPicker(false);
     }
   }, [open, expense]);
 
@@ -106,6 +132,35 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       onClose();
     } catch (err) {
       setError(err.response?.data?.error || "Something went wrong");
+    }
+  };
+
+  const handleQuickAddCategory = async () => {
+    if (!quickForm.name.trim()) { setQuickError("Name is required"); return; }
+    try {
+      const newCat = await createCategory.mutateAsync(quickForm);
+      set("categoryId", newCat.id);
+      setQuickAdd(false);
+      setQuickForm({ name: "", color: "#6366f1", icon: "📁" });
+      setQuickError("");
+      setShowIconPicker(false);
+      setInvalidField("");
+    } catch {
+      setQuickError("Failed to create category");
+    }
+  };
+
+  const handleQuickAddTag = async () => {
+    if (!quickTagForm.name.trim()) { setQuickTagError("Name is required"); return; }
+    try {
+      const newTag = await createTag.mutateAsync(quickTagForm);
+      set("tagIds", [...form.tagIds, newTag.id]);
+      setQuickAddTag(false);
+      setQuickTagForm({ name: "", color: "#6366f1", icon: "🏷️" });
+      setQuickTagError("");
+      setShowTagIconPicker(false);
+    } catch {
+      setQuickTagError("Failed to create tag");
     }
   };
 
@@ -207,35 +262,277 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
 
           <div ref={categoryRef}>
             <label style={{ ...fieldLabelStyle, color: invalidField === "category" ? "var(--neg)" : "var(--ink-3)" }}>Category</label>
-            <div className="sp-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: invalidField === "category" ? 6 : 0, borderRadius: "var(--r-sm)", border: `1px solid ${invalidField === "category" ? "var(--neg)" : "transparent"}`, boxShadow: invalidField === "category" ? "0 0 0 3px var(--neg-soft)" : "none", transition: "border-color var(--d1) var(--e), box-shadow var(--d1) var(--e)" }}>
-              {categories.map((c) => {
-                const on = form.categoryId === c.id;
-                return (
-                  <button key={c.id} type="button" onClick={() => { set("categoryId", c.id); setInvalidField(""); }}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", borderRadius: "var(--r-sm)", border: `1px solid ${on ? "transparent" : "var(--line)"}`, background: on ? c.color : "var(--surface-2)", color: on ? "#fff" : "var(--ink-2)", fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)" }}
+            {(() => {
+              const CAT_LIMIT = 9;
+              const selectedIdx = categories.findIndex((c) => c.id === form.categoryId);
+              const expanded = showAllCats || selectedIdx >= CAT_LIMIT;
+              const visible = expanded ? categories : categories.slice(0, CAT_LIMIT);
+              const hiddenCount = categories.length - CAT_LIMIT;
+              return (
+                <>
+                  <div className="sp-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: invalidField === "category" ? 6 : 0, borderRadius: "var(--r-sm)", border: `1px solid ${invalidField === "category" ? "var(--neg)" : "transparent"}`, boxShadow: invalidField === "category" ? "0 0 0 3px var(--neg-soft)" : "none", transition: "border-color var(--d1) var(--e), box-shadow var(--d1) var(--e)" }}>
+                    {visible.map((c) => {
+                      const on = form.categoryId === c.id;
+                      return (
+                        <button key={c.id} type="button" onClick={() => { set("categoryId", c.id); setInvalidField(""); }}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", borderRadius: "var(--r-sm)", border: `1px solid ${on ? "transparent" : "var(--line)"}`, background: on ? c.color : "var(--surface-2)", color: on ? "#fff" : "var(--ink-2)", fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)" }}
+                        >
+                          <span style={{ fontSize: 16 }}>{c.icon}</span>{c.name}
+                        </button>
+                      );
+                    })}
+                    {/* + New */}
+                    <button
+                      type="button"
+                      onClick={() => { setQuickAdd((v) => !v); setQuickError(""); }}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        padding: "9px 11px", borderRadius: "var(--r-sm)",
+                        border: `1px dashed ${quickAdd ? "var(--brand)" : "var(--line)"}`,
+                        background: quickAdd ? "var(--brand-soft)" : "transparent",
+                        color: quickAdd ? "var(--brand)" : "var(--ink-3)",
+                        fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)",
+                      }}
+                    >
+                      + New
+                    </button>
+                    {/* + X more / Show less */}
+                    {categories.length > CAT_LIMIT && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllCats((v) => !v)}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          padding: "9px 11px", borderRadius: "var(--r-sm)",
+                          border: "1px solid var(--line)",
+                          background: "transparent",
+                          color: "var(--ink-3)",
+                          fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)",
+                        }}
+                      >
+                        {expanded ? "Show less" : `+ ${hiddenCount} more`}
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+
+
+            {quickAdd && (
+              <div style={{ marginTop: 10, padding: "14px", borderRadius: "var(--r-sm)", background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowIconPicker((v) => !v)}
+                    title="Change icon"
+                    style={{
+                      width: 46, height: 44, flexShrink: 0, fontSize: 22,
+                      borderRadius: "var(--r-sm)",
+                      border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+                      background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+                      cursor: "pointer", transition: "all var(--d1) var(--e)",
+                      display: "grid", placeItems: "center",
+                    }}
                   >
-                    <span style={{ fontSize: 16 }}>{c.icon}</span>{c.name}
+                    {quickForm.icon}
                   </button>
-                );
-              })}
-            </div>
+                  <input
+                    type="text"
+                    value={quickForm.name}
+                    onChange={(e) => { setQuickForm((f) => ({ ...f, name: e.target.value })); setQuickError(""); }}
+                    placeholder="Category name"
+                    autoFocus={!showIconPicker}
+                    onKeyDown={(e) => e.key === "Enter" && handleQuickAddCategory()}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+
+                {showIconPicker && (
+                  <div style={{ borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface)", padding: 10 }}>
+                    <EmojiPicker
+                      value={quickForm.icon}
+                      onChange={(e) => { setQuickForm((f) => ({ ...f, icon: e })); setShowIconPicker(false); }}
+                    />
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, whiteSpace: "nowrap" }}>Or type:</span>
+                      <input
+                        type="text"
+                        maxLength={2}
+                        value={quickForm.icon}
+                        onChange={(e) => { if (e.target.value) setQuickForm((f) => ({ ...f, icon: e.target.value })); }}
+                        placeholder="😊"
+                        style={{ ...inputStyle, height: 34, width: 54, textAlign: "center", fontSize: 18, padding: "0 8px" }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {CAT_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setQuickForm((f) => ({ ...f, color: c }))}
+                      style={{
+                        width: 22, height: 22, borderRadius: "50%", border: "none",
+                        background: c, cursor: "pointer", flexShrink: 0,
+                        outline: quickForm.color === c ? `2px solid ${c}` : "none",
+                        outlineOffset: 2,
+                        transform: quickForm.color === c ? "scale(1.2)" : "scale(1)",
+                        transition: "transform var(--d1) var(--e), outline var(--d1) var(--e)",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {quickError && (
+                  <div style={{ fontSize: 12, color: "var(--neg)" }}>{quickError}</div>
+                )}
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setQuickAdd(false); setQuickError(""); setShowIconPicker(false); }}
+                    className="sp-btn sp-btn-ghost"
+                    style={{ flex: 1, height: 34, fontSize: 13 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleQuickAddCategory}
+                    disabled={createCategory.isPending}
+                    className="sp-btn sp-btn-primary"
+                    style={{ flex: 1.5, height: 34, fontSize: 13 }}
+                  >
+                    {createCategory.isPending ? "Adding…" : "Add category"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {tags.length > 0 && (
-            <div>
-              <label style={fieldLabelStyle}>Tags</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {tags.map((t) => {
-                  const on = form.tagIds.includes(t.id);
-                  return (
-                    <button key={t.id} type="button" onClick={() => toggleTag(t.id)}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 12px", borderRadius: 99, border: `1px solid ${on ? t.color : "var(--line)"}`, background: on ? t.color + "22" : "var(--surface-2)", color: on ? t.color : "var(--ink-2)", fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)" }}
-                    >{t.icon} #{t.name}</button>
-                  );
-                })}
-              </div>
+          <div>
+            <label style={fieldLabelStyle}>Tags</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {tags.map((t) => {
+                const on = form.tagIds.includes(t.id);
+                return (
+                  <button key={t.id} type="button" onClick={() => toggleTag(t.id)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 12px", borderRadius: 99, border: `1px solid ${on ? t.color : "var(--line)"}`, background: on ? t.color + "22" : "var(--surface-2)", color: on ? t.color : "var(--ink-2)", fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)" }}
+                  >{t.icon} #{t.name}</button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => { setQuickAddTag((v) => !v); setQuickTagError(""); }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  height: 28, padding: "0 12px", borderRadius: 99,
+                  border: `1px dashed ${quickAddTag ? "var(--brand)" : "var(--line)"}`,
+                  background: quickAddTag ? "var(--brand-soft)" : "transparent",
+                  color: quickAddTag ? "var(--brand)" : "var(--ink-3)",
+                  fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)",
+                }}
+              >
+                + New
+              </button>
             </div>
-          )}
+
+            {quickAddTag && (
+              <div style={{ marginTop: 10, padding: "14px", borderRadius: "var(--r-sm)", background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowTagIconPicker((v) => !v)}
+                    title="Change icon"
+                    style={{
+                      width: 46, height: 44, flexShrink: 0, fontSize: 22,
+                      borderRadius: "var(--r-sm)",
+                      border: `1px solid ${showTagIconPicker ? "var(--brand)" : "var(--line)"}`,
+                      background: showTagIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+                      cursor: "pointer", transition: "all var(--d1) var(--e)",
+                      display: "grid", placeItems: "center",
+                    }}
+                  >
+                    {quickTagForm.icon}
+                  </button>
+                  <input
+                    type="text"
+                    value={quickTagForm.name}
+                    onChange={(e) => { setQuickTagForm((f) => ({ ...f, name: e.target.value })); setQuickTagError(""); }}
+                    placeholder="Tag name"
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && handleQuickAddTag()}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+
+                {showTagIconPicker && (
+                  <div style={{ borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface)", padding: 10 }}>
+                    <EmojiPicker
+                      value={quickTagForm.icon}
+                      onChange={(e) => { setQuickTagForm((f) => ({ ...f, icon: e })); setShowTagIconPicker(false); }}
+                    />
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, whiteSpace: "nowrap" }}>Or type:</span>
+                      <input
+                        type="text"
+                        maxLength={2}
+                        value={quickTagForm.icon}
+                        onChange={(e) => { if (e.target.value) setQuickTagForm((f) => ({ ...f, icon: e.target.value })); }}
+                        placeholder="😊"
+                        style={{ ...inputStyle, height: 34, width: 54, textAlign: "center", fontSize: 18, padding: "0 8px" }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {CAT_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setQuickTagForm((f) => ({ ...f, color: c }))}
+                      style={{
+                        width: 22, height: 22, borderRadius: "50%", border: "none",
+                        background: c, cursor: "pointer", flexShrink: 0,
+                        outline: quickTagForm.color === c ? `2px solid ${c}` : "none",
+                        outlineOffset: 2,
+                        transform: quickTagForm.color === c ? "scale(1.2)" : "scale(1)",
+                        transition: "transform var(--d1) var(--e), outline var(--d1) var(--e)",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {quickTagError && (
+                  <div style={{ fontSize: 12, color: "var(--neg)" }}>{quickTagError}</div>
+                )}
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setQuickAddTag(false); setQuickTagError(""); setShowTagIconPicker(false); }}
+                    className="sp-btn sp-btn-ghost"
+                    style={{ flex: 1, height: 34, fontSize: 13 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleQuickAddTag}
+                    disabled={createTag.isPending}
+                    className="sp-btn sp-btn-primary"
+                    style={{ flex: 1.5, height: 34, fontSize: 13 }}
+                  >
+                    {createTag.isPending ? "Adding…" : "Add tag"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <button type="button" onClick={() => set("isRecurring", !form.isRecurring)}

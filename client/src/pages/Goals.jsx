@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, X, Pencil } from "lucide-react";
 import ConfirmDelete from "../components/ConfirmDelete.jsx";
+import EmojiPicker from "../components/EmojiPicker.jsx";
 import { useTrend } from "../api/summary.js";
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from "../api/goals.js";
 import SavingsGoal from "../components/SavingsGoal.jsx";
@@ -8,7 +9,6 @@ import CycleBars from "../components/CycleBars.jsx";
 import Progress from "../components/Progress.jsx";
 import { formatCurrency } from "../utils/format.js";
 
-const GOAL_ICONS = ["🎯", "💻", "✈️", "📚", "🏥", "🏠", "🚗", "💍", "🎵", "🌴"];
 const GOAL_COLORS = ["#1d6b51", "#3B82F6", "#8B5CF6", "#EF4444", "#EC4899", "#F59E0B"];
 
 const inputStyle = {
@@ -24,6 +24,7 @@ function GoalForm({ initial, onSave, onCancel, isPrimarySlot }) {
   const [monthly, setMonthly] = useState(initial?.monthly?.toString() || "");
   const [icon, setIcon] = useState(initial?.icon || "🎯");
   const [color, setColor] = useState(initial?.color || "#1d6b51");
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const save = () => {
     if (!name || !target) return;
@@ -50,15 +51,20 @@ function GoalForm({ initial, onSave, onCancel, isPrimarySlot }) {
         </div>
         <div>
           <label style={labelStyle}>Icon</label>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {GOAL_ICONS.slice(0, 6).map((ic) => (
-              <button key={ic} onClick={() => setIcon(ic)} style={{
-                width: 34, height: 34, borderRadius: 8, fontSize: 17,
-                border: `2px solid ${icon === ic ? "var(--brand)" : "var(--line)"}`,
-                background: icon === ic ? "var(--brand-soft)" : "var(--surface-2)",
-              }}>{ic}</button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowIconPicker((v) => !v)}
+            title="Change icon"
+            style={{
+              width: 42, height: 42, fontSize: 22, borderRadius: 10,
+              border: `2px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+              background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+              cursor: "pointer", transition: "all var(--d1) var(--e)",
+              display: "grid", placeItems: "center",
+            }}
+          >
+            {icon}
+          </button>
         </div>
         <div>
           <label style={labelStyle}>Goal amount</label>
@@ -84,6 +90,26 @@ function GoalForm({ initial, onSave, onCancel, isPrimarySlot }) {
           </div>
         </div>
       </div>
+      {showIconPicker && (
+        <div style={{ marginBottom: 12, borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", padding: 10 }}>
+          <EmojiPicker
+            value={icon}
+            onChange={(e) => { setIcon(e); setShowIconPicker(false); }}
+          />
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, whiteSpace: "nowrap" }}>Or type:</span>
+            <input
+              type="text"
+              maxLength={2}
+              value={icon}
+              onChange={(e) => { if (e.target.value) setIcon(e.target.value); }}
+              placeholder="😊"
+              style={{ height: 34, width: 54, textAlign: "center", fontSize: 18, padding: "0 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", outline: "none" }}
+            />
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 10 }}>
         <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
         <button className="sp-btn sp-btn-primary" style={{ flex: 1.4 }} onClick={save} disabled={!name || !target}>
