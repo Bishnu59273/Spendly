@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useMe } from "./api/auth.js";
 import Layout from "./components/Layout.jsx";
 import Spinner from "./components/Spinner.jsx";
+import OfflineBanner from "./components/OfflineBanner.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -40,6 +41,7 @@ function AuthGuard({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

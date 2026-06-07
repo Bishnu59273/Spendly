@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useRegister } from "../api/auth.js";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"];
@@ -22,8 +23,12 @@ export default function Register() {
     name: "", email: "", password: "", salaryDay: 1, currency: "INR",
   });
   const [error, setError] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (error) setError("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,7 +81,29 @@ export default function Register() {
             </div>
             <div>
               <label style={lbl}>Password</label>
-              <input type="password" required minLength={6} autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} style={inp} />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPw ? "text" : "password"}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={(e) => set("password", e.target.value)}
+                  style={{ ...inp, paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  tabIndex={-1}
+                  style={{
+                    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "var(--ink-3)", display: "grid", placeItems: "center", padding: 4,
+                  }}
+                >
+                  {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>

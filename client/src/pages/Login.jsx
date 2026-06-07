@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "../api/auth.js";
 
 const inp = {
@@ -18,8 +19,12 @@ export default function Login() {
   const login = useLogin();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (error) setError("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +33,11 @@ export default function Login() {
       await login.mutateAsync(form);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.error || "Login failed");
+      if (!navigator.onLine) {
+        setError("You're offline — check your connection and try again.");
+      } else {
+        setError(err.response?.data?.error || "Login failed. Please try again.");
+      }
     }
   };
 
@@ -68,7 +77,28 @@ export default function Login() {
             </div>
             <div>
               <label style={lbl}>Password</label>
-              <input type="password" required autoComplete="current-password" value={form.password} onChange={(e) => set("password", e.target.value)} style={inp} />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPw ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  value={form.password}
+                  onChange={(e) => set("password", e.target.value)}
+                  style={{ ...inp, paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  tabIndex={-1}
+                  style={{
+                    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "var(--ink-3)", display: "grid", placeItems: "center", padding: 4,
+                  }}
+                >
+                  {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
