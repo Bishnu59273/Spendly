@@ -20,7 +20,18 @@ export function useUpdateGoal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }) => api.patch(`/goals/${id}`, data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["goals"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["goals"] });
+      qc.invalidateQueries({ queryKey: ["goal-snapshots"] });
+    },
+  });
+}
+
+export function useGoalSnapshots(goalId) {
+  return useQuery({
+    queryKey: ["goal-snapshots", goalId],
+    queryFn: () => api.get(`/goals/${goalId}/snapshots`).then((r) => r.data),
+    enabled: !!goalId,
   });
 }
 

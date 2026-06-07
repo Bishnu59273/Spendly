@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Plus, X, Pencil, Star, PlusCircle } from "lucide-react";
 import ConfirmDelete from "../components/ConfirmDelete.jsx";
 import EmojiPicker from "../components/EmojiPicker.jsx";
-import { useTrend } from "../api/summary.js";
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from "../api/goals.js";
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useGoalSnapshots } from "../api/goals.js";
 import SavingsGoal from "../components/SavingsGoal.jsx";
-import CycleBars from "../components/CycleBars.jsx";
+import SavingsHistoryChart from "../components/SavingsHistoryChart.jsx";
 import Progress from "../components/Progress.jsx";
 import { formatCurrency } from "../utils/format.js";
 
@@ -123,7 +122,6 @@ function GoalForm({ initial, onSave, onCancel, isPrimarySlot }) {
 const labelStyle = { display: "block", fontSize: 11, fontWeight: 700, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 };
 
 export default function Goals({ user }) {
-  const { data: trend } = useTrend();
   const { data: goals = [], isLoading } = useGoals();
   const create = useCreateGoal();
   const update = useUpdateGoal();
@@ -140,7 +138,7 @@ export default function Goals({ user }) {
   const primaryGoal = goals.find((g) => g.isPrimary);
   const otherGoals = goals.filter((g) => !g.isPrimary);
 
-  const cycles = trend?.barData?.map((d) => ({ label: d.label, spent: d.total, budget: d.total * 1.15 })) || [];
+  const { data: snapshots = [] } = useGoalSnapshots(primaryGoal?.id);
 
   const handleCreate = async (data) => {
     await create.mutateAsync(data);
@@ -233,15 +231,12 @@ export default function Goals({ user }) {
         <div className="sp-card sp-card-pad">
           <div className="sp-card-head">
             <div>
-              <div className="sp-card-title">Spending history</div>
-              <div className="sp-card-sub">Last {cycles.length} pay cycles</div>
+              <div className="sp-card-title">Savings history</div>
+              <div className="sp-card-sub">{primaryGoal ? primaryGoal.name : "No primary goal"}</div>
             </div>
-            {cycles.length > 0 && <span className="sp-pill sp-pill-pos">Tracked</span>}
+            {snapshots.length > 0 && <span className="sp-pill sp-pill-pos">Tracked</span>}
           </div>
-          {cycles.length > 0
-            ? <CycleBars cycles={cycles} currency={user.currency} />
-            : <div style={{ padding: "40px 0", textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>No cycle history yet</div>
-          }
+          <SavingsHistoryChart snapshots={snapshots} target={primaryGoal?.target} currency={user.currency} />
         </div>
       </div>
 

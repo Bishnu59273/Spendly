@@ -102,18 +102,30 @@ model Budget {
 }
 
 model Goal {
-  id        String   @id @default(dbgenerated("concat('goal_', (gen_random_uuid())::text)"))
-  userId    String   @map("user_id")
+  id        String         @id @default(dbgenerated("concat('goal_', (gen_random_uuid())::text)"))
+  userId    String         @map("user_id")
   name      String
-  icon      String   @default("🎯")
-  color     String   @default("#1d6b51")
+  icon      String         @default("🎯")
+  color     String         @default("#1d6b51")
   target    Float
-  saved     Float    @default(0)
-  monthly   Float    @default(0)
-  isPrimary Boolean  @default(false) @map("is_primary")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  saved     Float          @default(0)
+  monthly   Float          @default(0)
+  isPrimary Boolean        @default(false) @map("is_primary")
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  snapshots GoalSnapshot[]
 
   @@index([userId], map: "idx_goals_user")
   @@map("goals")
+}
+
+model GoalSnapshot {
+  id           String   @id @default(dbgenerated("concat('gsnap_', (gen_random_uuid())::text)"))
+  goalId       String   @map("goal_id")
+  savedAmount  Float    @map("saved_amount")
+  snapshotDate DateTime @default(now()) @map("snapshot_date") @db.Timestamptz(6)
+  goal         Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId, snapshotDate], map: "idx_goal_snapshots_goal_date")
+  @@map("goal_snapshots")
 }
