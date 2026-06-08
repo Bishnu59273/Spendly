@@ -57,7 +57,9 @@ router.patch("/:id", async (req, res, next) => {
         data: { isPrimary: false },
       });
     }
-    const goal = await prisma.goal.update({ where: { id: req.params.id }, data });
+    const updateResult = await prisma.goal.updateMany({ where: { id: req.params.id, userId: req.userId }, data });
+    if (updateResult.count === 0) return res.status(404).json({ error: "Not found" });
+    const goal = await prisma.goal.findUnique({ where: { id: req.params.id } });
 
     if (data.saved !== undefined) {
       await prisma.goalSnapshot.create({

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Edit2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { useExpenses, useDeleteExpense } from "../api/expenses.js";
 import { useCategories } from "../api/categories.js";
 import ExpenseForm from "../components/ExpenseForm.jsx";
@@ -57,13 +57,18 @@ export default function Expenses({ user }) {
           <Search style={{ width: 17, height: 17 }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search transactions…" />
         </div>
-        <div className="sp-seg">
-          <button className={categoryId === "all" ? "active" : ""} onClick={() => setCategoryId("all")}>All</button>
-          {categories.slice(0, 4).map((c) => (
-            <button key={c.id} className={categoryId === c.id ? "active" : ""} onClick={() => setCategoryId(c.id)}>
-              {c.icon} {c.name}
-            </button>
-          ))}
+        <div className="sp-select-wrap">
+          <select
+            className="sp-select"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+            ))}
+          </select>
+          <ChevronDown style={{ width: 15, height: 15 }} />
         </div>
       </div>
 
@@ -115,6 +120,10 @@ export default function Expenses({ user }) {
                       ))}
                     </div>
                   )}
+                  <div className="sp-exp-cat-m">
+                    <span className="sp-dot" style={{ background: e.category?.color || "#888" }} />
+                    {e.category?.name}
+                  </div>
                 </div>
               </div>
               <div className="sp-exp-cat">

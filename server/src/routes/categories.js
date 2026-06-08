@@ -40,15 +40,12 @@ router.post("/", async (req, res, next) => {
 router.patch("/:id", async (req, res, next) => {
   try {
     const data = categorySchema.partial().parse(req.body);
-    const cat = await prisma.category.findFirst({
+    const result = await prisma.category.updateMany({
       where: { id: req.params.id, userId: req.userId },
-    });
-    if (!cat) return res.status(404).json({ error: "Not found" });
-
-    const updated = await prisma.category.update({
-      where: { id: req.params.id },
       data,
     });
+    if (result.count === 0) return res.status(404).json({ error: "Not found" });
+    const updated = await prisma.category.findUnique({ where: { id: req.params.id } });
     res.json(updated);
   } catch (err) {
     next(err);
@@ -57,12 +54,10 @@ router.patch("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const cat = await prisma.category.findFirst({
+    const result = await prisma.category.deleteMany({
       where: { id: req.params.id, userId: req.userId },
     });
-    if (!cat) return res.status(404).json({ error: "Not found" });
-
-    await prisma.category.delete({ where: { id: req.params.id } });
+    if (result.count === 0) return res.status(404).json({ error: "Not found" });
     res.json({ ok: true });
   } catch (err) {
     next(err);

@@ -37,10 +37,12 @@ router.post("/", async (req, res, next) => {
 router.patch("/:id", async (req, res, next) => {
   try {
     const data = tagSchema.partial().parse(req.body);
-    const tag = await prisma.tag.findFirst({ where: { id: req.params.id, userId: req.userId } });
-    if (!tag) return res.status(404).json({ error: "Not found" });
-
-    const updated = await prisma.tag.update({ where: { id: req.params.id }, data });
+    const result = await prisma.tag.updateMany({
+      where: { id: req.params.id, userId: req.userId },
+      data,
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Not found" });
+    const updated = await prisma.tag.findUnique({ where: { id: req.params.id } });
     res.json(updated);
   } catch (err) {
     next(err);
@@ -49,10 +51,10 @@ router.patch("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const tag = await prisma.tag.findFirst({ where: { id: req.params.id, userId: req.userId } });
-    if (!tag) return res.status(404).json({ error: "Not found" });
-
-    await prisma.tag.delete({ where: { id: req.params.id } });
+    const result = await prisma.tag.deleteMany({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Not found" });
     res.json({ ok: true });
   } catch (err) {
     next(err);
