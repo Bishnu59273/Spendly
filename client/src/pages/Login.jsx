@@ -34,9 +34,11 @@ export default function Login() {
       navigate("/dashboard");
     } catch (err) {
       if (!navigator.onLine) {
-        setError("You're offline — check your connection and try again.");
+        setError("You're offline. Check your connection and try again.");
+      } else if (err.response?.status === 401 || err.response?.status === 400) {
+        setError("Invalid email or password.");
       } else {
-        setError(err.response?.data?.error || "Login failed. Please try again.");
+        setError("Something went wrong. Please try again.");
       }
     }
   };
@@ -63,13 +65,7 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          {error && (
-            <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
-              {error}
-            </div>
-          )}
-
+        <div className="sp-card sp-card-pad">
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <label style={lbl}>Email</label>
@@ -84,7 +80,7 @@ export default function Login() {
                   autoComplete="current-password"
                   value={form.password}
                   onChange={(e) => set("password", e.target.value)}
-                  style={{ ...inp, paddingRight: 44 }}
+                  style={{ ...inp, paddingRight: 44, ...(error ? { borderColor: "var(--neg)" } : {}) }}
                 />
                 <button
                   type="button"
@@ -108,6 +104,11 @@ export default function Login() {
             >
               {login.isPending ? "Signing in…" : "Sign in"}
             </button>
+            {error && (
+              <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px", marginTop: 2 }}>
+                {error}
+              </div>
+            )}
           </form>
         </div>
 
