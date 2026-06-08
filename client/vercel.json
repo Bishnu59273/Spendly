@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://spendly-as8e.onrender.com/api/:path*"
+      "destination": "https://spendly-1-q5fn.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
