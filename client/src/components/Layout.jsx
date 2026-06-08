@@ -2,7 +2,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
-  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle,
+  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy,
 } from "lucide-react";
 import { useLogout } from "../api/auth.js";
 import { useGoals, useUpdateGoal } from "../api/goals.js";
@@ -10,6 +10,7 @@ import { formatCurrency } from "../utils/format.js";
 import TopBar from "./TopBar.jsx";
 import SmartAddModal from "./SmartAddModal.jsx";
 import InstallBanner from "./InstallBanner.jsx";
+import FeedbackPrompt from "./FeedbackPrompt.jsx";
 
 const FORM_TYPE = {
   "/categories": "category",
@@ -38,6 +39,7 @@ const NAV = [
   { to: "/goals",      icon: Target,           label: "Goals" },
   { to: "/tags",       icon: Tag,              label: "Tags" },
   { to: "/settings",   icon: Settings,         label: "Settings" },
+  { to: "/support",    icon: LifeBuoy,         label: "Help & Support" },
 ];
 
 function getInitials(name = "") {
@@ -317,6 +319,7 @@ export default function Layout({ user, children }) {
       )}
 
       <InstallBanner />
+      <FeedbackPrompt />
     </div>
   );
 }

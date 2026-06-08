@@ -20,6 +20,7 @@ model User {
   budgets       Budget[]
   categories    Category[]
   expenses      Expense[]
+  feedback      Feedback[]
   goals         Goal[]
   tags          Tag[]
 
@@ -117,6 +118,18 @@ model Goal {
 
   @@index([userId], map: "idx_goals_user")
   @@map("goals")
+}
+
+model Feedback {
+  id             String   @id @default(dbgenerated("concat('fb_', (gen_random_uuid())::text)"))
+  userId         String   @map("user_id")
+  stars          Int
+  recommendation String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_feedback_user")
+  @@map("feedback")
 }
 
 model GoalSnapshot {

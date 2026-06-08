@@ -12,6 +12,7 @@ import Categories from "./pages/Categories.jsx";
 import Tags from "./pages/Tags.jsx";
 import Goals from "./pages/Goals.jsx";
 import Settings from "./pages/Settings.jsx";
+import Support from "./pages/Support.jsx";
 
 function AuthGuard({ children }) {
   const { data: user, isLoading, isError } = useMe();
@@ -68,6 +69,10 @@ export default function App() {
         <Route
           path="/settings"
           element={<AuthGuard>{(user) => <Settings user={user} />}</AuthGuard>}
+        />
+        <Route
+          path="/support"
+          element={<AuthGuard>{(user) => <Support user={user} />}</AuthGuard>}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

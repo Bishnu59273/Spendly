@@ -1,0 +1,149 @@
+import { useState, useEffect } from "react";
+import { X, Star } from "lucide-react";
+import { useSubmitFeedback } from "../api/feedback.js";
+
+const STORAGE_DONE   = "sp_feedback_done";
+const STORAGE_REMIND = "sp_feedback_remind";
+const REMIND_MS      = 17 * 24 * 60 * 60 * 1000; // 17 days
+
+function shouldShow() {
+  if (localStorage.getItem(STORAGE_DONE)) return false;
+  const remind = localStorage.getItem(STORAGE_REMIND);
+  if (remind) return Date.now() > Number(remind);
+  return true;
+}
+
+export default function FeedbackPrompt() {
+  const [open, setOpen]         = useState(false);
+  const [stars, setStars]       = useState(0);
+  const [hovered, setHovered]   = useState(0);
+  const [note, setNote]         = useState("");
+  const [done, setDone]         = useState(false);
+  const submit = useSubmitFeedback();
+
+  useEffect(() => {
+    // Delay 4 s so it doesn't pop up immediately on page load
+    const t = setTimeout(() => { if (shouldShow()) setOpen(true); }, 4000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleRemind = () => {
+    localStorage.setItem(STORAGE_REMIND, String(Date.now() + REMIND_MS));
+    setOpen(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!stars) return;
+    await submit.mutateAsync({ stars, recommendation: note || undefined });
+    localStorage.setItem(STORAGE_DONE, "1");
+    setDone(true);
+    setTimeout(() => setOpen(false), 2200);
+  };
+
+  if (!open) return null;
+
+  const isMobile = window.innerWidth < 600;
+
+  return (
+    <>
+      <div
+        style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(3px)" }}
+        onClick={handleRemind}
+      />
+      <div style={{
+        position: "fixed", zIndex: 201,
+        left: "50%", top: "50%", transform: "translate(-50%,-50%)",
+        width: "100%", maxWidth: 420,
+        background: "var(--surface)", borderRadius: "var(--r-xl)",
+        border: "1px solid var(--line)", boxShadow: "var(--sh-lg)",
+        padding: isMobile ? "20px 18px 18px" : "32px 28px 28px",
+        display: "flex", flexDirection: "column", gap: isMobile ? 14 : 20,
+      }}>
+        <button
+          onClick={handleRemind}
+          style={{ position: "absolute", top: 14, right: 14, background: "var(--surface-sunken)", border: "none", borderRadius: 99, width: 30, height: 30, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink-3)" }}
+        >
+          <X style={{ width: 15, height: 15 }} />
+        </button>
+
+        {done ? (
+          <div style={{ textAlign: "center", padding: "12px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
+            <div className="sp-display" style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>Thank you!</div>
+            <div style={{ fontSize: 14, color: "var(--ink-3)" }}>Your feedback helps make Spendly better.</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: isMobile ? 26 : 36, marginBottom: isMobile ? 8 : 12 }}>💬</div>
+              <div className="sp-display" style={{ fontSize: isMobile ? 17 : 20, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: 6 }}>
+                How are we doing?
+              </div>
+              <div style={{ fontSize: isMobile ? 13 : 14, color: "var(--ink-3)" }}>
+                Rate your experience with Spendly
+              </div>
+            </div>
+
+            {/* Stars */}
+            <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 6 : 8 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setStars(n)}
+                  onMouseEnter={() => setHovered(n)}
+                  onMouseLeave={() => setHovered(0)}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 4, transition: "transform 0.1s" }}
+                >
+                  <Star
+                    style={{
+                      width: isMobile ? 28 : 36, height: isMobile ? 28 : 36,
+                      fill: n <= (hovered || stars) ? "#f59e0b" : "none",
+                      stroke: n <= (hovered || stars) ? "#f59e0b" : "var(--line-strong)",
+                      transition: "fill 0.15s, stroke 0.15s",
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* Recommendation */}
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 7 }}>
+                Any suggestions? <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+              </label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="What could we improve?"
+                rows={isMobile ? 2 : 3}
+                style={{
+                  width: "100%", padding: "10px 12px", borderRadius: "var(--r-sm)",
+                  border: "1px solid var(--line)", background: "var(--surface-2)",
+                  color: "var(--ink)", fontSize: 14, resize: "none", outline: "none",
+                  fontFamily: "var(--body)", boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                onClick={handleSubmit}
+                disabled={!stars || submit.isPending}
+                className="sp-btn sp-btn-primary"
+                style={{ width: "100%", height: isMobile ? 40 : 46, justifyContent: "center", fontSize: isMobile ? 14 : 15, opacity: !stars ? 0.5 : 1 }}
+              >
+                {submit.isPending ? "Submitting…" : "Submit feedback"}
+              </button>
+              <button
+                onClick={handleRemind}
+                style={{ width: "100%", height: 38, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--ink-3)", fontWeight: 500 }}
+              >
+                Remind me later
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
