@@ -84,6 +84,7 @@ router.patch("/:id", async (req, res, next) => {
               note: `Savings: ${existing.name}`,
               date: new Date(),
               categoryId: savingsCat.id,
+              goalId: req.params.id,
               userId: req.userId,
             },
           });

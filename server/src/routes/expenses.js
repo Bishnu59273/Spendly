@@ -166,6 +166,19 @@ router.delete("/:id", async (req, res, next) => {
     if (!existing) return res.status(404).json({ error: "Not found" });
 
     await prisma.expense.delete({ where: { id: req.params.id } });
+
+    // If this was a savings deduction, reverse the goal's saved amount
+    if (existing.goalId) {
+      const goal = await prisma.goal.findFirst({ where: { id: existing.goalId, userId: req.userId } });
+      if (goal) {
+        const newSaved = Math.max(0, goal.saved - existing.amount);
+        await prisma.goal.update({ where: { id: goal.id }, data: { saved: newSaved } });
+        await prisma.goalSnapshot.create({
+          data: { goalId: goal.id, savedAmount: newSaved },
+        });
+      }
+    }
+
     res.json({ ok: true });
   } catch (err) {
     next(err);

@@ -37,6 +37,8 @@ export function useDeleteExpense() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["expenses"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
+      qc.invalidateQueries({ queryKey: ["goals"] });
+      qc.invalidateQueries({ queryKey: ["goal-snapshots"] });
     },
   });
 }
