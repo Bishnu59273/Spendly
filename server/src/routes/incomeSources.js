@@ -54,7 +54,7 @@ router.delete("/:id", async (req, res, next) => {
     });
     if (!source) return res.status(404).json({ error: "Not found" });
     if (source.isDefault) return res.status(400).json({ error: "Cannot delete a default source" });
-    await prisma.incomeSource.delete({ where: { id: req.params.id } });
+    await prisma.incomeSource.deleteMany({ where: { id: req.params.id, userId: req.userId } });
     res.json({ ok: true });
   } catch (err) {
     next(err);
