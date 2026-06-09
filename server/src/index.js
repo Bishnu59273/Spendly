@@ -11,6 +11,7 @@ import expensesRouter from "./routes/expenses.js";
 import summaryRouter from "./routes/summary.js";
 import goalsRouter from "./routes/goals.js";
 import feedbackRouter from "./routes/feedback.js";
+import incomeSourcesRouter from "./routes/incomeSources.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import prisma from "./lib/prisma.js";
 import { getCycleRange } from "./lib/cycleHelper.js";
@@ -30,6 +31,7 @@ app.use("/api/expenses", expensesRouter);
 app.use("/api/summary", summaryRouter);
 app.use("/api/goals", goalsRouter);
 app.use("/api/feedback", feedbackRouter);
+app.use("/api/income-sources", incomeSourcesRouter);
 
 app.use(errorHandler);
 

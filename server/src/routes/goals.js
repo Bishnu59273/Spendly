@@ -50,7 +50,8 @@ router.patch("/:id", async (req, res, next) => {
     const existing = await prisma.goal.findFirst({ where: { id: req.params.id, userId: req.userId } });
     if (!existing) return res.status(404).json({ error: "Not found" });
 
-    const data = goalSchema.partial().parse(req.body);
+    const { deductFromBudget, ...bodyRest } = req.body;
+    const data = goalSchema.partial().parse(bodyRest);
     if (data.isPrimary) {
       await prisma.goal.updateMany({
         where: { userId: req.userId, isPrimary: true, id: { not: req.params.id } },
@@ -65,6 +66,29 @@ router.patch("/:id", async (req, res, next) => {
       await prisma.goalSnapshot.create({
         data: { goalId: req.params.id, savedAmount: goal.saved },
       });
+
+      if (deductFromBudget === true) {
+        const savingsAmount = data.saved - existing.saved;
+        if (savingsAmount > 0) {
+          let savingsCat = await prisma.category.findFirst({
+            where: { userId: req.userId, name: "Savings" },
+          });
+          if (!savingsCat) {
+            savingsCat = await prisma.category.create({
+              data: { name: "Savings", color: "#1d6b51", icon: "🏦", userId: req.userId },
+            });
+          }
+          await prisma.expense.create({
+            data: {
+              amount: savingsAmount,
+              note: `Savings: ${existing.name}`,
+              date: new Date(),
+              categoryId: savingsCat.id,
+              userId: req.userId,
+            },
+          });
+        }
+      }
     }
 
     res.json(goal);

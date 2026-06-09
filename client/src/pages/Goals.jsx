@@ -134,6 +134,7 @@ export default function Goals({ user }) {
   const [promotingId, setPromotingId] = useState(null);
   const [addSavingsGoalId, setAddSavingsGoalId] = useState(null);
   const [savingsAmount, setSavingsAmount] = useState("");
+  const [deductFromBudget, setDeductFromBudget] = useState(false);
 
   const primaryGoal = goals.find((g) => g.isPrimary);
   const otherGoals = goals.filter((g) => !g.isPrimary);
@@ -163,9 +164,10 @@ export default function Goals({ user }) {
   const handleAddSavings = async (goal) => {
     const amount = parseFloat(savingsAmount);
     if (!amount || amount <= 0) return;
-    await update.mutateAsync({ id: goal.id, saved: (goal.saved || 0) + amount });
+    await update.mutateAsync({ id: goal.id, saved: (goal.saved || 0) + amount, deductFromBudget });
     setAddSavingsGoalId(null);
     setSavingsAmount("");
+    setDeductFromBudget(false);
   };
 
   const confirmDelete = async () => {
@@ -186,23 +188,29 @@ export default function Goals({ user }) {
             <div style={{ position: "relative" }}>
               <SavingsGoal goal={primaryGoal} currency={user.currency}>
                 {addSavingsGoalId === primaryGoal.id && (
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
-                    <input
-                      type="number"
-                      min="0"
-                      autoFocus
-                      placeholder="Amount saved"
-                      value={savingsAmount}
-                      onChange={(e) => setSavingsAmount(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddSavings(primaryGoal)}
-                      style={{ flex: 1, height: 34, padding: "0 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 14, outline: "none" }}
-                    />
-                    <button onClick={() => handleAddSavings(primaryGoal)} disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ height: 34, padding: "0 14px", fontSize: 13 }}>
-                      {update.isPending ? "…" : "Add"}
-                    </button>
-                    <button onClick={() => { setAddSavingsGoalId(null); setSavingsAmount(""); }} className="sp-btn sp-btn-ghost" style={{ height: 34, padding: "0 10px", fontSize: 13 }}>
-                      Cancel
-                    </button>
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        autoFocus
+                        placeholder="Amount saved"
+                        value={savingsAmount}
+                        onChange={(e) => setSavingsAmount(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddSavings(primaryGoal)}
+                        style={{ flex: 1, height: 34, padding: "0 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 14, outline: "none" }}
+                      />
+                      <button onClick={() => handleAddSavings(primaryGoal)} disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ height: 34, padding: "0 14px", fontSize: 13 }}>
+                        {update.isPending ? "…" : "Add"}
+                      </button>
+                      <button onClick={() => { setAddSavingsGoalId(null); setSavingsAmount(""); setDeductFromBudget(false); }} className="sp-btn sp-btn-ghost" style={{ height: 34, padding: "0 10px", fontSize: 13 }}>
+                        Cancel
+                      </button>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 8, fontSize: 12, color: "var(--ink-2)", cursor: "pointer", userSelect: "none" }}>
+                      <input type="checkbox" checked={deductFromBudget} onChange={(e) => setDeductFromBudget(e.target.checked)} style={{ accentColor: "var(--brand)", width: 14, height: 14, cursor: "pointer" }} />
+                      Deduct from monthly budget
+                    </label>
                   </div>
                 )}
               </SavingsGoal>
@@ -307,23 +315,29 @@ export default function Goals({ user }) {
                     <PlusCircle size={12} /> Add savings
                   </button>
                   {addSavingsGoalId === g.id && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-                      <input
-                        type="number"
-                        min="0"
-                        autoFocus
-                        placeholder="Amount saved"
-                        value={savingsAmount}
-                        onChange={(e) => setSavingsAmount(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleAddSavings(g)}
-                        style={{ flex: 1, height: 32, padding: "0 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 13, outline: "none" }}
-                      />
-                      <button onClick={() => handleAddSavings(g)} disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ height: 32, padding: "0 12px", fontSize: 12 }}>
-                        {update.isPending ? "…" : "Add"}
-                      </button>
-                      <button onClick={() => { setAddSavingsGoalId(null); setSavingsAmount(""); }} className="sp-btn sp-btn-ghost" style={{ height: 32, padding: "0 8px", fontSize: 12 }}>
-                        Cancel
-                      </button>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          autoFocus
+                          placeholder="Amount saved"
+                          value={savingsAmount}
+                          onChange={(e) => setSavingsAmount(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleAddSavings(g)}
+                          style={{ flex: 1, height: 32, padding: "0 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 13, outline: "none" }}
+                        />
+                        <button onClick={() => handleAddSavings(g)} disabled={update.isPending} className="sp-btn sp-btn-primary" style={{ height: 32, padding: "0 12px", fontSize: 12 }}>
+                          {update.isPending ? "…" : "Add"}
+                        </button>
+                        <button onClick={() => { setAddSavingsGoalId(null); setSavingsAmount(""); setDeductFromBudget(false); }} className="sp-btn sp-btn-ghost" style={{ height: 32, padding: "0 8px", fontSize: 12 }}>
+                          Cancel
+                        </button>
+                      </div>
+                      <label style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 8, fontSize: 12, color: "var(--ink-2)", cursor: "pointer", userSelect: "none" }}>
+                        <input type="checkbox" checked={deductFromBudget} onChange={(e) => setDeductFromBudget(e.target.checked)} style={{ accentColor: "var(--brand)", width: 14, height: 14, cursor: "pointer" }} />
+                        Deduct from monthly budget
+                      </label>
                     </div>
                   )}
                   <button

@@ -3,6 +3,7 @@ import { X, Check } from "lucide-react";
 import { useCategories, useCreateCategory } from "../api/categories.js";
 import { useTags, useCreateTag } from "../api/tags.js";
 import { useCreateExpense, useUpdateExpense } from "../api/expenses.js";
+import { useIncomeSources, useCreateIncomeSource, useDeleteIncomeSource } from "../api/incomeSources.js";
 import EmojiPicker from "./EmojiPicker.jsx";
 
 const CAT_COLORS = [
@@ -54,12 +55,16 @@ const numInputStyle = {
 export default function ExpenseForm({ open, onClose, expense = null }) {
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
+  const { data: incomeSources = [] } = useIncomeSources();
   const create = useCreateExpense();
   const update = useUpdateExpense();
   const createCategory = useCreateCategory();
+  const createSource = useCreateIncomeSource();
+  const deleteSource = useDeleteIncomeSource();
 
+  const [txType, setTxType] = useState("EXPENSE");
   const [form, setForm] = useState({
-    amount: "", categoryId: "", date: today(), note: "",
+    amount: "", categoryId: "", sourceId: "", date: today(), note: "",
     tagIds: [], isRecurring: false, recurringDay: "",
     hour: "12", minute: "00", period: "PM",
   });
@@ -75,16 +80,25 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const [quickTagForm, setQuickTagForm] = useState({ name: "", color: "#6366f1", icon: "🏷️" });
   const [quickTagError, setQuickTagError] = useState("");
   const [showTagIconPicker, setShowTagIconPicker] = useState(false);
+  // source quick-add
+  const [quickAddSource, setQuickAddSource] = useState(false);
+  const [quickSourceForm, setQuickSourceForm] = useState({ name: "", icon: "💰" });
+  const [quickSourceError, setQuickSourceError] = useState("");
+  const [showSourceIconPicker, setShowSourceIconPicker] = useState(false);
+
   const amountRef = useRef(null);
   const dateRef = useRef(null);
   const categoryRef = useRef(null);
+  const sourceRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       const t = expense ? parseTime(expense.date) : nowTime();
+      setTxType(expense?.type || "EXPENSE");
       setForm({
         amount: expense?.amount?.toString() || "",
         categoryId: expense?.categoryId || (categories[0]?.id || ""),
+        sourceId: expense?.sourceId || "",
         date: expense ? expense.date.split("T")[0] : today(),
         note: expense?.note || "",
         tagIds: expense?.tags?.map((t) => t.tagId) || [],
@@ -102,6 +116,10 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       setQuickTagForm({ name: "", color: "#6366f1", icon: "🏷️" });
       setQuickTagError("");
       setShowTagIconPicker(false);
+      setQuickAddSource(false);
+      setQuickSourceForm({ name: "", icon: "💰" });
+      setQuickSourceError("");
+      setShowSourceIconPicker(false);
     }
   }, [open, expense]);
 
@@ -115,11 +133,21 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     setError("");
     if (!form.amount) { setInvalidField("amount"); amountRef.current?.focus(); amountRef.current?.select(); return; }
     if (!form.date) { setInvalidField("date"); dateRef.current?.focus(); return; }
-    if (!form.categoryId) { setInvalidField("category"); categoryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    if (txType === "INCOME" && !form.sourceId) {
+      setInvalidField("source");
+      sourceRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (txType === "EXPENSE" && !form.categoryId) {
+      setInvalidField("category");
+      categoryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
 
     const payload = {
       amount: parseFloat(form.amount),
-      categoryId: form.categoryId,
+      type: txType,
+      ...(txType === "EXPENSE" ? { categoryId: form.categoryId } : { sourceId: form.sourceId }),
       date: buildDateTime(form.date, form.hour, form.minute, form.period),
       note: form.note || null,
       tagIds: form.tagIds,
@@ -147,6 +175,21 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       setInvalidField("");
     } catch {
       setQuickError("Failed to create category");
+    }
+  };
+
+  const handleQuickAddSource = async () => {
+    if (!quickSourceForm.name.trim()) { setQuickSourceError("Name is required"); return; }
+    try {
+      const newSrc = await createSource.mutateAsync(quickSourceForm);
+      set("sourceId", newSrc.id);
+      setQuickAddSource(false);
+      setQuickSourceForm({ name: "", icon: "💰" });
+      setQuickSourceError("");
+      setShowSourceIconPicker(false);
+      setInvalidField("");
+    } catch {
+      setQuickSourceError("Failed to create source");
     }
   };
 
@@ -189,12 +232,35 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
         <div style={{ padding: "20px 26px 20px", background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div className="sp-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>
-              {expense ? "Edit expense" : "New expense"}
+              {expense ? (txType === "INCOME" ? "Edit income" : "Edit expense") : (txType === "INCOME" ? "New income" : "New expense")}
             </div>
             <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 99, display: "grid", placeItems: "center", background: "var(--surface-sunken)", border: "none", color: "var(--ink-2)" }}>
               <X style={{ width: 17, height: 17 }} />
             </button>
           </div>
+
+          {/* Type toggle */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "var(--surface-sunken)", borderRadius: "var(--r-sm)", padding: 3 }}>
+            {[{ value: "EXPENSE", label: "− Expense" }, { value: "INCOME", label: "+ Income" }].map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTxType(value)}
+                style={{
+                  flex: 1, height: 32, borderRadius: "calc(var(--r-sm) - 2px)", border: "none",
+                  fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all var(--d1) var(--e)",
+                  background: txType === value
+                    ? (value === "INCOME" ? "#16a34a" : "var(--brand)")
+                    : "transparent",
+                  color: txType === value ? "#fff" : "var(--ink-3)",
+                  boxShadow: txType === value ? "var(--sh-xs)" : "none",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: "var(--r-sm)", outline: invalidField === "amount" ? "2px solid var(--neg)" : "none", outlineOffset: 4, transition: "outline var(--d1) var(--e)" }}>
             <span className="sp-display" style={{ fontSize: 38, fontWeight: 700, color: invalidField === "amount" ? "var(--neg)" : form.amount ? "var(--ink)" : "var(--ink-3)" }}>&#8377;</span>
             <input
@@ -260,16 +326,137 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
             </div>
           </div>
 
-          <div ref={categoryRef}>
-            <label style={{ ...fieldLabelStyle, color: invalidField === "category" ? "var(--neg)" : "var(--ink-3)" }}>Category</label>
-            {(() => {
-              const CAT_LIMIT = 9;
-              const selectedIdx = categories.findIndex((c) => c.id === form.categoryId);
-              const expanded = showAllCats || selectedIdx >= CAT_LIMIT;
-              const visible = expanded ? categories : categories.slice(0, CAT_LIMIT);
-              const hiddenCount = categories.length - CAT_LIMIT;
-              return (
-                <>
+          {txType === "INCOME" ? (
+            /* ── Source picker (income only) ─────────────────────── */
+            <div ref={sourceRef}>
+              <label style={{ ...fieldLabelStyle, color: invalidField === "source" ? "var(--neg)" : "var(--ink-3)" }}>Source</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: invalidField === "source" ? 6 : 0, borderRadius: "var(--r-sm)", border: `1px solid ${invalidField === "source" ? "var(--neg)" : "transparent"}`, boxShadow: invalidField === "source" ? "0 0 0 3px var(--neg-soft)" : "none", transition: "border-color var(--d1) var(--e), box-shadow var(--d1) var(--e)" }}>
+                {incomeSources.map((s) => {
+                  const on = form.sourceId === s.id;
+                  return (
+                    <button key={s.id} type="button"
+                      onClick={() => { set("sourceId", s.id); setInvalidField(""); }}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 7,
+                        height: 36, padding: "0 14px", borderRadius: 99,
+                        border: `1px solid ${on ? "#16a34a" : "var(--line)"}`,
+                        background: on ? "#16a34a" : "var(--surface-2)",
+                        color: on ? "#fff" : "var(--ink-2)",
+                        fontWeight: 600, fontSize: 13, transition: "all var(--d1) var(--e)",
+                      }}
+                    >
+                      <span style={{ fontSize: 15 }}>{s.icon}</span>{s.name}
+                      {!s.isDefault && (
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); deleteSource.mutate(s.id); if (form.sourceId === s.id) set("sourceId", ""); }}
+                          style={{ marginLeft: 2, opacity: 0.6, fontSize: 11, lineHeight: 1, cursor: "pointer" }}
+                          title="Remove"
+                        >✕</span>
+                      )}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => { setQuickAddSource((v) => !v); setQuickSourceError(""); }}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    height: 36, padding: "0 14px", borderRadius: 99,
+                    border: `1px dashed ${quickAddSource ? "#16a34a" : "var(--line)"}`,
+                    background: quickAddSource ? "#16a34a11" : "transparent",
+                    color: quickAddSource ? "#16a34a" : "var(--ink-3)",
+                    fontWeight: 600, fontSize: 13, transition: "all var(--d1) var(--e)",
+                  }}
+                >
+                  + New
+                </button>
+              </div>
+
+              {quickAddSource && (
+                <div style={{ marginTop: 10, padding: "14px", borderRadius: "var(--r-sm)", background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowSourceIconPicker((v) => !v)}
+                      title="Change icon"
+                      style={{
+                        width: 46, height: 44, flexShrink: 0, fontSize: 22,
+                        borderRadius: "var(--r-sm)",
+                        border: `1px solid ${showSourceIconPicker ? "#16a34a" : "var(--line)"}`,
+                        background: showSourceIconPicker ? "#16a34a11" : "var(--surface-2)",
+                        cursor: "pointer", transition: "all var(--d1) var(--e)",
+                        display: "grid", placeItems: "center",
+                      }}
+                    >
+                      {quickSourceForm.icon}
+                    </button>
+                    <input
+                      type="text"
+                      value={quickSourceForm.name}
+                      onChange={(e) => { setQuickSourceForm((f) => ({ ...f, name: e.target.value })); setQuickSourceError(""); }}
+                      placeholder="Source name"
+                      autoFocus={!showSourceIconPicker}
+                      onKeyDown={(e) => e.key === "Enter" && handleQuickAddSource()}
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                  </div>
+
+                  {showSourceIconPicker && (
+                    <div style={{ borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface)", padding: 10 }}>
+                      <EmojiPicker
+                        value={quickSourceForm.icon}
+                        onChange={(e) => { setQuickSourceForm((f) => ({ ...f, icon: e })); setShowSourceIconPicker(false); }}
+                      />
+                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, whiteSpace: "nowrap" }}>Or type:</span>
+                        <input
+                          type="text"
+                          maxLength={2}
+                          value={quickSourceForm.icon}
+                          onChange={(e) => { if (e.target.value) setQuickSourceForm((f) => ({ ...f, icon: e.target.value })); }}
+                          placeholder="😊"
+                          style={{ ...inputStyle, height: 34, width: 54, textAlign: "center", fontSize: 18, padding: "0 8px" }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {quickSourceError && <div style={{ fontSize: 12, color: "var(--neg)" }}>{quickSourceError}</div>}
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => { setQuickAddSource(false); setQuickSourceError(""); setShowSourceIconPicker(false); }}
+                      className="sp-btn sp-btn-ghost"
+                      style={{ flex: 1, height: 34, fontSize: 13 }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddSource}
+                      disabled={createSource.isPending}
+                      className="sp-btn sp-btn-primary"
+                      style={{ flex: 1.5, height: 34, fontSize: 13, background: "#16a34a" }}
+                    >
+                      {createSource.isPending ? "Adding…" : "Add source"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* ── Category picker (expense only) ──────────────────── */
+            <div ref={categoryRef}>
+              <label style={{ ...fieldLabelStyle, color: invalidField === "category" ? "var(--neg)" : "var(--ink-3)" }}>Category</label>
+              {(() => {
+                const CAT_LIMIT = 9;
+                const selectedIdx = categories.findIndex((c) => c.id === form.categoryId);
+                const expanded = showAllCats || selectedIdx >= CAT_LIMIT;
+                const visible = expanded ? categories : categories.slice(0, CAT_LIMIT);
+                const hiddenCount = categories.length - CAT_LIMIT;
+                return (
                   <div className="sp-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: invalidField === "category" ? 6 : 0, borderRadius: "var(--r-sm)", border: `1px solid ${invalidField === "category" ? "var(--neg)" : "transparent"}`, boxShadow: invalidField === "category" ? "0 0 0 3px var(--neg-soft)" : "none", transition: "border-color var(--d1) var(--e), box-shadow var(--d1) var(--e)" }}>
                     {visible.map((c) => {
                       const on = form.categoryId === c.id;
@@ -281,7 +468,6 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                         </button>
                       );
                     })}
-                    {/* + New */}
                     <button
                       type="button"
                       onClick={() => { setQuickAdd((v) => !v); setQuickError(""); }}
@@ -296,7 +482,6 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                     >
                       + New
                     </button>
-                    {/* + X more / Show less */}
                     {categories.length > CAT_LIMIT && (
                       <button
                         type="button"
@@ -304,114 +489,109 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                         style={{
                           display: "flex", alignItems: "center", justifyContent: "center",
                           padding: "9px 11px", borderRadius: "var(--r-sm)",
-                          border: "1px solid var(--line)",
-                          background: "transparent",
-                          color: "var(--ink-3)",
-                          fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)",
+                          border: "1px solid var(--line)", background: "transparent",
+                          color: "var(--ink-3)", fontWeight: 600, fontSize: 12.5, transition: "all var(--d1) var(--e)",
                         }}
                       >
                         {expanded ? "Show less" : `+ ${hiddenCount} more`}
                       </button>
                     )}
                   </div>
-                </>
-              );
-            })()}
+                );
+              })()}
 
-
-            {quickAdd && (
-              <div style={{ marginTop: 10, padding: "14px", borderRadius: "var(--r-sm)", background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowIconPicker((v) => !v)}
-                    title="Change icon"
-                    style={{
-                      width: 46, height: 44, flexShrink: 0, fontSize: 22,
-                      borderRadius: "var(--r-sm)",
-                      border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
-                      background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
-                      cursor: "pointer", transition: "all var(--d1) var(--e)",
-                      display: "grid", placeItems: "center",
-                    }}
-                  >
-                    {quickForm.icon}
-                  </button>
-                  <input
-                    type="text"
-                    value={quickForm.name}
-                    onChange={(e) => { setQuickForm((f) => ({ ...f, name: e.target.value })); setQuickError(""); }}
-                    placeholder="Category name"
-                    autoFocus={!showIconPicker}
-                    onKeyDown={(e) => e.key === "Enter" && handleQuickAddCategory()}
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                </div>
-
-                {showIconPicker && (
-                  <div style={{ borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface)", padding: 10 }}>
-                    <EmojiPicker
-                      value={quickForm.icon}
-                      onChange={(e) => { setQuickForm((f) => ({ ...f, icon: e })); setShowIconPicker(false); }}
-                    />
-                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, whiteSpace: "nowrap" }}>Or type:</span>
-                      <input
-                        type="text"
-                        maxLength={2}
-                        value={quickForm.icon}
-                        onChange={(e) => { if (e.target.value) setQuickForm((f) => ({ ...f, icon: e.target.value })); }}
-                        placeholder="😊"
-                        style={{ ...inputStyle, height: 34, width: 54, textAlign: "center", fontSize: 18, padding: "0 8px" }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {CAT_COLORS.map((c) => (
+              {quickAdd && (
+                <div style={{ marginTop: 10, padding: "14px", borderRadius: "var(--r-sm)", background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
                     <button
-                      key={c}
                       type="button"
-                      onClick={() => setQuickForm((f) => ({ ...f, color: c }))}
+                      onClick={() => setShowIconPicker((v) => !v)}
+                      title="Change icon"
                       style={{
-                        width: 22, height: 22, borderRadius: "50%", border: "none",
-                        background: c, cursor: "pointer", flexShrink: 0,
-                        outline: quickForm.color === c ? `2px solid ${c}` : "none",
-                        outlineOffset: 2,
-                        transform: quickForm.color === c ? "scale(1.2)" : "scale(1)",
-                        transition: "transform var(--d1) var(--e), outline var(--d1) var(--e)",
+                        width: 46, height: 44, flexShrink: 0, fontSize: 22,
+                        borderRadius: "var(--r-sm)",
+                        border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+                        background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+                        cursor: "pointer", transition: "all var(--d1) var(--e)",
+                        display: "grid", placeItems: "center",
                       }}
+                    >
+                      {quickForm.icon}
+                    </button>
+                    <input
+                      type="text"
+                      value={quickForm.name}
+                      onChange={(e) => { setQuickForm((f) => ({ ...f, name: e.target.value })); setQuickError(""); }}
+                      placeholder="Category name"
+                      autoFocus={!showIconPicker}
+                      onKeyDown={(e) => e.key === "Enter" && handleQuickAddCategory()}
+                      style={{ ...inputStyle, flex: 1 }}
                     />
-                  ))}
-                </div>
+                  </div>
 
-                {quickError && (
-                  <div style={{ fontSize: 12, color: "var(--neg)" }}>{quickError}</div>
-                )}
+                  {showIconPicker && (
+                    <div style={{ borderRadius: "var(--r-sm)", border: "1px solid var(--line)", background: "var(--surface)", padding: 10 }}>
+                      <EmojiPicker
+                        value={quickForm.icon}
+                        onChange={(e) => { setQuickForm((f) => ({ ...f, icon: e })); setShowIconPicker(false); }}
+                      />
+                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, whiteSpace: "nowrap" }}>Or type:</span>
+                        <input
+                          type="text"
+                          maxLength={2}
+                          value={quickForm.icon}
+                          onChange={(e) => { if (e.target.value) setQuickForm((f) => ({ ...f, icon: e.target.value })); }}
+                          placeholder="😊"
+                          style={{ ...inputStyle, height: 34, width: 54, textAlign: "center", fontSize: 18, padding: "0 8px" }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => { setQuickAdd(false); setQuickError(""); setShowIconPicker(false); }}
-                    className="sp-btn sp-btn-ghost"
-                    style={{ flex: 1, height: 34, fontSize: 13 }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleQuickAddCategory}
-                    disabled={createCategory.isPending}
-                    className="sp-btn sp-btn-primary"
-                    style={{ flex: 1.5, height: 34, fontSize: 13 }}
-                  >
-                    {createCategory.isPending ? "Adding…" : "Add category"}
-                  </button>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {CAT_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setQuickForm((f) => ({ ...f, color: c }))}
+                        style={{
+                          width: 22, height: 22, borderRadius: "50%", border: "none",
+                          background: c, cursor: "pointer", flexShrink: 0,
+                          outline: quickForm.color === c ? `2px solid ${c}` : "none",
+                          outlineOffset: 2,
+                          transform: quickForm.color === c ? "scale(1.2)" : "scale(1)",
+                          transition: "transform var(--d1) var(--e), outline var(--d1) var(--e)",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {quickError && <div style={{ fontSize: 12, color: "var(--neg)" }}>{quickError}</div>}
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => { setQuickAdd(false); setQuickError(""); setShowIconPicker(false); }}
+                      className="sp-btn sp-btn-ghost"
+                      style={{ flex: 1, height: 34, fontSize: 13 }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddCategory}
+                      disabled={createCategory.isPending}
+                      className="sp-btn sp-btn-primary"
+                      style={{ flex: 1.5, height: 34, fontSize: 13 }}
+                    >
+                      {createCategory.isPending ? "Adding…" : "Add category"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label style={fieldLabelStyle}>Tags</label>
@@ -555,7 +735,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
           <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="sp-btn sp-btn-primary" style={{ flex: 1.4 }} onClick={handleSubmit} disabled={isPending}>
             <Check style={{ width: 17, height: 17 }} />
-            {isPending ? "Saving..." : expense ? "Save changes" : "Add expense"}
+            {isPending ? "Saving..." : expense ? "Save changes" : txType === "INCOME" ? "Add income" : "Add expense"}
           </button>
         </div>
       </div>

@@ -14,7 +14,7 @@ router.get("/cycle", async (req, res, next) => {
     });
     const { cycleStart, cycleEnd } = parseCycleStart(req.query.cycleStart, user.salaryDay);
 
-    const expenses = await prisma.expense.findMany({
+    const allTransactions = await prisma.expense.findMany({
       where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd } },
       include: { category: true },
     });
@@ -28,10 +28,13 @@ router.get("/cycle", async (req, res, next) => {
       },
     });
 
-    const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+    const spendingOnly = allTransactions.filter((t) => t.type !== "INCOME");
+    const incomeOnly   = allTransactions.filter((t) => t.type === "INCOME");
+    const totalSpent   = spendingOnly.reduce((s, e) => s + e.amount, 0);
+    const totalIncome  = incomeOnly.reduce((s, e) => s + e.amount, 0);
 
     const byCategoryMap = {};
-    for (const e of expenses) {
+    for (const e of spendingOnly) {
       if (!byCategoryMap[e.categoryId]) {
         byCategoryMap[e.categoryId] = { ...e.category, spent: 0 };
       }
@@ -56,8 +59,9 @@ router.get("/cycle", async (req, res, next) => {
       cycleStart,
       cycleEnd,
       totalSpent,
+      totalIncome,
       totalBudget,
-      remaining: totalBudget - totalSpent,
+      remaining: totalBudget - totalSpent + totalIncome,
       daysLeft,
       byCategory,
       hasOverallBudget: user.monthlyBudget != null,
@@ -76,7 +80,7 @@ router.get("/chart", async (req, res, next) => {
     const { cycleStart, cycleEnd } = parseCycleStart(req.query.cycleStart, user.salaryDay);
 
     const expenses = await prisma.expense.findMany({
-      where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd } },
+      where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd }, type: { not: "INCOME" } },
       include: { category: true },
     });
 
@@ -109,7 +113,7 @@ router.get("/trend", async (req, res, next) => {
       const { cycleStart, cycleEnd } = getCycleRange(user.salaryDay, ref);
 
       const expenses = await prisma.expense.findMany({
-        where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd } },
+        where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd }, type: { not: "INCOME" } },
       });
       const total = expenses.reduce((s, e) => s + e.amount, 0);
 

@@ -9,20 +9,21 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(dbgenerated("concat('u_', (gen_random_uuid())::text)"))
-  email         String     @unique
+  id            String         @id @default(dbgenerated("concat('u_', (gen_random_uuid())::text)"))
+  email         String         @unique
   password      String
   name          String
-  salaryDay     Int        @default(1) @map("salary_day")
-  currency      String     @default("INR")
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  monthlyBudget Float?     @map("monthly_budget")
+  salaryDay     Int            @default(1) @map("salary_day")
+  currency      String         @default("INR")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  monthlyBudget Float?         @map("monthly_budget")
   budgets       Budget[]
   categories    Category[]
   expenses      Expense[]
   feedback      Feedback[]
   goals         Goal[]
   tags          Tag[]
+  incomeSources IncomeSource[]
 
   @@map("users")
 }
@@ -59,21 +60,38 @@ model Tag {
 }
 
 model Expense {
-  id           String       @id @default(dbgenerated("concat('exp_', (gen_random_uuid())::text)"))
+  id           String        @id @default(dbgenerated("concat('exp_', (gen_random_uuid())::text)"))
   amount       Float
+  type         String        @default("EXPENSE")
   note         String?
-  date         DateTime     @db.Timestamptz(6)
-  isRecurring  Boolean      @default(false) @map("is_recurring")
-  recurringDay Int?         @map("recurring_day")
-  categoryId   String       @map("category_id")
-  userId       String       @map("user_id")
-  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  date         DateTime      @db.Timestamptz(6)
+  isRecurring  Boolean       @default(false) @map("is_recurring")
+  recurringDay Int?          @map("recurring_day")
+  categoryId   String?       @map("category_id")
+  sourceId     String?       @map("source_id")
+  userId       String        @map("user_id")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   tags         ExpenseTag[]
-  category     Category     @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  category     Category?     @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  source       IncomeSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId, date], map: "idx_expenses_user_date")
   @@map("expenses")
+}
+
+model IncomeSource {
+  id        String    @id @default(dbgenerated("concat('src_', (gen_random_uuid())::text)"))
+  name      String
+  icon      String    @default("💰")
+  isDefault Boolean   @default(false) @map("is_default")
+  userId    String    @map("user_id")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expenses  Expense[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_income_sources_user")
+  @@map("income_sources")
 }
 
 model ExpenseTag {

@@ -1,28 +1,78 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Wallet, TrendingUp, Clock, Sparkles, ArrowDown } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Wallet,
+  TrendingUp,
+  Clock,
+  Sparkles,
+  ArrowDown,
+} from "lucide-react";
 import { useCycleSummary, useTrend } from "../api/summary.js";
 import { useExpenses } from "../api/expenses.js";
 import { useGoals } from "../api/goals.js";
 import { formatCurrency, formatDate } from "../utils/format.js";
-import { getCycleRange, formatCycleLabel, prevCycleRef, nextCycleRef } from "../utils/cycle.js";
+import {
+  getCycleRange,
+  formatCycleLabel,
+  prevCycleRef,
+  nextCycleRef,
+} from "../utils/cycle.js";
 import Donut from "../components/Donut.jsx";
 import Progress from "../components/Progress.jsx";
 import SavingsGoal from "../components/SavingsGoal.jsx";
 
 function StatCard({ icon: Icon, tint, label, value, sub }) {
   return (
-    <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, display: "grid", placeItems: "center",
-          background: `color-mix(in srgb, ${tint} 14%, transparent)`, color: tint }}>
+    <div
+      className="sp-card sp-card-pad"
+      style={{ display: "flex", flexDirection: "column", gap: 16 }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            display: "grid",
+            placeItems: "center",
+            background: `color-mix(in srgb, ${tint} 14%, transparent)`,
+            color: tint,
+          }}
+        >
           <Icon style={{ width: 20, height: 20 }} />
         </div>
         {sub}
       </div>
       <div>
-        <div style={{ fontSize: 12.5, color: "var(--ink-3)", fontWeight: 500, marginBottom: 3 }}>{label}</div>
-        <div className="sp-display sp-num" style={{ fontSize: 28, fontWeight: 700, color: "var(--ink)", lineHeight: 1 }}>{value}</div>
+        <div
+          style={{
+            fontSize: 12.5,
+            color: "var(--ink-3)",
+            fontWeight: 500,
+            marginBottom: 3,
+          }}
+        >
+          {label}
+        </div>
+        <div
+          className="sp-display sp-num"
+          style={{
+            fontSize: 28,
+            fontWeight: 700,
+            color: "var(--ink)",
+            lineHeight: 1,
+          }}
+        >
+          {value}
+        </div>
       </div>
     </div>
   );
@@ -30,17 +80,29 @@ function StatCard({ icon: Icon, tint, label, value, sub }) {
 
 function RecentTxns({ expenses, currency, onViewAll }) {
   return (
-    <div className="sp-card" style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div
+      className="sp-card"
+      style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}
+    >
       <div className="sp-card-head" style={{ padding: "22px 22px 0" }}>
         <div>
           <div className="sp-card-title">Recent transactions</div>
           <div className="sp-card-sub">{expenses.length} most recent</div>
         </div>
-        <button className="sp-btn sp-btn-soft sp-btn-sm" onClick={onViewAll}>View all</button>
+        <button className="sp-btn sp-btn-soft sp-btn-sm" onClick={onViewAll}>
+          View all
+        </button>
       </div>
       <div style={{ marginTop: 8 }}>
         {expenses.length === 0 && (
-          <div style={{ padding: "40px 22px", textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>
+          <div
+            style={{
+              padding: "40px 22px",
+              textAlign: "center",
+              color: "var(--ink-3)",
+              fontSize: 13,
+            }}
+          >
             No expenses yet this cycle
           </div>
         )}
@@ -48,30 +110,69 @@ function RecentTxns({ expenses, currency, onViewAll }) {
           <div
             key={e.id}
             style={{
-              display: "flex", alignItems: "center", gap: 13, padding: "11px 22px",
+              display: "flex",
+              alignItems: "center",
+              gap: 13,
+              padding: "11px 22px",
               borderTop: i === 0 ? "none" : "1px solid var(--line)",
               transition: "background var(--d1) var(--e)",
             }}
-            onMouseEnter={(ev) => (ev.currentTarget.style.background = "var(--surface-2)")}
-            onMouseLeave={(ev) => (ev.currentTarget.style.background = "transparent")}
+            onMouseEnter={(ev) =>
+              (ev.currentTarget.style.background = "var(--surface-2)")
+            }
+            onMouseLeave={(ev) =>
+              (ev.currentTarget.style.background = "transparent")
+            }
           >
-            <span style={{
-              width: 38, height: 38, borderRadius: 11, display: "grid", placeItems: "center",
-              background: (e.category?.color || "#888") + "22",
-              fontSize: 18, flex: "none",
-            }}>
-              {e.category?.icon || "💸"}
+            <span
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 11,
+                display: "grid",
+                placeItems: "center",
+                background:
+                  e.type === "INCOME"
+                    ? "#16a34a22"
+                    : (e.category?.color || "#888") + "22",
+                fontSize: 18,
+                flex: "none",
+              }}
+            >
+              {e.type === "INCOME"
+                ? e.source?.icon || "💰"
+                : e.category?.icon || "💸"}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {e.note || e.category?.name || "Expense"}
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "var(--ink)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {e.note ||
+                  (e.type === "INCOME" ? e.source?.name : e.category?.name) ||
+                  "Transaction"}
               </div>
               <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                {e.category?.name} · {formatDate(e.date)}
+                {e.type === "INCOME" ? e.source?.name : e.category?.name} ·{" "}
+                {formatDate(e.date)}
               </div>
             </div>
-            <div className="sp-num" style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
-              −{formatCurrency(e.amount, currency)}
+            <div
+              className="sp-num"
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: e.type === "INCOME" ? "#16a34a" : "var(--ink)",
+              }}
+            >
+              {e.type === "INCOME" ? "+" : "−"}
+              {formatCurrency(e.amount, currency)}
             </div>
           </div>
         ))}
@@ -95,22 +196,37 @@ export default function Dashboard({ user }) {
 
   const byCategory = summary?.byCategory || [];
   const totalSpent = summary?.totalSpent || 0;
+  const totalIncome = summary?.totalIncome || 0;
   const totalBudget = summary?.totalBudget || 0;
-  const remaining = summary?.remaining ?? (totalBudget - totalSpent);
+  const remaining = summary?.remaining ?? totalBudget - totalSpent + totalIncome;
   const daysLeft = summary?.daysLeft ?? "—";
   const topCategory = [...byCategory].sort((a, b) => b.spent - a.spent)[0];
-  const pctUsed = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : null;
+  const pctUsed =
+    totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : null;
 
   const donutData = byCategory
     .filter((c) => c.spent > 0)
-    .map((c) => ({ id: c.id, value: c.spent, color: c.color || "#888", name: c.name }));
+    .map((c) => ({
+      id: c.id,
+      value: c.spent,
+      color: c.color || "#888",
+      name: c.name,
+    }));
 
   const activeCat = hoverCat ? byCategory.find((c) => c.id === hoverCat) : null;
 
   return (
     <div>
       {/* Cycle switcher */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, marginBottom: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 18,
+          marginBottom: 24,
+        }}
+      >
         <button
           className="sp-icon-btn"
           style={{ width: 38, height: 38 }}
@@ -119,10 +235,22 @@ export default function Dashboard({ user }) {
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
         <div style={{ textAlign: "center", minWidth: 230 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 2 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--ink-3)",
+              marginBottom: 2,
+            }}
+          >
             Pay Cycle
           </div>
-          <div className="sp-display" style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          <div
+            className="sp-display"
+            style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
             {formatCycleLabel(cycleStart, cycleEnd)}
           </div>
         </div>
@@ -142,14 +270,29 @@ export default function Dashboard({ user }) {
           tint="var(--cat-1)"
           label="Total spent"
           value={formatCurrency(totalSpent, user.currency)}
-          sub={pctUsed !== null && <span className="sp-pill sp-pill-muted sp-num">{pctUsed}% used</span>}
+          sub={
+            pctUsed !== null && (
+              <span className="sp-pill sp-pill-muted sp-num">
+                {pctUsed}% used
+              </span>
+            )
+          }
         />
         <StatCard
           icon={TrendingUp}
           tint="var(--brand)"
           label="Remaining budget"
-          value={totalBudget > 0 ? formatCurrency(remaining, user.currency) : "No budget set"}
-          sub={<span className="sp-pill sp-pill-pos"><ArrowDown style={{ width: 12, height: 12 }} />On track</span>}
+          value={
+            totalBudget > 0
+              ? formatCurrency(remaining, user.currency)
+              : "No budget set"
+          }
+          sub={
+            <span className="sp-pill sp-pill-pos">
+              <ArrowDown style={{ width: 12, height: 12 }} />
+              On track
+            </span>
+          }
         />
         <StatCard
           icon={Clock}
@@ -163,7 +306,13 @@ export default function Dashboard({ user }) {
           tint="var(--cat-5)"
           label="Top category"
           value={topCategory ? topCategory.name : "—"}
-          sub={topCategory && <span className="sp-pill sp-pill-muted sp-num">{formatCurrency(topCategory.spent, user.currency)}</span>}
+          sub={
+            topCategory && (
+              <span className="sp-pill sp-pill-muted sp-num">
+                {formatCurrency(topCategory.spent, user.currency)}
+              </span>
+            )
+          }
         />
       </div>
 
@@ -178,26 +327,88 @@ export default function Dashboard({ user }) {
             </div>
           </div>
           {donutData.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "32px 0", color: "var(--ink-3)", fontSize: 13 }}>
+            <div
+              style={{
+                textAlign: "center",
+                padding: "32px 0",
+                color: "var(--ink-3)",
+                fontSize: 13,
+              }}
+            >
               No expenses yet this cycle
             </div>
           ) : (
             <>
-              <div style={{ position: "relative", display: "grid", placeItems: "center", marginBottom: 18 }}>
-                <Donut data={donutData} size={208} stroke={28} active={hoverCat} onHover={setHoverCat} />
-                <div style={{ position: "absolute", textAlign: "center", pointerEvents: "none" }}>
+              <div
+                style={{
+                  position: "relative",
+                  display: "grid",
+                  placeItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <Donut
+                  data={donutData}
+                  size={208}
+                  stroke={28}
+                  active={hoverCat}
+                  onHover={setHoverCat}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    textAlign: "center",
+                    pointerEvents: "none",
+                  }}
+                >
                   {activeCat ? (
                     <>
-                      <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 600 }}>{activeCat.name}</div>
-                      <div className="sp-display sp-num" style={{ fontSize: 24, fontWeight: 700 }}>{formatCurrency(activeCat.spent, user.currency)}</div>
-                      <div className="sp-num" style={{ fontSize: 12, color: activeCat.color, fontWeight: 700 }}>
-                        {totalSpent > 0 ? Math.round((activeCat.spent / totalSpent) * 100) : 0}%
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--ink-3)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {activeCat.name}
+                      </div>
+                      <div
+                        className="sp-display sp-num"
+                        style={{ fontSize: 24, fontWeight: 700 }}
+                      >
+                        {formatCurrency(activeCat.spent, user.currency)}
+                      </div>
+                      <div
+                        className="sp-num"
+                        style={{
+                          fontSize: 12,
+                          color: activeCat.color,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {totalSpent > 0
+                          ? Math.round((activeCat.spent / totalSpent) * 100)
+                          : 0}
+                        %
                       </div>
                     </>
                   ) : (
                     <>
-                      <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 600 }}>Total spent</div>
-                      <div className="sp-display sp-num" style={{ fontSize: 26, fontWeight: 700 }}>{formatCurrency(totalSpent, user.currency)}</div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--ink-3)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Total spent
+                      </div>
+                      <div
+                        className="sp-display sp-num"
+                        style={{ fontSize: 26, fontWeight: 700 }}
+                      >
+                        {formatCurrency(totalSpent, user.currency)}
+                      </div>
                     </>
                   )}
                 </div>
@@ -208,13 +419,37 @@ export default function Dashboard({ user }) {
                     key={d.id}
                     onMouseEnter={() => setHoverCat(d.id)}
                     onMouseLeave={() => setHoverCat(null)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
                       opacity: hoverCat && hoverCat !== d.id ? 0.5 : 1,
-                      transition: "opacity var(--d1) var(--e)" }}
+                      transition: "opacity var(--d1) var(--e)",
+                    }}
                   >
-                    <span className="sp-swatch" style={{ background: d.color }} />
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-2)", flex: 1 }}>{d.name}</span>
-                    <span className="sp-num" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
+                    <span
+                      className="sp-swatch"
+                      style={{ background: d.color }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "var(--ink-2)",
+                        flex: 1,
+                      }}
+                    >
+                      {d.name}
+                    </span>
+                    <span
+                      className="sp-num"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "var(--ink)",
+                      }}
+                    >
                       {formatCurrency(d.value, user.currency)}
                     </span>
                   </div>
@@ -237,9 +472,31 @@ export default function Dashboard({ user }) {
         {goal ? (
           <SavingsGoal goal={goal} currency={user.currency} />
         ) : (
-          <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 180 }}>
-            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>No savings goal set</div>
-            <a href="/goals" style={{ fontSize: 13, color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>Set a goal →</a>
+          <div
+            className="sp-card sp-card-pad"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              minHeight: 180,
+            }}
+          >
+            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+              No savings goal set
+            </div>
+            <a
+              href="/goals"
+              style={{
+                fontSize: 13,
+                color: "var(--brand)",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Set a goal →
+            </a>
           </div>
         )}
 
@@ -249,36 +506,92 @@ export default function Dashboard({ user }) {
             <div>
               <div className="sp-card-title">Budget by category</div>
               <div className="sp-card-sub">
-                {formatCurrency(totalSpent, user.currency)} of {formatCurrency(totalBudget, user.currency)} used
+                {formatCurrency(totalSpent, user.currency)} of{" "}
+                {formatCurrency(totalBudget, user.currency)} used
               </div>
             </div>
           </div>
           {byCategory.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "32px 0", color: "var(--ink-3)", fontSize: 13 }}>
+            <div
+              style={{
+                textAlign: "center",
+                padding: "32px 0",
+                color: "var(--ink-3)",
+                fontSize: 13,
+              }}
+            >
               No categories with budgets yet
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 17 }}>
-              {byCategory.filter((c) => c.budget).map((c) => {
-                const over = c.spent > c.budget;
-                return (
-                  <div key={c.id}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 8, display: "grid", placeItems: "center",
-                        background: (c.color || "#888") + "22", fontSize: 14, flex: "none" }}>
-                        {c.icon}
-                      </span>
-                      <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", flex: 1 }}>{c.name}</span>
-                      <span className="sp-num" style={{ fontSize: 12.5, color: "var(--ink-2)", fontWeight: 500 }}>
-                        {formatCurrency(c.spent, user.currency)}{" "}
-                        <span style={{ color: "var(--ink-3)" }}>/ {formatCurrency(c.budget, user.currency)}</span>
-                      </span>
-                      {over && <span className="sp-pill sp-pill-neg" style={{ height: 22, fontSize: 11 }}>Over</span>}
+              {byCategory
+                .filter((c) => c.budget)
+                .map((c) => {
+                  const over = c.spent > c.budget;
+                  return (
+                    <div key={c.id}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            display: "grid",
+                            placeItems: "center",
+                            background: (c.color || "#888") + "22",
+                            fontSize: 14,
+                            flex: "none",
+                          }}
+                        >
+                          {c.icon}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 13.5,
+                            fontWeight: 600,
+                            color: "var(--ink)",
+                            flex: 1,
+                          }}
+                        >
+                          {c.name}
+                        </span>
+                        <span
+                          className="sp-num"
+                          style={{
+                            fontSize: 12.5,
+                            color: "var(--ink-2)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {formatCurrency(c.spent, user.currency)}{" "}
+                          <span style={{ color: "var(--ink-3)" }}>
+                            / {formatCurrency(c.budget, user.currency)}
+                          </span>
+                        </span>
+                        {over && (
+                          <span
+                            className="sp-pill sp-pill-neg"
+                            style={{ height: 22, fontSize: 11 }}
+                          >
+                            Over
+                          </span>
+                        )}
+                      </div>
+                      <Progress
+                        value={c.spent}
+                        max={c.budget}
+                        color={c.color}
+                      />
                     </div>
-                    <Progress value={c.spent} max={c.budget} color={c.color} />
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           )}
         </div>
