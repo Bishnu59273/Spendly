@@ -4,6 +4,7 @@ import { useMe } from "./api/auth.js";
 import Layout from "./components/Layout.jsx";
 import Spinner from "./components/Spinner.jsx";
 import OfflineBanner from "./components/OfflineBanner.jsx";
+import DomainMigrationBanner from "./components/DomainMigrationBanner.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -41,7 +42,9 @@ function AuthGuard({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <>
+      <DomainMigrationBanner />
+      <BrowserRouter>
       <OfflineBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -78,5 +81,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
+    </>
   );
 }
