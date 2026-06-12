@@ -72,7 +72,12 @@ export default function Login() {
               <input type="email" required autoComplete="email" value={form.email} onChange={(e) => set("email", e.target.value)} style={inp} />
             </div>
             <div>
-              <label style={lbl}>Password</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <label style={lbl}>Password</label>
+                <Link to="/forgot-password" style={{ fontSize: 12.5, color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>
+                  Forgot password?
+                </Link>
+              </div>
               <div style={{ position: "relative" }}>
                 <input
                   type={showPw ? "text" : "password"}

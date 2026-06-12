@@ -60,3 +60,26 @@ export function useChangePassword() {
     mutationFn: (data) => api.patch("/auth/password", data).then((r) => r.data),
   });
 }
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (data) => api.post("/auth/forgot-password", data).then((r) => r.data),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (data) => api.post("/auth/reset-password", data).then((r) => r.data),
+  });
+}
+
+export function useValidateResetToken(token) {
+  return useQuery({
+    queryKey: ["reset-token", token],
+    queryFn: () =>
+      api.get("/auth/reset-password/validate", { params: { token } }).then((r) => r.data),
+    enabled: !!token,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+}

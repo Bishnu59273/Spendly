@@ -7,6 +7,8 @@ import OfflineBanner from "./components/OfflineBanner.jsx";
 import DomainMigrationBanner from "./components/DomainMigrationBanner.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Expenses from "./pages/Expenses.jsx";
 import Categories from "./pages/Categories.jsx";
@@ -49,6 +51,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/dashboard"
           element={<AuthGuard>{(user) => <Dashboard user={user} />}</AuthGuard>}

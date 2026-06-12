@@ -1,9 +1,11 @@
 import { Router } from "express";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendPasswordResetEmail } from "../lib/email.js";
 import { seedDefaultCategories } from "../../prisma/seed.js";
 
 const router = Router();
@@ -128,6 +130,105 @@ router.patch("/password", authMiddleware, async (req, res, next) => {
 
     const hashed = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({ where: { id: req.userId }, data: { password: hashed } });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6),
+});
+
+const RESET_TOKEN_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const RESET_RESEND_COOLDOWN_MS = 60 * 1000;
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+router.post("/forgot-password", async (req, res, next) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ error: "No account found with this email" });
+    }
+
+    const recent = await prisma.passwordResetToken.findFirst({
+      where: {
+        userId: user.id,
+        createdAt: { gt: new Date(Date.now() - RESET_RESEND_COOLDOWN_MS) },
+      },
+    });
+
+    if (!recent) {
+      const token = crypto.randomBytes(32).toString("hex");
+      await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashResetToken(token),
+          expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+        },
+      });
+
+      const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+      try {
+        await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+      } catch (emailErr) {
+        console.error(`Failed to send password reset email to ${user.email}:`, emailErr);
+        return res.status(502).json({ error: "Could not send the reset email. Please try again." });
+      }
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/reset-password/validate", async (req, res, next) => {
+  try {
+    const token = typeof req.query.token === "string" ? req.query.token : "";
+    if (!token) return res.json({ valid: false });
+
+    const record = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashResetToken(token) },
+    });
+    res.json({ valid: !!record && record.expiresAt >= new Date() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/reset-password", async (req, res, next) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    const record = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashResetToken(token) },
+    });
+
+    if (!record || record.expiresAt < new Date()) {
+      if (record) {
+        await prisma.passwordResetToken.delete({ where: { id: record.id } });
+      }
+      return res.status(400).json({ error: "This reset link is invalid or has expired" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: record.userId }, data: { password: hashed } }),
+      prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
+    ]);
+
     res.json({ ok: true });
   } catch (err) {
     next(err);
