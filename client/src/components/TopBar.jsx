@@ -8,6 +8,7 @@ const TITLES = {
   "/goals":      { eyebrow: "Saving toward",      title: "Goals" },
   "/tags":       { eyebrow: "Organise",           title: "Tags" },
   "/settings":   { eyebrow: "Account",            title: "Settings" },
+  "/support":    { eyebrow: "We're here to help",  title: "Help & Support" },
 };
 
 const ADD_LABELS = {
