@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,10 +9,13 @@ import {
   Clock,
   Sparkles,
   ArrowDown,
+  Pencil,
+  Plus,
 } from "lucide-react";
 import { useCycleSummary, useTrend } from "../api/summary.js";
 import { useExpenses } from "../api/expenses.js";
 import { useGoals } from "../api/goals.js";
+import { useUpdateProfile } from "../api/auth.js";
 import { formatCurrency, formatDate } from "../utils/format.js";
 import {
   getCycleRange,
@@ -22,8 +26,9 @@ import {
 import Donut from "../components/Donut.jsx";
 import Progress from "../components/Progress.jsx";
 import SavingsGoal from "../components/SavingsGoal.jsx";
+import Modal from "../components/Modal.jsx";
 
-function StatCard({ icon: Icon, tint, label, value, sub }) {
+function StatCard({ icon: Icon, tint, label, value, sub, onEdit, editIcon: EditIcon = Pencil }) {
   return (
     <div
       className="sp-card sp-card-pad"
@@ -49,7 +54,23 @@ function StatCard({ icon: Icon, tint, label, value, sub }) {
         >
           <Icon style={{ width: 20, height: 20 }} />
         </div>
-        {sub}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {sub}
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              title="Set budget"
+              style={{
+                width: 28, height: 28, borderRadius: 8,
+                display: "grid", placeItems: "center",
+                background: "var(--surface-sunken)",
+                border: "none", color: "var(--ink-3)", cursor: "pointer",
+              }}
+            >
+              <EditIcon style={{ width: 13, height: 13 }} />
+            </button>
+          )}
+        </div>
       </div>
       <div>
         <div
@@ -183,8 +204,24 @@ function RecentTxns({ expenses, currency, onViewAll }) {
 
 export default function Dashboard({ user }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const updateProfile = useUpdateProfile();
   const [cycleRef, setCycleRef] = useState(new Date());
   const [hoverCat, setHoverCat] = useState(null);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetInput, setBudgetInput] = useState("");
+
+  const openBudgetModal = () => {
+    setBudgetInput(user.monthlyBudget?.toString() ?? "");
+    setShowBudgetModal(true);
+  };
+
+  const saveBudget = async () => {
+    const val = parseFloat(budgetInput) || null;
+    await updateProfile.mutateAsync({ monthlyBudget: val });
+    qc.invalidateQueries({ queryKey: ["summary"] });
+    setShowBudgetModal(false);
+  };
   const { data: goals = [] } = useGoals();
   const goal = goals.find((g) => g.isPrimary) || null;
 
@@ -288,11 +325,15 @@ export default function Dashboard({ user }) {
               : "No budget set"
           }
           sub={
-            <span className="sp-pill sp-pill-pos">
-              <ArrowDown style={{ width: 12, height: 12 }} />
-              On track
-            </span>
+            totalBudget > 0 && (
+              <span className="sp-pill sp-pill-pos">
+                <ArrowDown style={{ width: 12, height: 12 }} />
+                On track
+              </span>
+            )
           }
+          onEdit={openBudgetModal}
+          editIcon={totalBudget > 0 ? Pencil : Plus}
         />
         <StatCard
           icon={Clock}
@@ -596,6 +637,60 @@ export default function Dashboard({ user }) {
           )}
         </div>
       </div>
+
+      <Modal
+        open={showBudgetModal}
+        onClose={() => setShowBudgetModal(false)}
+        title="Set monthly budget"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ink-2)" }}>
+            Your total spending limit per pay cycle.
+          </p>
+          <div style={{ position: "relative" }}>
+            <span
+              style={{
+                position: "absolute", left: 12, top: "50%",
+                transform: "translateY(-50%)", color: "var(--ink-3)",
+                fontSize: 13, pointerEvents: "none",
+              }}
+            >
+              {user.currency}
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              autoFocus
+              value={budgetInput}
+              onChange={(e) => setBudgetInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveBudget()}
+              placeholder="e.g. 30000"
+              style={{
+                width: "100%", height: 44, paddingLeft: 48, paddingRight: 14,
+                borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
+                background: "var(--surface-2)", color: "var(--ink)",
+                fontSize: 14, outline: "none", boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              className="sp-btn sp-btn-ghost"
+              onClick={() => setShowBudgetModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="sp-btn sp-btn-primary"
+              onClick={saveBudget}
+              disabled={updateProfile.isPending}
+            >
+              {updateProfile.isPending ? "Saving…" : "Save budget"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
