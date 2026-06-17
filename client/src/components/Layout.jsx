@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
   Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy,
@@ -11,6 +11,7 @@ import TopBar from "./TopBar.jsx";
 import SmartAddModal from "./SmartAddModal.jsx";
 import InstallBanner from "./InstallBanner.jsx";
 import FeedbackPrompt from "./FeedbackPrompt.jsx";
+import TourOverlay from "./TourOverlay.jsx";
 
 const FORM_TYPE = {
   "/categories": "category",
@@ -33,13 +34,79 @@ const FAB_LABELS = {
 };
 
 const NAV = [
-  { to: "/dashboard",  icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/expenses",   icon: Receipt,          label: "Expenses" },
-  { to: "/categories", icon: FolderOpen,       label: "Categories" },
-  { to: "/goals",      icon: Target,           label: "Goals" },
-  { to: "/tags",       icon: Tag,              label: "Tags" },
-  { to: "/settings",   icon: Settings,         label: "Settings" },
-  { to: "/support",    icon: LifeBuoy,         label: "Help & Support" },
+  { to: "/dashboard",  icon: LayoutDashboard, label: "Dashboard",      tourId: "nav-dashboard"  },
+  { to: "/expenses",   icon: Receipt,          label: "Expenses",       tourId: "nav-expenses"   },
+  { to: "/categories", icon: FolderOpen,       label: "Categories",     tourId: "nav-categories" },
+  { to: "/goals",      icon: Target,           label: "Goals",          tourId: "nav-goals"      },
+  { to: "/tags",       icon: Tag,              label: "Tags"                                      },
+  { to: "/settings",   icon: Settings,         label: "Settings",       tourId: "nav-settings"   },
+  { to: "/support",    icon: LifeBuoy,         label: "Help & Support", tourId: "nav-support"    },
+];
+
+const TOUR_STEPS = [
+  {
+    selector: '[data-tour="budget-btn"]',
+    title: "Set your monthly budget",
+    desc: "Tap + to tell Spendly your spending limit for this pay cycle. Your remaining budget will appear here instantly.",
+    side: "bottom",
+  },
+  {
+    selector: '[data-tour="nav-expenses"]',
+    title: "Expenses",
+    desc: "Every transaction you log lives here — filter, search, and review your spending history.",
+    side: "right",
+  },
+  {
+    selector: '[data-tour="nav-categories"]',
+    title: "Categories",
+    desc: "Organise spending into categories like Food or Transport, each with its own budget limit.",
+    side: "right",
+  },
+  {
+    selector: '[data-tour="nav-goals"]',
+    title: "Goals",
+    desc: "Set savings targets and track how close you are each pay cycle.",
+    side: "right",
+  },
+  {
+    selector: '[data-tour="goals-section"]',
+    title: "Track your savings",
+    desc: "Create a primary savings goal and log progress each cycle. Spendly shows how close you are at a glance.",
+    side: "bottom",
+    navigate: "/goals",
+  },
+  {
+    selector: '[data-tour="nav-settings"]',
+    title: "Settings",
+    desc: "Update your name, currency, budget cycle, and appearance preferences.",
+    side: "right",
+  },
+  {
+    selector: '[data-tour="settings-profile"]',
+    title: "Personalize Spendly",
+    desc: "Set your monthly budget limit here — it's what drives the Remaining Budget card on your dashboard.",
+    side: "bottom",
+    navigate: "/settings",
+  },
+  {
+    selector: '[data-tour="nav-support"]',
+    title: "Help & Support",
+    desc: "Have a question or want to suggest something? Reach out directly from the app.",
+    side: "right",
+  },
+  {
+    selector: '[data-tour="support-form"]',
+    title: "Get help anytime",
+    desc: "Send feedback, report a bug, or ask a question — we read and respond to everything.",
+    side: "bottom",
+    navigate: "/support",
+  },
+  {
+    selector: '[data-tour="fab-add"]',
+    title: "Add expense or income",
+    desc: "Tap this button any time to log a new transaction — from any page in the app.",
+    side: "top",
+  },
 ];
 
 function getInitials(name = "") {
@@ -96,6 +163,28 @@ export default function Layout({ user, children }) {
     }
   };
 
+  const [tourDone, setTourDone] = useState(
+    () => !!localStorage.getItem("sp_tour_v1"),
+  );
+  const [tourSidebarStep, setTourSidebarStep] = useState(false);
+  const navigateTo = useNavigate();
+
+  const handleTourStep = (stepIndex) => {
+    const step = TOUR_STEPS[stepIndex];
+    const sidebarSteps = new Set([1, 2, 3, 5, 7]);
+    const needsMenu = sidebarSteps.has(stepIndex);
+    setMenu(needsMenu);
+    setTourSidebarStep(needsMenu);
+    if (step?.navigate) navigateTo(step.navigate);
+  };
+
+  const handleTourDone = () => {
+    localStorage.setItem("sp_tour_v1", "1");
+    setMenu(false);
+    setTourSidebarStep(false);
+    setTourDone(true);
+  };
+
   const toggleDark = () => {
     const next = !dark;
     setDark(next);
@@ -123,13 +212,14 @@ export default function Layout({ user, children }) {
         </div>
 
         <nav className="sp-nav">
-          {NAV.map(({ to, icon: Icon, label }) => {
+          {NAV.map(({ to, icon: Icon, label, tourId }) => {
             const active = pathname === to || (to !== "/" && pathname.startsWith(to));
             return (
               <Link
                 key={to}
                 to={to}
                 className={`sp-nav-item${active ? " active" : ""}`}
+                data-tour={tourId}
                 onClick={() => setMenu(false)}
               >
                 <Icon />
@@ -302,7 +392,7 @@ export default function Layout({ user, children }) {
       </div>
 
       {/* FAB */}
-      <button className="sp-fab" onClick={() => setAddOpen(true)} aria-label={FAB_LABELS[getFormType(pathname)]}>
+      <button className="sp-fab" data-tour="fab-add" onClick={() => setAddOpen(true)} aria-label={FAB_LABELS[getFormType(pathname)]}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <path d="M12 5v14M5 12h14" />
         </svg>
@@ -313,13 +403,25 @@ export default function Layout({ user, children }) {
       {/* Mobile menu scrim */}
       {menu && (
         <div
-          onClick={() => setMenu(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 94, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
+          onClick={tourSidebarStep ? undefined : () => setMenu(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 94,
+            background: tourSidebarStep ? "transparent" : "rgba(0,0,0,0.35)",
+            backdropFilter: tourSidebarStep ? "none" : "blur(2px)",
+          }}
         />
       )}
 
       <InstallBanner />
       <FeedbackPrompt />
+
+      {!tourDone && (
+        <TourOverlay
+          steps={TOUR_STEPS}
+          onStep={handleTourStep}
+          onDone={handleTourDone}
+        />
+      )}
     </div>
   );
 }

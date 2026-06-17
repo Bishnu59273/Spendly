@@ -48,7 +48,7 @@ export default function Support({ user }) {
   return (
     <div className="sp-grid-halves">
       {/* Left — Suggestion form */}
-      <div className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div data-tour="support-form" className="sp-card sp-card-pad" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div className="sp-card-head" style={{ padding: 0 }}>
           <div>
             <div className="sp-card-title">Something missing?</div>

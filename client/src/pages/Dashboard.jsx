@@ -28,10 +28,11 @@ import Progress from "../components/Progress.jsx";
 import SavingsGoal from "../components/SavingsGoal.jsx";
 import Modal from "../components/Modal.jsx";
 
-function StatCard({ icon: Icon, tint, label, value, sub, onEdit, editIcon: EditIcon = Pencil }) {
+function StatCard({ icon: Icon, tint, label, value, sub, onEdit, editIcon: EditIcon = Pencil, tourId }) {
   return (
     <div
       className="sp-card sp-card-pad"
+      data-tour={tourId}
       style={{ display: "flex", flexDirection: "column", gap: 16 }}
     >
       <div
@@ -334,6 +335,7 @@ export default function Dashboard({ user }) {
           }
           onEdit={openBudgetModal}
           editIcon={totalBudget > 0 ? Pencil : Plus}
+          tourId="budget-btn"
         />
         <StatCard
           icon={Clock}

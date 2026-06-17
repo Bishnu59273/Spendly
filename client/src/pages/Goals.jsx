@@ -179,7 +179,7 @@ export default function Goals({ user }) {
     <div>
       {/* Main savings goal + Cycle history */}
       <div className="sp-grid-5-7" style={{ marginBottom: 16 }}>
-        <div>
+        <div data-tour="goals-section">
           {editGoal?.isPrimary ? (
             <GoalForm initial={editGoal} onSave={handleUpdate} onCancel={() => setEditGoal(null)} isPrimarySlot />
           ) : showPrimaryForm ? (
