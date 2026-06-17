@@ -31,6 +31,8 @@ export default function ForgotPassword() {
         setError("You're offline. Check your connection and try again.");
       } else if (err.response?.status === 404) {
         setError("No Spendly account exists with this email. Double-check for typos, or create a new account.");
+      } else if (err.response?.status === 429) {
+        setError("Too many reset requests. Please wait a few hours before trying again.");
       } else if (err.response?.status === 502) {
         setError("We couldn't send the email right now. Please try again in a moment.");
       } else {
@@ -78,7 +80,7 @@ export default function ForgotPassword() {
               </div>
               <p style={{ fontSize: 13.5, color: "var(--ink-3)", lineHeight: 1.6, margin: 0 }}>
                 We've sent a password reset link to <strong style={{ color: "var(--ink)" }}>{email}</strong>.
-                It expires in 10 minutes — check your spam folder too.
+                It expires in 1 hour. If it doesn't arrive within a few minutes, check your spam folder — Gmail sometimes delays mail from new domains.
               </p>
             </div>
           ) : (

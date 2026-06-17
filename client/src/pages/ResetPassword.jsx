@@ -113,7 +113,7 @@ export default function ResetPassword() {
                 This link has expired
               </div>
               <p style={{ fontSize: 13.5, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 16px" }}>
-                Reset links work only once and expire after 10 minutes.
+                Reset links work only once and expire after 1 hour.
                 If you still need to change your password, request a new link.
               </p>
               <Link to="/forgot-password" className="sp-btn sp-btn-primary" style={{ justifyContent: "center", fontSize: 14, textDecoration: "none" }}>
