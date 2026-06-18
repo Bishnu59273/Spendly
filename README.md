@@ -2,7 +2,7 @@
 
 **Spendly** is a personal finance tracker built around your pay cycle — not the calendar month. It helps you understand where your money goes, stay inside your budget, and grow your savings, all from a clean and fast web app.
 
-🔗 **Live app → [spendly-bice.vercel.app](https://spendly-bice.vercel.app)**
+🔗 **Live app → [spendly-bice.vercel.app](https://spendly.it.com)**
 
 ---
 
