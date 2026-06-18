@@ -395,6 +395,18 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .sp-content-inner { max-width: 1160px; margin: 0 auto; }
 
 /* ============================================================
+   Third-party overrides
+   ============================================================ */
+em-emoji-picker {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  --border-radius: 0;
+  --border-color: transparent;
+  --background-rgb: var(--surface-2, 248 248 248);
+}
+
+/* ============================================================
    Cards & primitives
    ============================================================ */
 .sp-card {
