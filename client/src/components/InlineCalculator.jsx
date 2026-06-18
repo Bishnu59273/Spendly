@@ -107,7 +107,9 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
   const [justEvaled, setJustEvaled] = useState(false);
   const [error, setError] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [lastAnswer, setLastAnswer] = useState(null);
   const justPercented = useRef(false);
+  const prevExprRef = useRef("");
 
   useEffect(() => {
     if (open) {
@@ -115,8 +117,10 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
       setDisplay(seed);
       setTokens([]);
       justPercented.current = false;
+      prevExprRef.current = "";
       setJustEvaled(false);
       setError(null);
+      setLastAnswer(null);
       setShowInfo(false);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -142,7 +146,8 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
   function handleBtn(btn) {
     if (btn.action !== "percent") justPercented.current = false;
     if (btn.action === "clear") {
-      setTokens([]); setDisplay("0"); setJustEvaled(false); setError(null); return;
+      setTokens([]); setDisplay("0"); setJustEvaled(false); setError(null);
+      setLastAnswer(null); prevExprRef.current = ""; return;
     }
     if (btn.action === "back") {
       if (justEvaled) { setTokens([]); setDisplay("0"); setJustEvaled(false); return; }
@@ -223,7 +228,10 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
         const result = evaluate(tokens, display);
         if (!isFinite(result) || isNaN(result)) { setError("ERR"); setDisplay("Error"); return; }
         if (Math.abs(result) > 999_999_999) { setError("OVERFLOW"); setDisplay("Too large"); return; }
-        setDisplay(formatResult(result));
+        prevExprRef.current = expressionString(tokens) + " " + display;
+        const formatted = formatResult(result);
+        setDisplay(formatted);
+        setLastAnswer(formatted);
         setTokens([]);
         setJustEvaled(true);
         setError(null);
@@ -244,9 +252,23 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
     return null;
   })();
 
-  // Expression tape: show completed tokens; when awaiting operand, append the operator symbol hint
-  const tapeParts = expressionString(tokens);
-  const showTape = tokens.length > 0;
+  // Large display: expression being built, or result after =
+  const displayToken = display + (justPercented.current ? "%" : "");
+  const bigText = (() => {
+    if (justEvaled) return display;
+    if (awaitingOperand) return expressionString(tokens);
+    if (tokens.length > 0) return expressionString(tokens) + " " + displayToken;
+    return display;
+  })();
+
+  // Small context line above: result preview, completed expression, or previous answer
+  const smallText = (() => {
+    if (error) return null;
+    if (justEvaled && prevExprRef.current) return prevExprRef.current + " =";
+    if (!justEvaled && liveResult && tokens.length > 0) return "= " + liveResult;
+    if (lastAnswer && tokens.length === 0 && !justEvaled) return "Ans = " + lastAnswer;
+    return null;
+  })();
 
   return (
     <div
@@ -318,40 +340,31 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
           </div>
         )}
 
-        {/* Expression tape — LTR, shows completed tokens only */}
+        {/* Small context line: result preview or previous answer */}
         <div
           style={{
             minHeight: 20, textAlign: "right", fontSize: 12,
             color: "var(--ink-3)", letterSpacing: "0.01em",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             fontFamily: "var(--display)",
-            visibility: showTape ? "visible" : "hidden",
+            visibility: smallText ? "visible" : "hidden",
           }}
         >
-          {tapeParts}
+          {smallText}
         </div>
 
-        {/* Result display */}
+        {/* Large display: the expression being built, or the result */}
         <div
           style={{
             fontFamily: "var(--display)", fontSize: 32, fontWeight: 700,
             letterSpacing: "-0.03em", textAlign: "right", lineHeight: 1.15,
             marginBottom: 10, fontVariantNumeric: "tabular-nums",
-            // Muted color when awaiting second operand (placeholder 0) or on error
-            color: error
-              ? "var(--neg)"
-              : awaitingOperand
-              ? "var(--ink-3)"
-              : "var(--ink)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            color: error ? "var(--neg)" : "var(--ink)",
             transition: "color var(--d1) var(--e)",
           }}
         >
-          {display}
-          {!error && !awaitingOperand && liveResult && liveResult !== display && tokens.length > 0 && (
-            <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-3)", marginLeft: 8 }}>
-              = {liveResult}
-            </span>
-          )}
+          {bigText}
         </div>
 
         {/* Button grid */}
