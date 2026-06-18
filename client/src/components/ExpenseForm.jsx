@@ -288,9 +288,9 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                 display: "inline-flex", alignItems: "center", gap: 5,
                 height: 26, padding: "0 10px",
                 borderRadius: "var(--r-pill, 999px)",
-                border: `1px solid ${calcOpen ? "var(--brand)" : "var(--line)"}`,
-                background: calcOpen ? "var(--brand-soft)" : "transparent",
-                color: calcOpen ? "var(--brand)" : "var(--ink-3)",
+                border: "1.5px solid var(--brand)",
+                background: calcOpen ? "var(--brand)" : "var(--brand-soft)",
+                color: calcOpen ? "#fff" : "var(--brand)",
                 fontSize: 12, fontWeight: 600, cursor: "pointer",
                 transition: "all var(--d1) var(--e)",
               }}

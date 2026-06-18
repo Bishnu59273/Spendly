@@ -94,11 +94,56 @@ function btnStyle(btn) {
 }
 
 const INFO_PATTERNS = [
-  { keys: "1000 × 10 %",      desc: "10% of 1000",             result: "= 100" },
-  { keys: "1000 + 18 % =",    desc: "Add 18% GST",             result: "= 1180" },
-  { keys: "500 − 10 % =",     desc: "10% discount on 500",     result: "= 450" },
-  { keys: "300 ÷ 3 =",        desc: "Split ₹300 among 3",      result: "= 100" },
-  { keys: "100 + 200 + 50 =", desc: "Add multiple items",      result: "= 350" },
+  {
+    title: "Percentage of a number",
+    formula: "A × B %",
+    effect: "B% of A",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><line x1="19" y1="5" x2="5" y2="19"/>
+      </svg>
+    ),
+  },
+  {
+    title: "Add GST or tax",
+    formula: "A + B %",
+    effect: "A plus B% tax",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+      </svg>
+    ),
+  },
+  {
+    title: "Apply a discount",
+    formula: "A − B %",
+    effect: "A minus B% off",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.6 13.4 13 21l-9-9V4h8z"/><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
+  },
+  {
+    title: "Split a bill",
+    formula: "A ÷ B",
+    effect: "A split B ways",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M17 11a3 3 0 0 0 0-6"/><path d="M21 20c0-2.5-1.3-4.2-3.5-4.8"/>
+      </svg>
+    ),
+  },
+  {
+    title: "Add up several items",
+    formula: "A + B + C",
+    effect: "all added together",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function InlineCalculator({ open, onConfirm, initialValue }) {
@@ -107,6 +152,7 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
   const [justEvaled, setJustEvaled] = useState(false);
   const [error, setError] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [lastAnswer, setLastAnswer] = useState(null);
   const justPercented = useRef(false);
   const prevExprRef = useRef("");
@@ -122,6 +168,9 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
       setError(null);
       setLastAnswer(null);
       setShowInfo(false);
+      setShowHint(true);
+      const t = setTimeout(() => setShowHint(false), 4600);
+      return () => clearTimeout(t);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -288,51 +337,76 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
           padding: "12px 12px 10px",
         }}
       >
-        {/* Info toggle */}
-        <button
-          type="button"
-          onClick={() => setShowInfo((v) => !v)}
-          title="How to use"
-          style={{
-            position: "absolute", top: 8, left: 10,
-            width: 22, height: 22, borderRadius: "50%",
-            border: `1px solid ${showInfo ? "var(--brand)" : "var(--line)"}`,
-            background: showInfo ? "var(--brand)" : "transparent",
-            color: showInfo ? "#fff" : "var(--ink-3)",
-            fontSize: 11, fontWeight: 700, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            lineHeight: 1, transition: "all var(--d1) var(--e)",
-          }}
-        >
-          i
-        </button>
+        {/* Info toggle + animated hint label */}
+        <div style={{ position: "absolute", top: 8, left: 10, display: "flex", alignItems: "center", gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => { setShowInfo((v) => !v); setShowHint(false); }}
+            title="What can I do here?"
+            style={{
+              flexShrink: 0,
+              width: 22, height: 22, borderRadius: "50%",
+              border: `1.5px solid ${showInfo ? "var(--brand)" : "var(--brand)"}`,
+              background: showInfo ? "var(--brand)" : "var(--brand-soft)",
+              color: showInfo ? "#fff" : "var(--brand)",
+              fontSize: 11, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              lineHeight: 1, transition: "all var(--d1) var(--e)",
+            }}
+          >
+            i
+          </button>
+          <span style={{
+            fontSize: 11.5, fontWeight: 600, color: "var(--brand)",
+            whiteSpace: "nowrap", pointerEvents: "none",
+            opacity: showHint && !showInfo ? 1 : 0,
+            transform: showHint && !showInfo ? "translateX(0)" : "translateX(-6px)",
+            transition: "opacity 0.5s ease, transform 0.5s ease",
+          }}>
+            formulas
+          </span>
+        </div>
 
-        {/* Info overlay */}
+        {/* Info overlay — Variation 2: Iconed cause → effect */}
         {showInfo && (
           <div style={{
             position: "absolute", inset: 0,
             borderRadius: "var(--r-sm)",
             background: "var(--surface-sunken)",
-            padding: "10px 14px 14px",
+            padding: "12px 14px 14px",
             overflowY: "auto",
             zIndex: 3,
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--ink-3)" }}>How to use</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>What can I do here?</span>
               <button
                 type="button"
                 onClick={() => setShowInfo(false)}
-                style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "var(--surface-2)", color: "var(--ink-3)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.05)", color: "var(--ink-3)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >×</button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {INFO_PATTERNS.map((p) => (
-                <div key={p.keys} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 10px", borderRadius: "var(--r-xs)", background: "var(--surface-2)", border: "1px solid var(--line)" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <code style={{ fontSize: 12.5, fontWeight: 700, color: "var(--brand)", fontFamily: "var(--display)", letterSpacing: "0.02em" }}>{p.keys}</code>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-3)" }}>{p.result}</span>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {INFO_PATTERNS.map((p, i) => (
+                <div key={p.title}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 4px" }}>
+                    <div style={{
+                      flexShrink: 0, width: 38, height: 38, borderRadius: 11,
+                      background: "var(--brand-soft)", color: "var(--brand)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {p.icon}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>{p.title}</div>
+                      <div style={{ fontSize: 12, color: "var(--ink-2)", marginTop: 3 }}>
+                        <span style={{ fontFamily: "var(--display)", color: "var(--brand)", fontWeight: 600 }}>{p.formula}</span>
+                        {" gives "}<strong style={{ color: "var(--ink)", fontWeight: 600 }}>{p.effect}</strong>
+                      </div>
+                    </div>
                   </div>
-                  <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{p.desc}</span>
+                  {i < INFO_PATTERNS.length - 1 && (
+                    <div style={{ height: 1, background: "rgba(0,0,0,0.05)", margin: "0 4px" }} />
+                  )}
                 </div>
               ))}
             </div>
