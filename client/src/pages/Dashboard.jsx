@@ -77,14 +77,18 @@ function StatCard({
         >
           {label}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <div
             className="sp-display sp-num sp-stat-val"
             style={{
-              fontSize: 28,
+              fontSize: "clamp(14px, 5vw, 28px)",
               fontWeight: 700,
               color: "var(--ink)",
               lineHeight: 1,
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {value}
