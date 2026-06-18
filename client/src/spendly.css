@@ -602,6 +602,10 @@ body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !
     transform: translateY(24px) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    /* Switch from flex column to block so all content stacks in one natural scroll flow.
+       Without this, flexShrink:0 on the action buttons pins them at the bottom of the
+       constrained flex container, causing them to visually overlap the fields above. */
+    display: block !important;
   }
   .sp-modal-sheet.sp-modal-open {
     transform: translateY(0) !important;

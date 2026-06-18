@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Calculator } from "lucide-react";
 import { useCategories, useCreateCategory } from "../api/categories.js";
 import { useTags, useCreateTag } from "../api/tags.js";
 import { useCreateExpense, useUpdateExpense } from "../api/expenses.js";
 import { useIncomeSources, useCreateIncomeSource, useDeleteIncomeSource } from "../api/incomeSources.js";
 import EmojiPicker from "./EmojiPicker.jsx";
+import InlineCalculator from "./InlineCalculator.jsx";
 
 const CAT_COLORS = [
   "#F97316","#3B82F6","#8B5CF6","#EF4444","#EC4899",
@@ -86,6 +87,8 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const [quickSourceError, setQuickSourceError] = useState("");
   const [showSourceIconPicker, setShowSourceIconPicker] = useState(false);
 
+  const [calcOpen, setCalcOpen] = useState(false);
+
   const amountRef = useRef(null);
   const dateRef = useRef(null);
   const categoryRef = useRef(null);
@@ -120,6 +123,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       setQuickSourceForm({ name: "", icon: "💰" });
       setQuickSourceError("");
       setShowSourceIconPicker(false);
+      setCalcOpen(false);
     }
   }, [open, expense]);
 
@@ -223,13 +227,14 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
           width: 480, maxWidth: "94vw",
           background: "var(--surface)", borderRadius: "var(--r-xl)",
           boxShadow: "var(--sh-lg)", border: "1px solid var(--line)", overflow: "hidden",
+          display: "flex", flexDirection: "column", maxHeight: "90vh",
         }}
       >
         <div className="sp-sheet-handle" style={{ display: "none", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 99, background: "var(--line-strong)" }} />
         </div>
 
-        <div style={{ padding: "20px 26px 20px", background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
+        <div style={{ padding: "20px 26px 20px", background: "var(--surface-2)", borderBottom: "1px solid var(--line)", overflowY: "auto", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div className="sp-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>
               {expense ? (txType === "INCOME" ? "Edit income" : "Edit expense") : (txType === "INCOME" ? "New income" : "New expense")}
@@ -274,9 +279,41 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
               style={{ border: "none", background: "none", outline: "none", fontSize: 42, fontWeight: 700, width: "100%", color: invalidField === "amount" ? "var(--neg)" : "var(--ink)", letterSpacing: "-0.03em", fontFamily: "var(--display)" }}
             />
           </div>
+
+          <div style={{ display: "flex", marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={() => { amountRef.current?.blur(); setCalcOpen((v) => !v); }}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                height: 26, padding: "0 10px",
+                borderRadius: "var(--r-pill, 999px)",
+                border: `1px solid ${calcOpen ? "var(--brand)" : "var(--line)"}`,
+                background: calcOpen ? "var(--brand-soft)" : "transparent",
+                color: calcOpen ? "var(--brand)" : "var(--ink-3)",
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                transition: "all var(--d1) var(--e)",
+              }}
+            >
+              <Calculator style={{ width: 13, height: 13 }} />
+              {calcOpen ? "Close calculator" : "Calculator"}
+            </button>
+          </div>
+
+          <InlineCalculator
+            open={calcOpen}
+            initialValue={form.amount}
+            onConfirm={(val) => {
+              set("amount", val);
+              setInvalidField("");
+              setCalcOpen(false);
+              amountRef.current?.focus();
+            }}
+            onClose={() => setCalcOpen(false)}
+          />
         </div>
 
-        <div className="sp-modal-fields" style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 18, maxHeight: "60vh", overflowY: "auto" }}>
+        <div className="sp-modal-fields" style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0, overflowY: "auto" }}>
           {error && (
             <div style={{ padding: "10px 14px", borderRadius: "var(--r-sm)", background: "var(--neg-soft)", color: "var(--neg)", fontSize: 13, fontWeight: 500 }}>{error}</div>
           )}
@@ -731,7 +768,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 12, padding: "0 26px 24px" }}>
+        <div style={{ display: "flex", gap: 12, padding: "0 26px 24px", flexShrink: 0 }}>
           <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
           <button className="sp-btn sp-btn-primary" style={{ flex: 1.4 }} onClick={handleSubmit} disabled={isPending}>
             <Check style={{ width: 17, height: 17 }} />
