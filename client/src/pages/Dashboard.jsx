@@ -28,7 +28,16 @@ import Progress from "../components/Progress.jsx";
 import SavingsGoal from "../components/SavingsGoal.jsx";
 import Modal from "../components/Modal.jsx";
 
-function StatCard({ icon: Icon, tint, label, value, sub, onEdit, editIcon: EditIcon = Pencil, tourId }) {
+function StatCard({
+  icon: Icon,
+  tint,
+  label,
+  value,
+  sub,
+  onEdit,
+  editIcon: EditIcon = Pencil,
+  tourId,
+}) {
   return (
     <div
       className="sp-card sp-card-pad"
@@ -55,23 +64,7 @@ function StatCard({ icon: Icon, tint, label, value, sub, onEdit, editIcon: EditI
         >
           <Icon style={{ width: 20, height: 20 }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {sub}
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              title="Set budget"
-              style={{
-                width: 28, height: 28, borderRadius: 8,
-                display: "grid", placeItems: "center",
-                background: "var(--surface-sunken)",
-                border: "none", color: "var(--ink-3)", cursor: "pointer",
-              }}
-            >
-              <EditIcon style={{ width: 13, height: 13 }} />
-            </button>
-          )}
-        </div>
+        <div>{sub}</div>
       </div>
       <div>
         <div
@@ -84,16 +77,38 @@ function StatCard({ icon: Icon, tint, label, value, sub, onEdit, editIcon: EditI
         >
           {label}
         </div>
-        <div
-          className="sp-display sp-num"
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: "var(--ink)",
-            lineHeight: 1,
-          }}
-        >
-          {value}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            className="sp-display sp-num sp-stat-val"
+            style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: "var(--ink)",
+              lineHeight: 1,
+            }}
+          >
+            {value}
+          </div>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              title="Set budget"
+              className="sp-stat-edit"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                display: "grid",
+                placeItems: "center",
+                background: "var(--surface-sunken)",
+                border: "none",
+                color: "var(--ink-3)",
+                cursor: "pointer",
+              }}
+            >
+              <EditIcon style={{ width: 13, height: 13 }} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -236,7 +251,8 @@ export default function Dashboard({ user }) {
   const totalSpent = summary?.totalSpent || 0;
   const totalIncome = summary?.totalIncome || 0;
   const totalBudget = summary?.totalBudget || 0;
-  const remaining = summary?.remaining ?? totalBudget - totalSpent + totalIncome;
+  const remaining =
+    summary?.remaining ?? totalBudget - totalSpent + totalIncome;
   const daysLeft = summary?.daysLeft ?? "—";
   const topCategory = [...byCategory].sort((a, b) => b.spent - a.spent)[0];
   const pctUsed =
@@ -323,7 +339,7 @@ export default function Dashboard({ user }) {
           value={
             totalBudget > 0
               ? formatCurrency(remaining, user.currency)
-              : "No budget set"
+              : "Set budget"
           }
           sub={
             totalBudget > 0 && (
@@ -652,9 +668,13 @@ export default function Dashboard({ user }) {
           <div style={{ position: "relative" }}>
             <span
               style={{
-                position: "absolute", left: 12, top: "50%",
-                transform: "translateY(-50%)", color: "var(--ink-3)",
-                fontSize: 13, pointerEvents: "none",
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--ink-3)",
+                fontSize: 13,
+                pointerEvents: "none",
               }}
             >
               {user.currency}
@@ -669,10 +689,17 @@ export default function Dashboard({ user }) {
               onKeyDown={(e) => e.key === "Enter" && saveBudget()}
               placeholder="e.g. 30000"
               style={{
-                width: "100%", height: 44, paddingLeft: 48, paddingRight: 14,
-                borderRadius: "var(--r-sm)", border: "1px solid var(--line)",
-                background: "var(--surface-2)", color: "var(--ink)",
-                fontSize: 14, outline: "none", boxSizing: "border-box",
+                width: "100%",
+                height: 44,
+                paddingLeft: 48,
+                paddingRight: 14,
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--line)",
+                background: "var(--surface-2)",
+                color: "var(--ink)",
+                fontSize: 14,
+                outline: "none",
+                boxSizing: "border-box",
               }}
             />
           </div>
