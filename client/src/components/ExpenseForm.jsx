@@ -1547,8 +1547,8 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
               : expense
                 ? "Save changes"
                 : txType === "INCOME"
-                  ? "Add INCOME"
-                  : "Add EXPENSE"}
+                  ? "Add income"
+                  : "Add expense"}
           </button>
         </div>
       </div>
