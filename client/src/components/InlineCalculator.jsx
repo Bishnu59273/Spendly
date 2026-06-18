@@ -167,16 +167,15 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
       if (tokens.length >= 2) {
         const lastOp = tokens[tokens.length - 1];
         const base = tokens[0].value;
-        if (lastOp.type === "op" && (lastOp.value === "+" || lastOp.value === "-")) {
-          // e.g. 1000 + 18% → show 180 (18% of 1000), press = to get 1180
-          setDisplay(formatResult(base * n / 100));
-        } else {
-          // e.g. 760 × 15% → immediately show 114
-          const result = lastOp.value === "*" ? base * n / 100 : base / (n / 100);
-          setDisplay(formatResult(result));
-          setTokens([]);
-          setJustEvaled(true);
-        }
+        let result;
+        if (lastOp.value === "+") result = base + base * n / 100;
+        else if (lastOp.value === "-") result = base - base * n / 100;
+        else if (lastOp.value === "*") result = base * n / 100;
+        else result = base / (n / 100);
+        prevExprRef.current = expressionString(tokens) + " " + display + "%";
+        setDisplay(formatResult(result));
+        setTokens([]);
+        setJustEvaled(true);
       } else {
         setDisplay(formatResult(n / 100));
       }
