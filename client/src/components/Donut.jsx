@@ -14,7 +14,10 @@ export default function Donut({ data = [], size = 208, stroke = 28, active, onHo
   });
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ transform: "rotate(-90deg)", width: "100%", height: "auto", maxWidth: size, display: "block" }}
+    >
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-sunken)" strokeWidth={stroke} />
       {arcs.map((a) => (
         <circle
@@ -28,6 +31,7 @@ export default function Donut({ data = [], size = 208, stroke = 28, active, onHo
           strokeDashoffset={a.off}
           onMouseEnter={() => onHover && onHover(a.id)}
           onMouseLeave={() => onHover && onHover(null)}
+          onClick={() => onHover && onHover(active === a.id ? null : a.id)}
           style={{
             transition: "stroke-width 200ms var(--e), opacity 200ms var(--e)",
             opacity: active && active !== a.id ? 0.45 : 1,

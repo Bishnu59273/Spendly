@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,6 +24,7 @@ import {
   nextCycleRef,
 } from "../utils/cycle.js";
 import Donut from "../components/Donut.jsx";
+import DailyChart from "../components/DailyChart.jsx";
 import Progress from "../components/Progress.jsx";
 import SavingsGoal from "../components/SavingsGoal.jsx";
 import Modal from "../components/Modal.jsx";
@@ -77,7 +78,9 @@ function StatCard({
         >
           {label}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <div
+          style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}
+        >
           <div
             className="sp-display sp-num sp-stat-val"
             style={{
@@ -230,6 +233,18 @@ export default function Dashboard({ user }) {
   const [hoverCat, setHoverCat] = useState(null);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
+  const [catTab, setCatTab] = useState("category");
+  const [includeRent, setIncludeRent] = useState(false);
+  const tabPanelRef = useRef(null);
+  const [lockedHeight, setLockedHeight] = useState(null);
+
+  const switchTab = (tab) => {
+    if (tab !== "category" && catTab === "category" && tabPanelRef.current) {
+      setLockedHeight(tabPanelRef.current.offsetHeight);
+    }
+    if (tab === "category") setLockedHeight(null);
+    setCatTab(tab);
+  };
 
   const openBudgetModal = () => {
     setBudgetInput(user.monthlyBudget?.toString() ?? "");
@@ -270,6 +285,54 @@ export default function Dashboard({ user }) {
       color: c.color || "#888",
       name: c.name,
     }));
+
+  const todayKey = new Date().toISOString().substring(0, 10);
+  const dailyData = useMemo(() => {
+    const start = new Date(cycleStart);
+    const end = new Date(cycleEnd);
+
+    const rentKeywords = ["rent", "vara"];
+    const filtered = expenses.filter((e) => {
+      if (e.type === "INCOME") return false;
+      if (!includeRent) {
+        const note = e.note?.toLowerCase() ?? "";
+        if (rentKeywords.some((kw) => note.includes(kw))) return false;
+      }
+      return true;
+    });
+
+    const byDay = {};
+    filtered.forEach((e) => {
+      const key = e.date.substring(0, 10);
+      byDay[key] = (byDay[key] || 0) + e.amount;
+    });
+
+    const MONTHS = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const days = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const key = d.toISOString().substring(0, 10);
+      days.push({
+        label: d.getUTCDate().toString(),
+        dateLabel: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`,
+        total: byDay[key] || 0,
+        isToday: key === todayKey,
+      });
+    }
+    return days;
+  }, [expenses, cycleStart, cycleEnd, includeRent, todayKey]);
 
   const activeCat = hoverCat ? byCategory.find((c) => c.id === hoverCat) : null;
 
@@ -382,144 +445,341 @@ export default function Dashboard({ user }) {
       {/* Donut + Recent transactions */}
       <div className="sp-grid-5-7" style={{ marginBottom: 16 }}>
         {/* Donut */}
-        <div className="sp-card sp-card-pad">
-          <div className="sp-card-head">
+        <div className="sp-card sp-card-pad" style={{ minWidth: 0 }}>
+          <div className="sp-card-head" style={{ flexWrap: "wrap" }}>
             <div>
-              <div className="sp-card-title">Spending by category</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="sp-card-title">
+                  {catTab === "category"
+                    ? "Spending by category"
+                    : "Daily spending"}
+                </div>
+                {catTab === "daily" && (
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "var(--ink-3)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Include rent
+                    </span>
+                    <button
+                      onClick={() => setIncludeRent((r) => !r)}
+                      style={{
+                        width: 32,
+                        height: 18,
+                        borderRadius: 9,
+                        border: "none",
+                        cursor: "pointer",
+                        background: includeRent
+                          ? "var(--brand)"
+                          : "var(--surface-sunken)",
+                        position: "relative",
+                        transition: "background 200ms var(--e)",
+                        padding: 0,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 2,
+                          left: includeRent ? 16 : 2,
+                          width: 14,
+                          height: 14,
+                          borderRadius: "50%",
+                          background: "white",
+                          transition: "left 200ms var(--e)",
+                          boxShadow: "var(--sh-xs)",
+                          display: "block",
+                        }}
+                      />
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="sp-card-sub">This pay cycle</div>
             </div>
-          </div>
-          {donutData.length === 0 ? (
             <div
               style={{
-                textAlign: "center",
-                padding: "32px 0",
-                color: "var(--ink-3)",
-                fontSize: 13,
+                display: "flex",
+                gap: 3,
+                background: "var(--surface-sunken)",
+                borderRadius: 10,
+                padding: 3,
               }}
             >
-              No expenses yet this cycle
-            </div>
-          ) : (
-            <>
-              <div
-                style={{
-                  position: "relative",
-                  display: "grid",
-                  placeItems: "center",
-                  marginBottom: 18,
-                }}
-              >
-                <Donut
-                  data={donutData}
-                  size={208}
-                  stroke={28}
-                  active={hoverCat}
-                  onHover={setHoverCat}
-                />
-                <div
+              {["category", "daily"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => switchTab(tab)}
                   style={{
-                    position: "absolute",
-                    textAlign: "center",
-                    pointerEvents: "none",
+                    padding: "4px 11px",
+                    borderRadius: 7,
+                    border: "none",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    background:
+                      catTab === tab ? "var(--surface)" : "transparent",
+                    color: catTab === tab ? "var(--ink)" : "var(--ink-3)",
+                    boxShadow: catTab === tab ? "var(--sh-xs)" : "none",
+                    transition: "all var(--d1) var(--e)",
                   }}
                 >
-                  {activeCat ? (
-                    <>
+                  {tab === "category" ? "By Category" : "Daily"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div
+            ref={tabPanelRef}
+            style={{
+              height: lockedHeight ?? undefined,
+              overflow: lockedHeight ? "hidden" : undefined,
+            }}
+          >
+            {catTab === "category" ? (
+              donutData.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "32px 0",
+                    color: "var(--ink-3)",
+                    fontSize: 13,
+                  }}
+                >
+                  No expenses yet this cycle
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        maxWidth: 208,
+                      }}
+                    >
+                      <Donut
+                        data={donutData}
+                        size={208}
+                        stroke={28}
+                        active={hoverCat}
+                        onHover={setHoverCat}
+                      />
                       <div
                         style={{
-                          fontSize: 12,
-                          color: "var(--ink-3)",
-                          fontWeight: 600,
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          textAlign: "center",
+                          pointerEvents: "none",
                         }}
                       >
-                        {activeCat.name}
+                        {activeCat ? (
+                          <>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "var(--ink-3)",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {activeCat.name}
+                            </div>
+                            <div
+                              className="sp-display sp-num"
+                              style={{ fontSize: 24, fontWeight: 700 }}
+                            >
+                              {formatCurrency(activeCat.spent, user.currency)}
+                            </div>
+                            <div
+                              className="sp-num"
+                              style={{
+                                fontSize: 12,
+                                color: activeCat.color,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {totalSpent > 0
+                                ? Math.round(
+                                    (activeCat.spent / totalSpent) * 100,
+                                  )
+                                : 0}
+                              %
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "var(--ink-3)",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Total spent
+                            </div>
+                            <div
+                              className="sp-display sp-num"
+                              style={{ fontSize: 26, fontWeight: 700 }}
+                            >
+                              {formatCurrency(totalSpent, user.currency)}
+                            </div>
+                          </>
+                        )}
                       </div>
+                    </div>
+                  </div>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 9 }}
+                  >
+                    {donutData.map((d) => (
                       <div
-                        className="sp-display sp-num"
-                        style={{ fontSize: 24, fontWeight: 700 }}
+                        key={d.id}
+                        onMouseEnter={() => setHoverCat(d.id)}
+                        onMouseLeave={() => setHoverCat(null)}
+                        onClick={() =>
+                          setHoverCat(hoverCat === d.id ? null : d.id)
+                        }
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          cursor: "pointer",
+                          opacity: hoverCat && hoverCat !== d.id ? 0.5 : 1,
+                          transition: "opacity var(--d1) var(--e)",
+                        }}
                       >
-                        {formatCurrency(activeCat.spent, user.currency)}
+                        <span
+                          className="sp-swatch"
+                          style={{ background: d.color }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: "var(--ink-2)",
+                            flex: 1,
+                          }}
+                        >
+                          {d.name}
+                        </span>
+                        <span
+                          className="sp-num"
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "var(--ink)",
+                          }}
+                        >
+                          {formatCurrency(d.value, user.currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )
+            ) : (
+              <div>
+                <DailyChart data={dailyData} currency={user.currency} />
+                {(() => {
+                  const spent = dailyData.filter((d) => d.total > 0);
+                  if (spent.length === 0) return null;
+                  const avg =
+                    spent.reduce((s, d) => s + d.total, 0) / spent.length;
+                  const peakDay = spent.reduce((a, b) =>
+                    b.total > a.total ? b : a,
+                  );
+                  const lowDay = spent.reduce((a, b) =>
+                    b.total < a.total ? b : a,
+                  );
+                  const stat = (label, val, date) => (
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--ink-3)",
+                          fontWeight: 500,
+                          marginBottom: 3,
+                        }}
+                      >
+                        {label}
                       </div>
                       <div
                         className="sp-num"
                         style={{
-                          fontSize: 12,
-                          color: activeCat.color,
+                          fontSize: 13,
                           fontWeight: 700,
+                          color: "var(--ink)",
                         }}
                       >
-                        {totalSpent > 0
-                          ? Math.round((activeCat.spent / totalSpent) * 100)
-                          : 0}
-                        %
+                        {formatCurrency(val, user.currency)}
                       </div>
-                    </>
-                  ) : (
-                    <>
+                      {date && (
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "var(--ink-3)",
+                            marginTop: 2,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {date}
+                        </div>
+                      )}
+                    </div>
+                  );
+                  return (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        marginTop: 16,
+                        padding: "10px 12px",
+                        background: "var(--surface-sunken)",
+                        borderRadius: 10,
+                      }}
+                    >
+                      {stat("Avg daily spend", avg)}
                       <div
                         style={{
-                          fontSize: 12,
-                          color: "var(--ink-3)",
-                          fontWeight: 600,
+                          width: 1,
+                          background: "var(--border)",
+                          flexShrink: 0,
                         }}
-                      >
-                        Total spent
-                      </div>
+                      />
+                      {stat("Peak spend", peakDay.total, peakDay.dateLabel)}
                       <div
-                        className="sp-display sp-num"
-                        style={{ fontSize: 26, fontWeight: 700 }}
-                      >
-                        {formatCurrency(totalSpent, user.currency)}
-                      </div>
-                    </>
-                  )}
-                </div>
+                        style={{
+                          width: 1,
+                          background: "var(--border)",
+                          flexShrink: 0,
+                        }}
+                      />
+                      {stat("Lowest spend", lowDay.total, lowDay.dateLabel)}
+                    </div>
+                  );
+                })()}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                {donutData.map((d) => (
-                  <div
-                    key={d.id}
-                    onMouseEnter={() => setHoverCat(d.id)}
-                    onMouseLeave={() => setHoverCat(null)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      cursor: "pointer",
-                      opacity: hoverCat && hoverCat !== d.id ? 0.5 : 1,
-                      transition: "opacity var(--d1) var(--e)",
-                    }}
-                  >
-                    <span
-                      className="sp-swatch"
-                      style={{ background: d.color }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "var(--ink-2)",
-                        flex: 1,
-                      }}
-                    >
-                      {d.name}
-                    </span>
-                    <span
-                      className="sp-num"
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "var(--ink)",
-                      }}
-                    >
-                      {formatCurrency(d.value, user.currency)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Recent transactions */}
