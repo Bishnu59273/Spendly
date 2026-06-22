@@ -2,9 +2,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
-  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy,
+  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy, Share2,
 } from "lucide-react";
 import { useLogout } from "../api/auth.js";
+import ShareModal, { triggerShare } from "./ShareModal.jsx";
 import { useGoals, useUpdateGoal } from "../api/goals.js";
 import { formatCurrency } from "../utils/format.js";
 import TopBar from "./TopBar.jsx";
@@ -117,6 +118,7 @@ export default function Layout({ user, children }) {
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const logout = useLogout();
 
@@ -251,6 +253,25 @@ export default function Layout({ user, children }) {
                 </div>
               </div>
             </div>
+
+            {/* Refer a friend */}
+            <button
+              onClick={() => triggerShare(() => setShareOpen(true))}
+              style={{
+                display: "flex", alignItems: "center", gap: 12, width: "100%",
+                height: 42, padding: "0 14px",
+                borderRadius: "var(--r-sm)", color: "var(--brand)",
+                fontSize: 14, fontWeight: 600,
+                background: "color-mix(in srgb, var(--brand) 8%, transparent)",
+                border: "none",
+                transition: "background var(--d1) var(--e)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--brand) 15%, transparent)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--brand) 8%, transparent)")}
+            >
+              <Share2 style={{ width: 18, height: 18 }} />
+              Refer a friend
+            </button>
 
             {/* Dark mode toggle */}
             <button
@@ -411,6 +432,8 @@ export default function Layout({ user, children }) {
           }}
         />
       )}
+
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       <InstallBanner />
       <FeedbackPrompt />

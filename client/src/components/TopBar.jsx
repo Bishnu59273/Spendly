@@ -1,5 +1,7 @@
-import { Menu, Moon, Sun, Plus } from "lucide-react";
+import { Menu, Moon, Sun, Plus, Share2 } from "lucide-react";
+import { useState } from "react";
 import NotificationPanel from "./NotificationPanel.jsx";
+import ShareModal, { triggerShare } from "./ShareModal.jsx";
 
 const TITLES = {
   "/dashboard":  { eyebrow: "Overview",          title: "Dashboard" },
@@ -31,6 +33,11 @@ function getInitials(name = "") {
 export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, setAddOpen }) {
   const t = Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] || TITLES["/dashboard"];
   const addLabel = getAddLabel(pathname);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  function handleShare() {
+    triggerShare(() => setShareOpen(true));
+  }
 
   return (
     <header className="sp-topbar">
@@ -50,6 +57,10 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
       {/* Desktop-only right section */}
       <div className="sp-topbar-right sp-hide-mobile">
         <NotificationPanel currency={user?.currency} />
+
+        <button className="sp-icon-btn" onClick={handleShare} aria-label="Share Spendly">
+          <Share2 style={{ width: 18, height: 18 }} />
+        </button>
 
         <button
           className="sp-icon-btn"
@@ -72,6 +83,8 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
           <span className="sp-uname">{user?.name?.split(" ")[0]}</span>
         </div>
       </div>
+
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </header>
   );
 }
