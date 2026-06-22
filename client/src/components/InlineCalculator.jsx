@@ -146,7 +146,7 @@ const INFO_PATTERNS = [
   },
 ];
 
-export default function InlineCalculator({ open, onConfirm, initialValue }) {
+export default function InlineCalculator({ open, onConfirm, initialValue, currencySymbol = "₹" }) {
   const [tokens, setTokens] = useState([]);
   const [display, setDisplay] = useState("0");
   const [justEvaled, setJustEvaled] = useState(false);
@@ -467,7 +467,7 @@ export default function InlineCalculator({ open, onConfirm, initialValue }) {
             transition: "opacity var(--d1) var(--e)",
           }}
         >
-          {effectiveConfirm ? `Use ₹${effectiveConfirm}` : "Enter an amount"}
+          {effectiveConfirm ? `Use ${currencySymbol}${effectiveConfirm}` : "Enter an amount"}
         </button>
       </div>
     </div>

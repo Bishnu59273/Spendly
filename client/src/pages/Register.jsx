@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useRegister } from "../api/auth.js";
-
-const CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"];
+import { CURRENCIES, getCurrencySymbol } from "../utils/format.js";
 
 const inp = {
   width: "100%", height: 46, padding: "0 14px",
@@ -120,7 +119,7 @@ export default function Register() {
                 <label style={lbl}>Currency</label>
                 <select value={form.currency} onChange={(e) => set("currency", e.target.value)} style={{ ...inp, cursor: "pointer" }}>
                   {CURRENCIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>{getCurrencySymbol(c)} {c}</option>
                   ))}
                 </select>
               </div>

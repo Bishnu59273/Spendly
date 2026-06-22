@@ -1,5 +1,22 @@
+export const CURRENCY_SYMBOLS = {
+  INR: "₹", USD: "$", EUR: "€", GBP: "£", JPY: "¥", AUD: "A$",
+  CAD: "C$", CHF: "Fr", CNY: "¥", SGD: "S$", AED: "د.إ", BDT: "৳",
+};
+
+export const CURRENCIES = Object.keys(CURRENCY_SYMBOLS);
+
+export function getCurrencySymbol(currency) {
+  return CURRENCY_SYMBOLS[currency] ?? currency ?? "₹";
+}
+
 export function formatCurrency(amount, currency = "INR") {
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+  const locale = currency === "INR" ? "en-IN" : "en-US";
+  const symbol = CURRENCY_SYMBOLS[currency];
+  if (symbol) {
+    const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(amount);
+    return `${symbol}${number}`;
+  }
+  return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
 }
 
 export function formatDate(dateStr) {

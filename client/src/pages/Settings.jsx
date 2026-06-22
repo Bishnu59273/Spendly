@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
 import { useUpdateProfile, useChangePassword } from "../api/auth.js";
-import { formatCurrency } from "../utils/format.js";
-
-const CURRENCIES = ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD"];
+import { formatCurrency, CURRENCIES, getCurrencySymbol } from "../utils/format.js";
 
 const inp = {
   width: "100%", height: 44, padding: "0 14px",
@@ -117,7 +115,7 @@ export default function Settings({ user }) {
             <label style={lbl}>Currency</label>
             <select value={form.currency} onChange={(e) => set("currency", e.target.value)} style={{ ...inp, cursor: "pointer" }}>
               {CURRENCIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{getCurrencySymbol(c)} {c}</option>
               ))}
             </select>
           </div>

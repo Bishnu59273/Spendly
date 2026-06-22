@@ -108,7 +108,7 @@ function CategoryForm({ onClose, initial }) {
               className="sp-num"
               style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}
             >
-              Budget ₹{parseFloat(budget).toLocaleString()} / cycle
+              Budget {formatCurrency(parseFloat(budget), user.currency)} / cycle
             </div>
           ) : (
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>

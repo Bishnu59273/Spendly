@@ -1,5 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { X, Check, Calculator } from "lucide-react";
+import { useMe } from "../api/auth.js";
+import { getCurrencySymbol } from "../utils/format.js";
 import { useCategories, useCreateCategory } from "../api/categories.js";
 import { useTags, useCreateTag } from "../api/tags.js";
 import { useCreateExpense, useUpdateExpense } from "../api/expenses.js";
@@ -93,6 +95,8 @@ const numInputStyle = {
 };
 
 export default function ExpenseForm({ open, onClose, expense = null }) {
+  const { data: me } = useMe();
+  const currencySymbol = getCurrencySymbol(me?.currency);
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
   const { data: incomeSources = [] } = useIncomeSources();
@@ -473,7 +477,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                       : "var(--ink-3)",
               }}
             >
-              &#8377;
+              {currencySymbol}
             </span>
             <input
               ref={amountRef}
@@ -530,6 +534,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
 
           <InlineCalculator
             open={calcOpen}
+            currencySymbol={currencySymbol}
             initialValue={form.amount}
             onConfirm={(val) => {
               set("amount", val);
