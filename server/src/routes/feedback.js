@@ -26,7 +26,7 @@ router.get("/testimonials", async (req, res, next) => {
     }
 
     const testimonials = [...byUser.values()]
-      .slice(0, 3)
+      .slice(0, 5)
       .map((e) => ({
         text: e.recommendation.trim(),
         stars: e.stars,
