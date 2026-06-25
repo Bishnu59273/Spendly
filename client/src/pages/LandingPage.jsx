@@ -594,11 +594,11 @@ export default function LandingPage() {
                 maxWidth: 460,
               }}
             >
-              See where every rupee goes, budgeted around{" "}
+              The free expense tracker for{" "}
               <strong style={{ color: dark, fontWeight: 700 }}>
-                your payday
+                salaried professionals, students &amp; bachelors
               </strong>
-              . No jargon, no guilt — just a calm picture of your spending.
+              . Budget by your payday or pocket money — not the calendar. No jargon, no guilt.
             </p>
 
             <div
@@ -669,7 +669,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <span style={{ fontSize: 13, color: textMid, fontWeight: 600 }}>
-                Loved by 12,000+ savers · ★ 4.8
+                Loved by 12,000+ people across India · ★ 4.8
               </span>
             </div>
           </div>
@@ -878,6 +878,18 @@ export default function LandingPage() {
 
         {/* ── Features ── */}
         <section id="features" style={{ paddingBottom: 64 }}>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <h2 style={{
+              fontFamily: "var(--display)", fontWeight: 800,
+              fontSize: "clamp(22px, 3vw, 32px)", letterSpacing: "-0.02em",
+              color: dark, margin: "0 0 8px",
+            }}>
+              Built around when <em style={{ fontStyle: "normal", color: green }}>you</em> get paid
+            </h2>
+            <p style={{ fontSize: 15, color: textMid, margin: 0 }}>
+              Salary, stipend, or pocket money — your cycle, your rules.
+            </p>
+          </div>
           <div
             style={{
               display: "grid",
@@ -963,7 +975,7 @@ export default function LandingPage() {
               A peek inside the app
             </h2>
             <p style={{ fontSize: 15, color: textMuted, margin: "10px 0 0" }}>
-              Warm, simple, and genuinely nice to open.
+              Used by salaried professionals, students, and bachelors across India.
             </p>
           </div>
 
