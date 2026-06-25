@@ -15,7 +15,7 @@ import Progress from "../components/Progress.jsx";
 import { formatCurrency } from "../utils/format.js";
 import { getCycleRange } from "../utils/cycle.js";
 
-function CategoryForm({ onClose, initial }) {
+function CategoryForm({ onClose, initial, currency }) {
   const create = useCreateCategory();
   const update = useUpdateCategory();
   const [name, setName] = useState(initial?.name || "");
@@ -108,7 +108,7 @@ function CategoryForm({ onClose, initial }) {
               className="sp-num"
               style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}
             >
-              Budget {formatCurrency(parseFloat(budget), user.currency)} / cycle
+              Budget {formatCurrency(parseFloat(budget), currency)} / cycle
             </div>
           ) : (
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
@@ -360,14 +360,14 @@ export default function Categories({ user }) {
         onClose={() => setShowForm(false)}
         title="New category"
       >
-        <CategoryForm onClose={() => setShowForm(false)} />
+        <CategoryForm onClose={() => setShowForm(false)} currency={user.currency} />
       </Modal>
       <Modal
         open={!!editCat}
         onClose={() => setEditCat(null)}
         title="Edit category"
       >
-        <CategoryForm onClose={() => setEditCat(null)} initial={editCat} />
+        <CategoryForm onClose={() => setEditCat(null)} initial={editCat} currency={user.currency} />
       </Modal>
 
       <ConfirmDelete
