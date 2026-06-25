@@ -1,294 +1,487 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  CalendarDays, PieChart, Target,
+  UtensilsCrossed, Car, Banknote, ShoppingBag,
+  Quote, Star, ArrowRight, CheckCircle2,
+} from "lucide-react";
 import { useMe } from "../api/auth.js";
+import { useTestimonials } from "../api/feedback.js";
 
-const features = [
+// Direction B — WARM palette tokens
+const green      = "oklch(0.6 0.12 150)";
+const greenDark  = "oklch(0.48 0.12 150)";
+const greenSoft  = "oklch(0.93 0.04 150)";
+const amber      = "oklch(0.68 0.13 40)";
+const amberSoft  = "oklch(0.93 0.05 40)";
+const gold       = "oklch(0.75 0.1 80)";
+const goldSoft   = "oklch(0.93 0.04 80)";
+const bg         = "#faf4ea";
+const surface    = "#ffffff";
+const dark       = "#2c2620";
+const textMid    = "#6b6256";
+const textMuted  = "#a3917a";
+const border     = "#ece2d2";
+
+const AVATAR_COLORS = [green, amber, gold];
+
+const FEATURES = [
   {
-    icon: "📅",
-    title: "Budget by your payday",
-    desc: "Your cycle resets on the day YOU get paid — not the 1st of the month. Finally, a budget that matches real life.",
+    Icon: CalendarDays,
+    iconBg: greenSoft,
+    iconColor: green,
+    title: "Budget by payday",
+    desc: "Your month starts when you get paid — so the budget actually matches real life.",
   },
   {
-    icon: "📊",
-    title: "Visual spending insights",
-    desc: "Donut charts, daily trends, and category breakdowns give you an instant picture of where your money goes.",
+    Icon: PieChart,
+    iconBg: amberSoft,
+    iconColor: amber,
+    title: "See it all clearly",
+    desc: "Friendly charts turn a messy month into one calm, colourful picture.",
   },
   {
-    icon: "🎯",
-    title: "Savings goals",
-    desc: "Set a savings target, watch the ring fill up each cycle, and celebrate when you hit it.",
-  },
-  {
-    icon: "🏷️",
-    title: "Categories & tags",
-    desc: "Organise every expense your way. Create custom categories and tags that map to your actual spending habits.",
-  },
-  {
-    icon: "🌍",
-    title: "Multi-currency",
-    desc: "Pick your currency on signup — ₹, $, €, £ and more are all supported out of the box.",
-  },
-  {
-    icon: "📱",
-    title: "Installable PWA",
-    desc: "Add Spendly to your home screen. Works offline. No App Store, no Play Store, no waiting.",
+    Icon: Target,
+    iconBg: goldSoft,
+    iconColor: gold,
+    title: "Reach your goals",
+    desc: "Set a target and we'll nudge you toward it, one cycle at a time.",
   },
 ];
 
-const steps = [
-  { n: "1", title: "Set your payday", desc: "Tell Spendly the day your salary lands. That becomes day one of your budget cycle." },
-  { n: "2", title: "Log your expenses", desc: "Add expenses in seconds — pick a category, enter an amount, done." },
-  { n: "3", title: "See where you stand", desc: "Your dashboard shows remaining budget, top categories, and daily trend at a glance." },
+const STEPS = [
+  { n: "01", color: green, title: "Set your payday", desc: "Your cycle is built around the day money lands in your account." },
+  { n: "02", color: amber, title: "Add what you spend", desc: "A few taps and it's logged, sorted, and on the chart." },
+  { n: "03", color: gold,  title: "Feel in control",   desc: "Open the app and instantly know exactly where you stand." },
 ];
+
+const TRANSACTIONS = [
+  { Icon: UtensilsCrossed, iconBg: greenSoft,  label: "Swiggy",  sub: "Food",      amt: "−₹420",    amtColor: dark },
+  { Icon: Car,             iconBg: goldSoft,   label: "Uber",    sub: "Transport", amt: "−₹230",    amtColor: dark },
+  { Icon: Banknote,        iconBg: "oklch(0.93 0.05 230)", label: "Salary",  sub: "Income",    amt: "+₹60,000", amtColor: green },
+  { Icon: ShoppingBag,     iconBg: amberSoft,  label: "Amazon",  sub: "Shopping",  amt: "−₹1,299",  amtColor: dark },
+];
+
+// Pill badge used in several places
+function Pill({ children, style }) {
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      background: surface, border: `1px solid ${border}`,
+      color: "oklch(0.5 0.1 60)", fontWeight: 700, fontSize: 13,
+      padding: "8px 14px", borderRadius: 100, ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function TestimonialCard({ text, name, initials, stars, color }) {
+  return (
+    <div style={{ background: surface, borderRadius: 22, padding: 26 }}>
+      <Quote size={18} color={color} style={{ marginBottom: 10 }} />
+      <p style={{ fontSize: 15, lineHeight: 1.65, margin: "0 0 18px", color: dark }}>{text}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: "50%",
+          background: color, color: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontWeight: 700, fontSize: 13, fontFamily: "var(--display)", flexShrink: 0,
+        }}>
+          {initials}
+        </div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: dark }}>{name}</div>
+          <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
+            {Array.from({ length: stars }).map((_, i) => (
+              <Star key={i} size={11} fill={amber} color={amber} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { data: user, isLoading } = useMe();
+  const { data: user, isLoading: authLoading } = useMe();
+  const { data: testimonials = [] } = useTestimonials();
 
   useEffect(() => {
-    if (!isLoading && user) navigate("/dashboard", { replace: true });
-  }, [user, isLoading, navigate]);
+    if (!authLoading && user) navigate("/dashboard", { replace: true });
+  }, [user, authLoading, navigate]);
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+    <div style={{ minHeight: "100vh", background: bg, fontFamily: "var(--sans)", color: dark }}>
 
       {/* ── Nav ── */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "color-mix(in srgb, var(--bg) 85%, transparent)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid var(--line)",
-        padding: "0 24px",
-        height: 60,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        maxWidth: 1100, margin: "0 auto", width: "100%",
+        background: `color-mix(in srgb, ${bg} 88%, transparent)`,
+        backdropFilter: "blur(14px)",
+        padding: "0 40px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9, background: "var(--brand)",
-            display: "grid", placeItems: "center",
-            boxShadow: "0 2px 8px color-mix(in srgb, var(--brand) 35%, transparent)",
-          }}>
-            <span style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700, color: "#f4efe6", lineHeight: 1 }}>S</span>
+        <div style={{
+          maxWidth: 1160, margin: "0 auto",
+          height: 64, display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--display)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em" }}>
+            <span style={{
+              width: 13, height: 13, borderRadius: "50%", background: green, display: "inline-block",
+              boxShadow: `0 0 0 4px color-mix(in srgb, ${green} 18%, transparent)`,
+            }} />
+            Spendly
           </div>
-          <span style={{ fontFamily: "var(--display)", fontSize: 18, fontWeight: 800, letterSpacing: "-0.03em" }}>Spendly</span>
-        </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link to="/login" style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-2)", textDecoration: "none", padding: "8px 14px" }}>
-            Sign in
-          </Link>
-          <Link to="/register" className="sp-btn sp-btn-primary" style={{ fontSize: 14, height: 38, padding: "0 18px" }}>
-            Get started free
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 32, fontSize: 15, fontWeight: 600, color: textMid }}>
+            <a href="#features" style={{ color: "inherit", textDecoration: "none" }}>Features</a>
+            <a href="#how-it-works" style={{ color: "inherit", textDecoration: "none" }}>How it works</a>
+            <a href="#reviews" style={{ color: "inherit", textDecoration: "none" }}>Reviews</a>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <Link to="/login" style={{ fontSize: 15, fontWeight: 600, color: dark, textDecoration: "none" }}>Log in</Link>
+            <Link to="/register" style={{
+              background: dark, color: bg, fontWeight: 700, fontSize: 15,
+              padding: "11px 22px", borderRadius: 100, textDecoration: "none",
+            }}>
+              Start free
+            </Link>
+          </div>
         </div>
       </nav>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
+      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 40px" }}>
 
         {/* ── Hero ── */}
-        <section
-          aria-label="Hero"
-          style={{ padding: "96px 0 80px", textAlign: "center" }}
-        >
-          <div style={{
-            display: "inline-block", background: "var(--brand-soft)",
-            color: "var(--brand)", borderRadius: "var(--r-pill)",
-            padding: "6px 16px", fontSize: 13, fontWeight: 600,
-            marginBottom: 24, letterSpacing: "0.01em",
-          }}>
-            Free · No subscription · No credit card
-          </div>
-          <h1
-            className="sp-display"
-            style={{
-              fontSize: "clamp(38px, 6vw, 68px)", fontWeight: 800,
-              letterSpacing: "-0.04em", lineHeight: 1.08,
-              color: "var(--ink)", marginBottom: 22, maxWidth: 780, margin: "0 auto 22px",
-            }}
-          >
-            Track every rupee.{" "}
-            <span style={{ color: "var(--brand)" }}>Hit every goal.</span>
-          </h1>
-          <p style={{
-            fontSize: "clamp(16px, 2vw, 20px)", color: "var(--ink-2)", lineHeight: 1.6,
-            maxWidth: 560, margin: "0 auto 40px",
-          }}>
-            Spendly budgets by your <strong>salary cycle</strong> — not the calendar month.
-            See exactly where your money goes and reach your savings goals faster.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link
-              to="/register"
-              className="sp-btn sp-btn-primary"
-              style={{ fontSize: 16, height: 52, padding: "0 32px", borderRadius: "var(--r-md)" }}
-            >
-              Start for free
-            </Link>
-            <Link
-              to="/login"
-              className="sp-btn"
-              style={{
-                fontSize: 16, height: 52, padding: "0 32px", borderRadius: "var(--r-md)",
-                background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)",
-              }}
-            >
-              Sign in
-            </Link>
-          </div>
-        </section>
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 44, alignItems: "center", padding: "68px 0 60px" }}>
+          <div>
+            <Pill>🌱 Free, friendly, no spreadsheets</Pill>
 
-        {/* ── Dashboard preview card ── */}
-        <section aria-label="App preview" style={{ marginBottom: 96 }}>
-          <div style={{
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-xl)",
-            boxShadow: "var(--sh-lg)",
-            overflow: "hidden",
-            padding: 32,
-          }}>
-            {/* Fake dashboard top bar */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 24, alignItems: "center" }}>
-              <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--neg-soft)" }} />
-              <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--warn-soft)" }} />
-              <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--pos-soft)" }} />
-              <div style={{ flex: 1, height: 8, borderRadius: 4, background: "var(--surface-sunken)", marginLeft: 8 }} />
-            </div>
-            {/* Stats row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
-              {[
-                { label: "Budget remaining", value: "₹18,400", color: "var(--pos)" },
-                { label: "Spent this cycle", value: "₹11,600", color: "var(--neg)" },
-                { label: "Savings goal", value: "68%", color: "var(--brand)" },
-              ].map((s) => (
-                <div key={s.label} style={{
-                  background: "var(--surface-2)", borderRadius: "var(--r-md)",
-                  padding: "16px 20px", border: "1px solid var(--line)",
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-3)", marginBottom: 6 }}>{s.label}</div>
-                  <div style={{ fontSize: 26, fontWeight: 800, fontFamily: "var(--display)", color: s.color, letterSpacing: "-0.03em" }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-            {/* Category bars */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                { name: "Food & Dining", pct: 72, color: "var(--cat-2)" },
-                { name: "Transport", pct: 45, color: "var(--cat-4)" },
-                { name: "Entertainment", pct: 28, color: "var(--cat-5)" },
-                { name: "Utilities", pct: 18, color: "var(--cat-3)" },
-              ].map((c) => (
-                <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 120, fontSize: 13, color: "var(--ink-2)", flexShrink: 0 }}>{c.name}</div>
-                  <div style={{ flex: 1, height: 8, background: "var(--surface-sunken)", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ width: `${c.pct}%`, height: "100%", background: c.color, borderRadius: 4, transition: "width 1s var(--e)" }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)", width: 32, textAlign: "right" }}>{c.pct}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+            <h1 style={{
+              fontFamily: "var(--display)", fontWeight: 800,
+              fontSize: "clamp(42px, 5.5vw, 62px)", lineHeight: 1.02,
+              letterSpacing: "-0.03em", margin: "22px 0 0",
+            }}>
+              Money that finally{" "}
+              <span style={{ color: green }}>makes sense</span>.
+            </h1>
 
-        {/* ── Features grid ── */}
-        <section aria-labelledby="features-heading" style={{ marginBottom: 96 }}>
-          <h2
-            id="features-heading"
-            className="sp-display"
-            style={{ fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 800, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 12 }}
-          >
-            Everything you need. Nothing you don't.
-          </h2>
-          <p style={{ textAlign: "center", color: "var(--ink-2)", fontSize: 16, marginBottom: 48 }}>
-            Built for people who want clarity over complexity.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-            {features.map((f) => (
-              <article key={f.title} style={{
-                background: "var(--surface)", border: "1px solid var(--line)",
-                borderRadius: "var(--r-lg)", padding: "24px 24px 28px",
-                boxShadow: "var(--sh-sm)",
+            <p style={{ fontSize: "clamp(16px, 1.8vw, 18.5px)", lineHeight: 1.65, color: textMid, margin: "22px 0 0", maxWidth: 460 }}>
+              See where every rupee goes, budgeted around{" "}
+              <strong style={{ color: dark, fontWeight: 700 }}>your payday</strong>.
+              No jargon, no guilt — just a calm picture of your spending.
+            </p>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 34, flexWrap: "wrap" }}>
+              <Link to="/register" style={{
+                background: green, color: "#fff", fontWeight: 700, fontSize: 16,
+                padding: "16px 28px", borderRadius: 100, textDecoration: "none",
+                boxShadow: `0 10px 24px color-mix(in srgb, ${green} 32%, transparent)`,
+                display: "inline-flex", alignItems: "center", gap: 8,
               }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: "var(--ink)" }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
+                Start tracking free <ArrowRight size={16} />
+              </Link>
+              <a href="#how-it-works" style={{
+                color: dark, fontWeight: 700, fontSize: 16, textDecoration: "none",
+                padding: "15px 4px", borderBottom: `2px solid ${dark}`,
+                display: "inline-flex", alignItems: "center",
+              }}>
+                See how it works
+              </a>
+            </div>
+
+            {/* Social proof */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 32 }}>
+              <div style={{ display: "flex" }}>
+                {AVATAR_COLORS.map((c, i) => (
+                  <div key={i} style={{
+                    width: 30, height: 30, borderRadius: "50%", background: c,
+                    border: `2.5px solid ${bg}`, marginLeft: i > 0 ? -9 : 0,
+                  }} />
+                ))}
+              </div>
+              <span style={{ fontSize: 14, color: textMid, fontWeight: 600 }}>
+                Loved by 12,000+ savers · ★ 4.8
+              </span>
+            </div>
+          </div>
+
+          {/* Phone mockup */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{
+              width: 300, background: surface, borderRadius: 42, padding: 14,
+              boxShadow: `0 30px 60px rgba(60,40,20,0.16), inset 0 0 0 1px ${border}`,
+            }}>
+              <div style={{ background: "oklch(0.98 0.012 95)", borderRadius: 32, overflow: "hidden", height: 548 }}>
+                {/* notch */}
+                <div style={{ height: 34, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 90, height: 6, borderRadius: 6, background: border }} />
+                </div>
+                <div style={{ padding: "4px 22px 0" }}>
+                  <div style={{ fontSize: 12, color: textMuted, fontWeight: 700 }}>This cycle · resets in 18 days</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}>
+                    <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 30, letterSpacing: "-0.02em" }}>₹18,200</span>
+                    <span style={{ fontSize: 13, color: textMuted, fontWeight: 600 }}>left to spend</span>
+                  </div>
+                  {/* Donut */}
+                  <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 10px" }}>
+                    <div style={{
+                      width: 168, height: 168, borderRadius: "50%",
+                      background: `conic-gradient(${green} 0 32%, ${amber} 32% 60%, ${gold} 60% 76%, oklch(0.72 0.09 230) 76% 90%, oklch(0.88 0.04 150) 90% 100%)`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <div style={{
+                        width: 108, height: 108, borderRadius: "50%",
+                        background: "oklch(0.98 0.012 95)",
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <span style={{ fontSize: 11, color: textMuted, fontWeight: 700 }}>spent</span>
+                        <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 20 }}>₹42,180</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Legend */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                    {[
+                      { color: green, label: "Food & dining", val: "₹13.5k" },
+                      { color: amber, label: "Rent",          val: "₹11.8k" },
+                      { color: gold,  label: "Transport",     val: "₹6.7k"  },
+                      { color: "oklch(0.72 0.09 230)", label: "Shopping", val: "₹5.9k" },
+                    ].map((l) => (
+                      <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: "50%", background: l.color, flexShrink: 0 }} />
+                        <span style={{ flex: 1, color: "#4a4338", fontWeight: 700 }}>{l.label}</span>
+                        <span style={{ color: textMuted, fontWeight: 700 }}>{l.val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section id="features" style={{ paddingBottom: 72 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+            {FEATURES.map(({ Icon, iconBg, iconColor, title, desc }) => (
+              <article key={title} style={{ background: surface, borderRadius: 22, padding: "28px 28px 32px" }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: "50%", background: iconBg,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Icon size={21} color={iconColor} strokeWidth={2} />
+                </div>
+                <h3 style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 20, margin: "18px 0 8px", color: dark }}>{title}</h3>
+                <p style={{ fontSize: 15, lineHeight: 1.65, color: textMid, margin: 0 }}>{desc}</p>
               </article>
             ))}
           </div>
         </section>
+      </div>
+
+      {/* ── App preview band (full-width dark) ── */}
+      <section style={{ background: dark, padding: "64px 40px", margin: "0 0 0 0" }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 44px" }}>
+            <h2 style={{
+              fontFamily: "var(--display)", fontWeight: 800, fontSize: "clamp(26px, 3.5vw, 36px)",
+              letterSpacing: "-0.02em", margin: 0, color: bg,
+            }}>
+              A peek inside the app
+            </h2>
+            <p style={{ fontSize: 16, color: textMuted, margin: "12px 0 0" }}>Warm, simple, and genuinely nice to open.</p>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap" }}>
+            {/* Phone 1 — expenses list */}
+            <div style={{ width: 248, background: "#000", borderRadius: 36, padding: 10, flexShrink: 0 }}>
+              <div style={{ background: "oklch(0.98 0.012 95)", borderRadius: 28, height: 460, padding: "18px 16px", overflow: "hidden" }}>
+                <div style={{ fontSize: 11, color: textMuted, fontWeight: 700 }}>Day 12 of 30</div>
+                <div style={{ height: 7, borderRadius: 7, background: border, margin: "8px 0 16px", overflow: "hidden" }}>
+                  <div style={{ width: "40%", height: "100%", background: green, borderRadius: 7 }} />
+                </div>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 15, marginBottom: 10, color: dark }}>Recent</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                  {TRANSACTIONS.map(({ Icon, iconBg, label, sub, amt, amtColor }) => (
+                    <div key={label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: "50%", background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon size={14} color={dark} strokeWidth={2} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: dark }}>{label}</div>
+                        <div style={{ fontSize: 11, color: textMuted }}>{sub}</div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: amtColor }}>{amt}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Phone 2 — dashboard overview */}
+            <div style={{ width: 248, background: "#000", borderRadius: 36, padding: 10, flexShrink: 0 }}>
+              <div style={{ background: "oklch(0.98 0.012 95)", borderRadius: 28, height: 460, padding: "18px 16px", overflow: "hidden" }}>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 15, marginBottom: 14, color: dark }}>This cycle</div>
+                <div style={{ background: surface, borderRadius: 14, padding: "14px 16px", marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, marginBottom: 4 }}>Budget left</div>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 24, color: green, letterSpacing: "-0.02em" }}>₹18,200</div>
+                  <div style={{ height: 6, borderRadius: 6, background: border, marginTop: 10, overflow: "hidden" }}>
+                    <div style={{ width: "30%", height: "100%", background: green, borderRadius: 6 }} />
+                  </div>
+                </div>
+                {[
+                  { label: "Food & dining", pct: 72, color: green },
+                  { label: "Transport",     pct: 45, color: amber },
+                  { label: "Shopping",      pct: 28, color: gold  },
+                ].map((c) => (
+                  <div key={c.label} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: textMid, marginBottom: 4 }}>
+                      <span>{c.label}</span><span>{c.pct}%</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 6, background: border, overflow: "hidden" }}>
+                      <div style={{ width: `${c.pct}%`, height: "100%", background: c.color, borderRadius: 6 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Phone 3 — savings goal */}
+            <div style={{ width: 248, background: "#000", borderRadius: 36, padding: 10, flexShrink: 0 }}>
+              <div style={{ background: "oklch(0.98 0.012 95)", borderRadius: 28, height: 460, padding: "20px 18px", overflow: "hidden" }}>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 15, color: dark, marginBottom: 4 }}>Goals</div>
+                <div style={{ display: "flex", justifyContent: "center", margin: "22px 0" }}>
+                  <div style={{
+                    width: 148, height: 148, borderRadius: "50%",
+                    background: `conic-gradient(${green} 0 67%, ${border} 67% 100%)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <div style={{
+                      width: 112, height: 112, borderRadius: "50%",
+                      background: "oklch(0.98 0.012 95)",
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Target size={18} color={green} strokeWidth={2} />
+                      <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 21, color: dark }}>67%</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: bg, borderRadius: 14, padding: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                    <span style={{ color: textMuted, fontWeight: 700 }}>Goa trip</span>
+                    <span style={{ fontWeight: 800, color: dark }}>₹40k / ₹60k</span>
+                  </div>
+                  <div style={{ height: 7, borderRadius: 7, background: border, marginTop: 10, overflow: "hidden" }}>
+                    <div style={{ width: "67%", height: "100%", background: green, borderRadius: 7 }} />
+                  </div>
+                </div>
+                <div style={{ textAlign: "center", fontSize: 12, color: textMuted, marginTop: 14, fontWeight: 600 }}>
+                  Set aside ₹6,600 / cycle
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 40px" }}>
 
         {/* ── How it works ── */}
-        <section aria-labelledby="how-heading" style={{ marginBottom: 96 }}>
-          <h2
-            id="how-heading"
-            className="sp-display"
-            style={{ fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 800, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 56 }}
-          >
-            Up and running in 3 steps
+        <section id="how-it-works" style={{ padding: "80px 0 72px" }}>
+          <h2 style={{
+            fontFamily: "var(--display)", fontWeight: 800,
+            fontSize: "clamp(26px, 3.5vw, 36px)", letterSpacing: "-0.02em",
+            textAlign: "center", margin: "0 0 48px",
+          }}>
+            Three little steps
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 32, position: "relative" }}>
-            {steps.map((s, i) => (
-              <div key={s.n} style={{ textAlign: "center" }}>
-                <div style={{
-                  width: 52, height: 52, borderRadius: "50%",
-                  background: i === 0 ? "var(--brand)" : "var(--brand-soft)",
-                  color: i === 0 ? "var(--on-brand)" : "var(--brand)",
-                  display: "grid", placeItems: "center", margin: "0 auto 18px",
-                  fontSize: 20, fontWeight: 800, fontFamily: "var(--display)",
-                  boxShadow: i === 0 ? "0 4px 16px color-mix(in srgb, var(--brand) 30%, transparent)" : "none",
-                }}>
-                  {s.n}
-                </div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>{s.title}</h3>
-                <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+            {STEPS.map(({ n, color, title, desc }) => (
+              <div key={n} style={{ background: surface, borderRadius: 22, padding: 28 }}>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 34, color, lineHeight: 1 }}>{n}</div>
+                <h3 style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 19, margin: "10px 0 6px", color: dark }}>{title}</h3>
+                <p style={{ fontSize: 14.5, lineHeight: 1.65, color: textMid, margin: 0 }}>{desc}</p>
               </div>
             ))}
           </div>
         </section>
 
+        {/* ── Testimonials ── */}
+        {testimonials.length > 0 && (
+          <section id="reviews" style={{ paddingBottom: 72 }}>
+            <h2 style={{
+              fontFamily: "var(--display)", fontWeight: 800,
+              fontSize: "clamp(26px, 3.5vw, 36px)", letterSpacing: "-0.02em",
+              textAlign: "center", margin: "0 0 40px",
+            }}>
+              What people are saying
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+              {testimonials.map((t, i) => (
+                <TestimonialCard key={i} {...t} color={AVATAR_COLORS[i % AVATAR_COLORS.length]} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ── Final CTA ── */}
-        <section
-          aria-label="Call to action"
-          style={{
-            background: "var(--brand)", borderRadius: "var(--r-xl)",
-            padding: "64px 32px", textAlign: "center", marginBottom: 80,
-            boxShadow: "0 8px 40px color-mix(in srgb, var(--brand) 30%, transparent)",
-          }}
-        >
-          <h2
-            className="sp-display"
-            style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", color: "var(--on-brand)", marginBottom: 14 }}
-          >
-            Take control of your spending today.
+        <section style={{
+          background: green, borderRadius: 28,
+          padding: "60px 40px", textAlign: "center",
+          margin: "0 0 32px",
+          boxShadow: `0 10px 40px color-mix(in srgb, ${green} 30%, transparent)`,
+        }}>
+          <div style={{ fontSize: 30, marginBottom: 10 }}>🌿</div>
+          <h2 style={{
+            fontFamily: "var(--display)", fontWeight: 800,
+            fontSize: "clamp(24px, 3.5vw, 38px)", letterSpacing: "-0.02em",
+            margin: 0, color: "#fff",
+          }}>
+            Ready to feel good about money?
           </h2>
-          <p style={{ fontSize: 16, color: "color-mix(in srgb, var(--on-brand) 75%, transparent)", marginBottom: 36 }}>
-            Free forever. No hidden fees. Your data stays yours.
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.88)", margin: "14px 0 32px" }}>
+            Free forever. No credit card. No guilt.
           </p>
-          <Link
-            to="/register"
-            style={{
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              height: 52, padding: "0 36px", borderRadius: "var(--r-md)",
-              background: "var(--on-brand)", color: "var(--brand)",
-              fontSize: 16, fontWeight: 700, textDecoration: "none",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
-            }}
-          >
-            Create your free account
-          </Link>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 }}>
+            <Link to="/register" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              background: dark, color: "#fff", fontWeight: 700, fontSize: 16,
+              padding: "16px 32px", borderRadius: 100, textDecoration: "none",
+            }}>
+              Start tracking free <ArrowRight size={16} />
+            </Link>
+            <Link to="/login" style={{
+              display: "inline-flex", alignItems: "center",
+              background: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 600, fontSize: 16,
+              padding: "16px 28px", borderRadius: 100, textDecoration: "none",
+              border: "1.5px solid rgba(255,255,255,0.3)",
+            }}>
+              Already have an account
+            </Link>
+          </div>
+          <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+            {["No credit card required", "Free forever", "Works offline"].map((t) => (
+              <div key={t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: 600 }}>
+                <CheckCircle2 size={14} color="rgba(255,255,255,0.8)" />
+                {t}
+              </div>
+            ))}
+          </div>
         </section>
       </div>
 
       {/* ── Footer ── */}
-      <footer style={{
-        borderTop: "1px solid var(--line)", padding: "28px 24px",
-        textAlign: "center", fontSize: 13, color: "var(--ink-3)",
-      }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <span>© {new Date().getFullYear()} Spendly. All rights reserved.</span>
+      <footer style={{ borderTop: `1px solid ${border}`, padding: "28px 40px" }}>
+        <div style={{
+          maxWidth: 1160, margin: "0 auto",
+          display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
+        }}>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 16, color: dark }}>Spendly</span>
+          <span style={{ fontSize: 13, color: textMuted }}>© {new Date().getFullYear()} · Made for people with paydays</span>
           <div style={{ display: "flex", gap: 20 }}>
-            <Link to="/login" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Sign in</Link>
-            <Link to="/register" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Register</Link>
+            <Link to="/login"    style={{ fontSize: 13, color: textMuted, textDecoration: "none" }}>Sign in</Link>
+            <Link to="/register" style={{ fontSize: 13, color: textMuted, textDecoration: "none" }}>Register</Link>
           </div>
         </div>
       </footer>
