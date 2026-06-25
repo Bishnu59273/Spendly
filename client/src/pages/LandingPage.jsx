@@ -669,7 +669,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <span style={{ fontSize: 13, color: textMid, fontWeight: 600 }}>
-                Loved by 12,000+ people across India · ★ 4.8
+                Free forever · No credit card · ★ 4.8 rated
               </span>
             </div>
           </div>
