@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { trackPageView } from "./utils/analytics.js";
 import { useMe } from "./api/auth.js";
 import Layout from "./components/Layout.jsx";
 import Spinner from "./components/Spinner.jsx";
@@ -17,6 +18,14 @@ import Goals from "./pages/Goals.jsx";
 import Settings from "./pages/Settings.jsx";
 import Support from "./pages/Support.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
+
+function PageTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location]);
+  return null;
+}
 
 function AuthGuard({ children }) {
   const { data: user, isLoading, isError } = useMe();
@@ -48,6 +57,7 @@ export default function App() {
     <>
       <DomainMigrationBanner />
       <BrowserRouter>
+      <PageTracker />
       <OfflineBanner />
       <Routes>
         <Route path="/login" element={<Login />} />

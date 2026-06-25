@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useRegister } from "../api/auth.js";
 import { CURRENCIES, getCurrencySymbol } from "../utils/format.js";
+import { trackEvent } from "../utils/analytics.js";
 
 const inp = {
   width: "100%", height: 46, padding: "0 14px",
@@ -34,6 +35,7 @@ export default function Register() {
     setError("");
     try {
       await register.mutateAsync({ ...form, salaryDay: parseInt(form.salaryDay) });
+      trackEvent("sign_up", { method: "email" });
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.error || "Registration failed");
