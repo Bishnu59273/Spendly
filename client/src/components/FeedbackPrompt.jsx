@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Star } from "lucide-react";
 import { useSubmitFeedback } from "../api/feedback.js";
+import { useHasAnyExpense } from "../api/expenses.js";
 
 const STORAGE_DONE   = "sp_feedback_done";
 const STORAGE_REMIND = "sp_feedback_remind";
@@ -20,12 +21,14 @@ export default function FeedbackPrompt() {
   const [note, setNote]         = useState("");
   const [done, setDone]         = useState(false);
   const submit = useSubmitFeedback();
+  const { data: recentExpenses } = useHasAnyExpense();
 
   useEffect(() => {
-    // Delay 4 s so it doesn't pop up immediately on page load
-    const t = setTimeout(() => { if (shouldShow()) setOpen(true); }, 4000);
+    // Only prompt users who have actually logged at least one expense
+    if (!recentExpenses?.length) return;
+    const t = setTimeout(() => { if (shouldShow()) setOpen(true); }, 30_000);
     return () => clearTimeout(t);
-  }, []);
+  }, [recentExpenses]);
 
   const handleRemind = () => {
     localStorage.setItem(STORAGE_REMIND, String(Date.now() + REMIND_MS));

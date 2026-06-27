@@ -22,7 +22,8 @@ export function useCreateExpense() {
 export function useUpdateExpense() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }) => api.patch(`/expenses/${id}`, data).then((r) => r.data),
+    mutationFn: ({ id, ...data }) =>
+      api.patch(`/expenses/${id}`, data).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["expenses"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
@@ -40,5 +41,14 @@ export function useDeleteExpense() {
       qc.invalidateQueries({ queryKey: ["goals"] });
       qc.invalidateQueries({ queryKey: ["goal-snapshots"] });
     },
+  });
+}
+
+export function useHasAnyExpense() {
+  return useQuery({
+    queryKey: ["expenses", "recent", 5],
+    queryFn: () =>
+      api.get("/expenses/recent", { params: { limit: 5 } }).then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
   });
 }
