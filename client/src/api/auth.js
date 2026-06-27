@@ -5,6 +5,12 @@ function saveToken(data) {
   if (data?.token) localStorage.setItem("spendly_token", data.token);
 }
 
+function clearSessionKeys() {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith("sp_"))
+    .forEach((k) => localStorage.removeItem(k));
+}
+
 export function useMe() {
   return useQuery({
     queryKey: ["me"],
@@ -18,6 +24,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: (data) => api.post("/auth/login", data).then((r) => r.data),
     onSuccess: (data) => {
+      clearSessionKeys();
       saveToken(data);
       qc.invalidateQueries({ queryKey: ["me"] });
     },
@@ -29,6 +36,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: (data) => api.post("/auth/register", data).then((r) => r.data),
     onSuccess: (data) => {
+      clearSessionKeys();
       saveToken(data);
       qc.invalidateQueries({ queryKey: ["me"] });
     },

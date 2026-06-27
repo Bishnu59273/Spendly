@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,7 +14,6 @@ import {
 import { useCycleSummary, useTrend } from "../api/summary.js";
 import { useExpenses } from "../api/expenses.js";
 import { useGoals } from "../api/goals.js";
-import { useUpdateProfile } from "../api/auth.js";
 import { formatCurrency, formatDate } from "../utils/format.js";
 import {
   getCycleRange,
@@ -28,6 +26,7 @@ import DailyChart from "../components/DailyChart.jsx";
 import Progress from "../components/Progress.jsx";
 import SavingsGoal from "../components/SavingsGoal.jsx";
 import Modal from "../components/Modal.jsx";
+import BudgetModal from "../components/BudgetModal.jsx";
 
 function StatCard({
   icon: Icon,
@@ -227,12 +226,9 @@ function RecentTxns({ expenses, currency, onViewAll }) {
 
 export default function Dashboard({ user }) {
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const updateProfile = useUpdateProfile();
   const [cycleRef, setCycleRef] = useState(new Date());
   const [hoverCat, setHoverCat] = useState(null);
-  const [showBudgetModal, setShowBudgetModal] = useState(false);
-  const [budgetInput, setBudgetInput] = useState("");
+  const [budgetOpen, setBudgetOpen] = useState(false);
   const [catTab, setCatTab] = useState("category");
   const [includeRent, setIncludeRent] = useState(false);
   const tabPanelRef = useRef(null);
@@ -246,17 +242,6 @@ export default function Dashboard({ user }) {
     setCatTab(tab);
   };
 
-  const openBudgetModal = () => {
-    setBudgetInput(user.monthlyBudget?.toString() ?? "");
-    setShowBudgetModal(true);
-  };
-
-  const saveBudget = async () => {
-    const val = parseFloat(budgetInput) || null;
-    await updateProfile.mutateAsync({ monthlyBudget: val });
-    qc.invalidateQueries({ queryKey: ["summary"] });
-    setShowBudgetModal(false);
-  };
   const { data: goals = [] } = useGoals();
   const goal = goals.find((g) => g.isPrimary) || null;
 
@@ -416,7 +401,7 @@ export default function Dashboard({ user }) {
               </span>
             )
           }
-          onEdit={openBudgetModal}
+          onEdit={() => setBudgetOpen(true)}
           editIcon={totalBudget > 0 ? Pencil : Plus}
           tourId="budget-btn"
         />
@@ -920,70 +905,12 @@ export default function Dashboard({ user }) {
         </div>
       </div>
 
-      <Modal
-        open={showBudgetModal}
-        onClose={() => setShowBudgetModal(false)}
-        title="Set monthly budget"
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--ink-2)" }}>
-            Your total spending limit per pay cycle.
-          </p>
-          <div style={{ position: "relative" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--ink-3)",
-                fontSize: 13,
-                pointerEvents: "none",
-              }}
-            >
-              {user.currency}
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              autoFocus
-              value={budgetInput}
-              onChange={(e) => setBudgetInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveBudget()}
-              placeholder="e.g. 30000"
-              style={{
-                width: "100%",
-                height: 44,
-                paddingLeft: 48,
-                paddingRight: 14,
-                borderRadius: "var(--r-sm)",
-                border: "1px solid var(--line)",
-                background: "var(--surface-2)",
-                color: "var(--ink)",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button
-              className="sp-btn sp-btn-ghost"
-              onClick={() => setShowBudgetModal(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="sp-btn sp-btn-primary"
-              onClick={saveBudget}
-              disabled={updateProfile.isPending}
-            >
-              {updateProfile.isPending ? "Saving…" : "Save budget"}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <BudgetModal
+        open={budgetOpen}
+        onClose={() => setBudgetOpen(false)}
+        currency={user.currency}
+        initialValue={user.monthlyBudget?.toString() ?? ""}
+      />
     </div>
   );
 }

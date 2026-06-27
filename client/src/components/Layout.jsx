@@ -5,6 +5,7 @@ import {
   Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy, Share2,
 } from "lucide-react";
 import { useLogout } from "../api/auth.js";
+import BudgetModal from "./BudgetModal.jsx";
 import ShareModal, { triggerShare } from "./ShareModal.jsx";
 import { useGoals, useUpdateGoal } from "../api/goals.js";
 import { formatCurrency } from "../utils/format.js";
@@ -39,7 +40,7 @@ const NAV = [
   { to: "/expenses",   icon: Receipt,          label: "Expenses",       tourId: "nav-expenses"   },
   { to: "/categories", icon: FolderOpen,       label: "Categories",     tourId: "nav-categories" },
   { to: "/goals",      icon: Target,           label: "Goals",          tourId: "nav-goals"      },
-  { to: "/tags",       icon: Tag,              label: "Tags"                                      },
+  { to: "/tags",       icon: Tag,              label: "Tags",           tourId: "nav-tags"       },
   { to: "/settings",   icon: Settings,         label: "Settings",       tourId: "nav-settings"   },
   { to: "/support",    icon: LifeBuoy,         label: "Help & Support", tourId: "nav-support"    },
 ];
@@ -77,6 +78,12 @@ const TOUR_STEPS = [
     navigate: "/goals",
   },
   {
+    selector: '[data-tour="nav-tags"]',
+    title: "Tags",
+    desc: "Add tags to expenses for flexible cross-category grouping — useful for trips, events, or any custom label.",
+    side: "right",
+  },
+  {
     selector: '[data-tour="nav-settings"]',
     title: "Settings",
     desc: "Update your name, currency, budget cycle, and appearance preferences.",
@@ -105,7 +112,7 @@ const TOUR_STEPS = [
   {
     selector: '[data-tour="fab-add"]',
     title: "Add expense or income",
-    desc: "Tap this button any time to log a new transaction — from any page in the app.",
+    desc: "This button adapts to where you are — it adds an expense from the dashboard or expenses page, a category from Categories, a goal from Goals, and a tag from Tags.",
     side: "top",
   },
 ];
@@ -118,6 +125,7 @@ export default function Layout({ user, children }) {
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [budgetGateOpen, setBudgetGateOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const logout = useLogout();
@@ -185,6 +193,7 @@ export default function Layout({ user, children }) {
     setMenu(false);
     setTourSidebarStep(false);
     setTourDone(true);
+    navigateTo("/dashboard");
   };
 
   const toggleDark = () => {
@@ -413,13 +422,33 @@ export default function Layout({ user, children }) {
       </div>
 
       {/* FAB */}
-      <button className="sp-fab" data-tour="fab-add" onClick={() => setAddOpen(true)} aria-label={FAB_LABELS[getFormType(pathname)]}>
+      <button
+        className="sp-fab"
+        data-tour="fab-add"
+        aria-label={FAB_LABELS[getFormType(pathname)]}
+        onClick={() => {
+          if (getFormType(pathname) === "expense" && !user?.monthlyBudget) {
+            setBudgetGateOpen(true);
+          } else {
+            setAddOpen(true);
+          }
+        }}
+      >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <path d="M12 5v14M5 12h14" />
         </svg>
       </button>
 
       <SmartAddModal open={addOpen} onClose={() => setAddOpen(false)} type={getFormType(pathname)} />
+
+      <BudgetModal
+        open={budgetGateOpen}
+        onClose={() => setBudgetGateOpen(false)}
+        currency={user?.currency}
+        initialValue=""
+        hint="You need to set a monthly budget before logging your first expense."
+        onSaved={() => setAddOpen(true)}
+      />
 
       {/* Mobile menu scrim */}
       {menu && (
