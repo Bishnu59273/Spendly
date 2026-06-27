@@ -159,7 +159,7 @@ router.post("/forgot-password", async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return res.status(404).json({ error: "No account found with this email" });
+      return res.json({ ok: true });
     }
 
     const windowStart = new Date(Date.now() - RESET_RATE_WINDOW_MS);

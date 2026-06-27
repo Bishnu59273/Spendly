@@ -29,8 +29,6 @@ export default function ForgotPassword() {
     } catch (err) {
       if (!navigator.onLine) {
         setError("You're offline. Check your connection and try again.");
-      } else if (err.response?.status === 404) {
-        setError("No Spendly account exists with this email. Double-check for typos, or create a new account.");
       } else if (err.response?.status === 429) {
         setError("Too many reset requests. Please wait a few hours before trying again.");
       } else if (err.response?.status === 502) {
@@ -78,10 +76,19 @@ export default function ForgotPassword() {
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
                 Check your inbox
               </div>
-              <p style={{ fontSize: 13.5, color: "var(--ink-3)", lineHeight: 1.6, margin: 0 }}>
-                We've sent a password reset link to <strong style={{ color: "var(--ink)" }}>{email}</strong>.
-                It expires in 1 hour. If it doesn't arrive within a few minutes, check your spam folder — Gmail sometimes delays mail from new domains.
+              <p style={{ fontSize: 13.5, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+                If <strong style={{ color: "var(--ink)" }}>{email}</strong> has a Spendly account, a reset link is on its way. It expires in 1 hour.
               </p>
+              <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 16px" }}>
+                No email after a few minutes? Check your spam folder, or make sure you typed your address correctly.
+              </p>
+              <button
+                onClick={() => setSent(false)}
+                className="sp-btn sp-btn-ghost"
+                style={{ width: "100%", height: 40, justifyContent: "center", fontSize: 13.5 }}
+              >
+                Try a different email
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
