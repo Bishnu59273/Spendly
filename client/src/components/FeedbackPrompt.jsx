@@ -25,7 +25,7 @@ export default function FeedbackPrompt() {
 
   useEffect(() => {
     // Only prompt users who have actually logged at least one expense
-    if (!recentExpenses?.length) return;
+    if ((recentExpenses?.length ?? 0) < 5) return;
     const t = setTimeout(() => { if (shouldShow()) setOpen(true); }, 30_000);
     return () => clearTimeout(t);
   }, [recentExpenses]);
