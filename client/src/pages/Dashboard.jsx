@@ -283,7 +283,8 @@ export default function Dashboard({ user }) {
       name: c.name,
     }));
 
-  const todayKey = new Date().toISOString().substring(0, 10);
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const dailyData = useMemo(() => {
     const start = new Date(cycleStart);
     const end = new Date(cycleEnd);

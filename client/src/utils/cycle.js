@@ -9,9 +9,13 @@ function effectiveDayUTC(salaryDay, year, month) {
 export function getCycleRange(salaryDay, referenceDate = new Date()) {
   const ref = new Date(referenceDate);
 
-  let startYear  = ref.getUTCFullYear();
-  let startMonth = ref.getUTCMonth();
-  const refDay   = ref.getUTCDate();
+  // "Today" must be the device's local calendar day (not UTC) — otherwise the
+  // cycle stays on the previous day until UTC catches up to local midnight
+  // (up to ~14h late for timezones ahead of UTC, e.g. IST). Boundaries below
+  // are still encoded via Date.UTC so they serialize consistently to the server.
+  let startYear  = ref.getFullYear();
+  let startMonth = ref.getMonth();
+  const refDay   = ref.getDate();
 
   if (refDay < effectiveDayUTC(salaryDay, startYear, startMonth)) {
     startMonth -= 1;
