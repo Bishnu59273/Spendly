@@ -596,7 +596,7 @@ body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !
   .sp-exp-act  { grid-area: act; justify-content: flex-end !important; }
 
   /* Tags: drop bar column */
-  .sp-tag-row      { grid-template-columns: 1fr 110px 72px !important; }
+  .sp-tag-row      { grid-template-columns: minmax(0, 1fr) 110px 72px !important; }
   .sp-tag-bar-col  { display: none !important; }
 }
 

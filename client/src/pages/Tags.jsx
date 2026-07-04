@@ -222,17 +222,38 @@ export default function Tags({ user }) {
                   borderTop: i === 0 ? "none" : "1px solid var(--line)",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    minWidth: 0,
+                  }}
+                >
                   <span
                     className="sp-pill sp-pill-muted"
-                    style={{ fontSize: 13 }}
+                    style={{ fontSize: 13, minWidth: 0 }}
                   >
-                    {t.icon} #{t.name}
+                    <span style={{ flexShrink: 0 }}>{t.icon}</span>
+                    <span
+                      style={{
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      #{t.name}
+                    </span>
                   </span>
                   {t.count > 0 && (
                     <span
                       className="sp-num"
-                      style={{ fontSize: 12, color: "var(--ink-3)" }}
+                      style={{
+                        fontSize: 12,
+                        color: "var(--ink-3)",
+                        flexShrink: 0,
+                      }}
                     >
                       {t.count}×
                     </span>
