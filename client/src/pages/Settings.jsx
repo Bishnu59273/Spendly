@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
+import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff, Share2 } from "lucide-react";
 import { useUpdateProfile, useChangePassword } from "../api/auth.js";
 import { formatCurrency, CURRENCIES, getCurrencySymbol } from "../utils/format.js";
 
@@ -33,7 +33,8 @@ export default function Settings({ user }) {
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [installed, setInstalled] = useState(false);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-  const canInstall = !isStandalone && !!window.__pwaPrompt;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const canInstall = !isStandalone && (!!window.__pwaPrompt || isIOS);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -289,6 +290,26 @@ export default function Settings({ user }) {
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>App installed</div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>Spendly is running as an installed app</div>
                 </div>
+              </div>
+            ) : isIOS ? (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Add to home screen</div>
+                {[
+                  { icon: <Share2 size={15} />, text: 'Tap the Share button at the bottom of Safari' },
+                  { icon: <Download size={15} />, text: 'Select "Add to Home Screen"' },
+                  { icon: <CheckCircle size={15} />, text: 'Tap "Add" to confirm' },
+                ].map((step, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{
+                      width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+                      background: "var(--brand-soft)", color: "var(--brand)",
+                      display: "grid", placeItems: "center",
+                    }}>
+                      {step.icon}
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--ink-2)" }}>{step.text}</div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
