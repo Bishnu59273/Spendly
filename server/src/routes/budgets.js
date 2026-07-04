@@ -24,6 +24,14 @@ router.put("/monthly", async (req, res, next) => {
 
     let user;
     if (isDefault) {
+      // Lock in the month being edited so it reflects this amount immediately
+      // (matters when editing a past cycle, which the live default no longer
+      // reaches), while also updating the live default for future cycles.
+      await prisma.monthlyBudget.upsert({
+        where: { userId_month_year: { userId: req.userId, month, year } },
+        create: { userId: req.userId, month, year, amount },
+        update: { amount },
+      });
       user = await prisma.user.update({
         where: { id: req.userId },
         data: { monthlyBudget: amount, useDefaultBudget: true },

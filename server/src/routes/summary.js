@@ -58,20 +58,29 @@ router.get("/cycle", async (req, res, next) => {
     const categoryBudgetSum = budgets.reduce((s, b) => s + b.cap, 0) ||
       categories.reduce((s, c) => s + (c.budgetLimit || 0), 0);
 
+    // An explicit per-month record always wins and never changes once set —
+    // this is what lets a past month stay frozen even if the live default
+    // (below) is changed later. Only current/future cycles without one of
+    // their own fall back to the live default; past cycles without one just
+    // show "not set" rather than borrowing today's default.
+    const { cycleStart: liveCycleStart } = getCycleRange(user.salaryDay);
+    const isCurrentOrFutureCycle = cycleStart >= liveCycleStart;
+
+    const explicitMonthly = await prisma.monthlyBudget.findUnique({
+      where: { userId_month_year: { userId: req.userId, month: cycleMonth, year: cycleYear } },
+    });
+
     let totalBudget;
     let needsBudgetInput = false;
-    if (user.useDefaultBudget) {
+    if (explicitMonthly) {
+      totalBudget = explicitMonthly.amount;
+    } else if (isCurrentOrFutureCycle && user.useDefaultBudget) {
       totalBudget = user.monthlyBudget ?? categoryBudgetSum;
+    } else if (isCurrentOrFutureCycle) {
+      totalBudget = categoryBudgetSum || null;
+      needsBudgetInput = true;
     } else {
-      const monthly = await prisma.monthlyBudget.findUnique({
-        where: { userId_month_year: { userId: req.userId, month: cycleMonth, year: cycleYear } },
-      });
-      if (monthly) {
-        totalBudget = monthly.amount;
-      } else {
-        totalBudget = categoryBudgetSum || null;
-        needsBudgetInput = true;
-      }
+      totalBudget = categoryBudgetSum || null;
     }
 
     const now = new Date();

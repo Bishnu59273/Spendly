@@ -9,6 +9,8 @@ import BudgetModal from "./BudgetModal.jsx";
 import ShareModal, { triggerShare } from "./ShareModal.jsx";
 import { useGoals, useUpdateGoal } from "../api/goals.js";
 import { formatCurrency } from "../utils/format.js";
+import { getCycleRange } from "../utils/cycle.js";
+import { useDarkMode } from "../hooks/useDarkMode.js";
 import TopBar from "./TopBar.jsx";
 import SmartAddModal from "./SmartAddModal.jsx";
 import InstallBanner from "./InstallBanner.jsx";
@@ -127,8 +129,9 @@ export default function Layout({ user, children }) {
   const [addOpen, setAddOpen] = useState(false);
   const [budgetGateOpen, setBudgetGateOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [dark, toggleDark] = useDarkMode();
   const logout = useLogout();
+  const { cycleStart: gateCycleStart } = getCycleRange(user?.salaryDay);
 
   const { data: goals = [] } = useGoals();
   const updateGoal = useUpdateGoal();
@@ -194,13 +197,6 @@ export default function Layout({ user, children }) {
     setTourSidebarStep(false);
     setTourDone(true);
     navigateTo("/dashboard");
-  };
-
-  const toggleDark = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
   };
 
   return (
@@ -448,6 +444,9 @@ export default function Layout({ user, children }) {
         initialValue=""
         hint="You need to set a monthly budget before logging your first expense."
         onSaved={() => setAddOpen(true)}
+        month={gateCycleStart.getMonth() + 1}
+        year={gateCycleStart.getFullYear()}
+        useDefaultBudget={user?.useDefaultBudget ?? true}
       />
 
       {/* Mobile menu scrim */}
