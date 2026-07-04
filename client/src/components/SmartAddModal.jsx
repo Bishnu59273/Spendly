@@ -26,11 +26,16 @@ function CategoryAdd({ onClose }) {
   const [color, setColor] = useState("#6366f1");
   const [budget, setBudget] = useState("");
   const [err, setErr] = useState("");
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const save = async () => {
     if (!name.trim()) { setErr("Name is required"); return; }
-    await create.mutateAsync({ name: name.trim(), icon, color, budgetLimit: budget ? parseFloat(budget) : null });
-    onClose();
+    try {
+      await create.mutateAsync({ name: name.trim(), icon, color, budgetLimit: budget ? parseFloat(budget) : null });
+      onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || "Failed to create category");
+    }
   };
 
   return (
@@ -38,7 +43,27 @@ function CategoryAdd({ onClose }) {
       {err && <p style={{ fontSize: 13, color: "var(--neg)", margin: 0 }}>{err}</p>}
       <div><label style={lbl}>Name</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Housing" style={inp} /></div>
       <div><label style={lbl}>Monthly budget limit (optional)</label><input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Leave blank for no limit" style={inp} /></div>
-      <div><label style={lbl}>Icon</label><EmojiPicker value={icon} onChange={setIcon} /></div>
+      <div>
+        <label style={lbl}>Icon</label>
+        <button
+          type="button"
+          onClick={() => setShowIconPicker((v) => !v)}
+          style={{
+            width: 46, height: 44, fontSize: 22,
+            borderRadius: "var(--r-sm)",
+            border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+            background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+            cursor: "pointer", display: "grid", placeItems: "center",
+          }}
+        >
+          {icon}
+        </button>
+        {showIconPicker && (
+          <div style={{ marginTop: 8, borderRadius: "var(--r-sm)", border: "1px solid var(--line)", overflow: "hidden" }}>
+            <EmojiPicker value={icon} onChange={(v) => { setIcon(v); setShowIconPicker(false); }} />
+          </div>
+        )}
+      </div>
       <div><label style={lbl}>Color</label><ColorPicker value={color} onChange={setColor} /></div>
       <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
         <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
@@ -57,18 +82,43 @@ function TagAdd({ onClose }) {
   const [icon, setIcon] = useState("🏷️");
   const [color, setColor] = useState("#6366f1");
   const [err, setErr] = useState("");
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const save = async () => {
     if (!name.trim()) { setErr("Name is required"); return; }
-    await create.mutateAsync({ name: name.trim(), icon, color });
-    onClose();
+    try {
+      await create.mutateAsync({ name: name.trim(), icon, color });
+      onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || "Failed to create tag");
+    }
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {err && <p style={{ fontSize: 13, color: "var(--neg)", margin: 0 }}>{err}</p>}
       <div><label style={lbl}>Name</label><input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. essentials" style={inp} /></div>
-      <div><label style={lbl}>Icon</label><EmojiPicker value={icon} onChange={setIcon} /></div>
+      <div>
+        <label style={lbl}>Icon</label>
+        <button
+          type="button"
+          onClick={() => setShowIconPicker((v) => !v)}
+          style={{
+            width: 46, height: 44, fontSize: 22,
+            borderRadius: "var(--r-sm)",
+            border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+            background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+            cursor: "pointer", display: "grid", placeItems: "center",
+          }}
+        >
+          {icon}
+        </button>
+        {showIconPicker && (
+          <div style={{ marginTop: 8, borderRadius: "var(--r-sm)", border: "1px solid var(--line)", overflow: "hidden" }}>
+            <EmojiPicker value={icon} onChange={(v) => { setIcon(v); setShowIconPicker(false); }} />
+          </div>
+        )}
+      </div>
       <div><label style={lbl}>Color</label><ColorPicker value={color} onChange={setColor} /></div>
       {/* Live preview */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 14, borderRadius: "var(--r-sm)", background: "var(--surface-2)", border: "1px solid var(--line)" }}>

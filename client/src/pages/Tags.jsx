@@ -34,14 +34,21 @@ function TagForm({ tag = null, onClose }) {
     color: tag?.color || "#6366f1",
     icon: tag?.icon || "🏷️",
   });
+  const [error, setError] = useState("");
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const save = async () => {
     if (!form.name.trim()) return;
-    if (tag) await update.mutateAsync({ id: tag.id, ...form });
-    else await create.mutateAsync(form);
-    onClose();
+    setError("");
+    try {
+      if (tag) await update.mutateAsync({ id: tag.id, ...form });
+      else await create.mutateAsync(form);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to save tag");
+    }
   };
 
   return (
@@ -81,7 +88,41 @@ function TagForm({ tag = null, onClose }) {
         >
           Icon
         </label>
-        <EmojiPicker value={form.icon} onChange={(v) => set("icon", v)} />
+        <button
+          type="button"
+          onClick={() => setShowIconPicker((v) => !v)}
+          style={{
+            width: 46,
+            height: 44,
+            fontSize: 22,
+            borderRadius: "var(--r-sm)",
+            border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+            background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          {form.icon}
+        </button>
+        {showIconPicker && (
+          <div
+            style={{
+              marginTop: 8,
+              borderRadius: "var(--r-sm)",
+              border: "1px solid var(--line)",
+              overflow: "hidden",
+            }}
+          >
+            <EmojiPicker
+              value={form.icon}
+              onChange={(v) => {
+                set("icon", v);
+                setShowIconPicker(false);
+              }}
+            />
+          </div>
+        )}
       </div>
       <div>
         <label
@@ -129,6 +170,12 @@ function TagForm({ tag = null, onClose }) {
           {form.icon} #{form.name || "preview"}
         </span>
       </div>
+
+      {error && (
+        <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+          {error}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
         <button
@@ -191,9 +238,9 @@ export default function Tags({ user }) {
             <div className="sp-card-title">All tags</div>
             <div className="sp-card-sub">{tags.length} tags total</div>
           </div>
-          {/* <button className="sp-btn sp-btn-ghost" style={{ height: 38 }} onClick={() => setShowCreate(true)}>
+          <button className="sp-btn sp-btn-ghost" style={{ height: 38 }} onClick={() => setShowCreate(true)}>
             <Plus style={{ width: 16, height: 16 }} /> New tag
-          </button> */}
+          </button>
         </div>
 
         {tags.length === 0 ? (

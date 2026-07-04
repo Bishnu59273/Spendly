@@ -22,6 +22,8 @@ function CategoryForm({ onClose, initial, currency }) {
   const [icon, setIcon] = useState(initial?.icon || "📁");
   const [color, setColor] = useState(initial?.color || "#6366f1");
   const [budget, setBudget] = useState(initial?.budgetLimit?.toString() || "");
+  const [error, setError] = useState("");
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const save = async () => {
     const payload = {
@@ -30,9 +32,14 @@ function CategoryForm({ onClose, initial, currency }) {
       color,
       budgetLimit: budget ? parseFloat(budget) : null,
     };
-    if (initial) await update.mutateAsync({ id: initial.id, ...payload });
-    else await create.mutateAsync(payload);
-    onClose();
+    setError("");
+    try {
+      if (initial) await update.mutateAsync({ id: initial.id, ...payload });
+      else await create.mutateAsync(payload);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to save category");
+    }
   };
 
   return (
@@ -56,9 +63,31 @@ function CategoryForm({ onClose, initial, currency }) {
           style={inp}
         />
       </div>
+      {error && (
+        <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+          {error}
+        </div>
+      )}
       <div>
         <label style={lbl}>Icon</label>
-        <EmojiPicker value={icon} onChange={setIcon} />
+        <button
+          type="button"
+          onClick={() => setShowIconPicker((v) => !v)}
+          style={{
+            width: 46, height: 44, fontSize: 22,
+            borderRadius: "var(--r-sm)",
+            border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
+            background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+            cursor: "pointer", display: "grid", placeItems: "center",
+          }}
+        >
+          {icon}
+        </button>
+        {showIconPicker && (
+          <div style={{ marginTop: 8, borderRadius: "var(--r-sm)", border: "1px solid var(--line)", overflow: "hidden" }}>
+            <EmojiPicker value={icon} onChange={(v) => { setIcon(v); setShowIconPicker(false); }} />
+          </div>
+        )}
       </div>
       <div>
         <label style={lbl}>Color</label>

@@ -9,7 +9,7 @@ router.use(authMiddleware);
 const tagSchema = z.object({
   name: z.string().min(1),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  icon: z.string().max(2),
+  icon: z.string().min(1),
 });
 
 router.get("/", async (req, res, next) => {
