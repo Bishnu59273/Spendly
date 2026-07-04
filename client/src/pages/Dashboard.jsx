@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -247,9 +247,22 @@ export default function Dashboard({ user }) {
 
   const { cycleStart, cycleEnd } = getCycleRange(user.salaryDay, cycleRef);
   const cycleStartParam = cycleStart.toISOString();
+  const isCurrentCycle = new Date() >= cycleStart && new Date() <= cycleEnd;
 
   const { data: summary } = useCycleSummary({ cycleStart: cycleStartParam });
   const { data: expenses = [] } = useExpenses({ cycleStart: cycleStartParam });
+
+  const autoPromptedRef = useRef(null);
+  useEffect(() => {
+    if (
+      summary?.needsBudgetInput &&
+      isCurrentCycle &&
+      autoPromptedRef.current !== cycleStartParam
+    ) {
+      setBudgetOpen(true);
+      autoPromptedRef.current = cycleStartParam;
+    }
+  }, [summary?.needsBudgetInput, isCurrentCycle, cycleStartParam]);
 
   const byCategory = summary?.byCategory || [];
   const totalSpent = summary?.totalSpent || 0;
@@ -909,7 +922,12 @@ export default function Dashboard({ user }) {
         open={budgetOpen}
         onClose={() => setBudgetOpen(false)}
         currency={user.currency}
-        initialValue={user.monthlyBudget?.toString() ?? ""}
+        initialValue={
+          summary?.totalBudget ? summary.totalBudget.toString() : (user.monthlyBudget?.toString() ?? "")
+        }
+        month={cycleStart.getMonth() + 1}
+        year={cycleStart.getFullYear()}
+        useDefaultBudget={summary?.useDefaultBudget ?? true}
       />
     </div>
   );

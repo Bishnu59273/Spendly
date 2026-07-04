@@ -21,6 +21,7 @@ export default function Settings({ user }) {
     salaryDay: user.salaryDay,
     currency: user.currency,
     monthlyBudget: user.monthlyBudget?.toString() || "",
+    useDefaultBudget: user.useDefaultBudget ?? true,
   });
   const [darkMode, setDarkMode] = useState(() =>
     document.documentElement.classList.contains("dark"),
@@ -54,6 +55,7 @@ export default function Settings({ user }) {
         salaryDay: parseInt(form.salaryDay),
         currency: form.currency,
         monthlyBudget: form.monthlyBudget ? parseFloat(form.monthlyBudget) : null,
+        useDefaultBudget: form.useDefaultBudget,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -151,6 +153,33 @@ export default function Settings({ user }) {
               </span>
             )}
           </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Use this budget every month</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3 }}>
+              {form.useDefaultBudget
+                ? "Applied automatically to every cycle."
+                : "You'll be asked to set a budget each time a new cycle starts."}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => set("useDefaultBudget", !form.useDefaultBudget)}
+            style={{
+              position: "relative", width: 52, height: 30, borderRadius: 99, border: "none", cursor: "pointer",
+              background: form.useDefaultBudget ? "var(--brand)" : "var(--line)",
+              transition: "background var(--d1) var(--e)", flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: "absolute", top: 3, left: form.useDefaultBudget ? 25 : 3,
+              width: 24, height: 24, borderRadius: "50%", background: "var(--surface)",
+              transition: "left var(--d1) var(--e)",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+            }} />
+          </button>
         </div>
 
         {form.monthlyBudget && (

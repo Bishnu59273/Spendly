@@ -10,9 +10,11 @@ router.get("/cycle", async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { salaryDay: true, monthlyBudget: true },
+      select: { salaryDay: true, monthlyBudget: true, useDefaultBudget: true },
     });
     const { cycleStart, cycleEnd } = parseCycleStart(req.query.cycleStart, user.salaryDay);
+    const cycleMonth = cycleStart.getMonth() + 1;
+    const cycleYear = cycleStart.getFullYear();
 
     const allTransactions = await prisma.expense.findMany({
       where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd } },
@@ -23,8 +25,8 @@ router.get("/cycle", async (req, res, next) => {
     const budgets = await prisma.budget.findMany({
       where: {
         userId: req.userId,
-        month: cycleStart.getMonth() + 1,
-        year: cycleStart.getFullYear(),
+        month: cycleMonth,
+        year: cycleYear,
       },
     });
 
@@ -50,7 +52,22 @@ router.get("/cycle", async (req, res, next) => {
     // Priority: user's overall monthly budget → sum of per-month budget records → sum of category limits
     const categoryBudgetSum = budgets.reduce((s, b) => s + b.cap, 0) ||
       categories.reduce((s, c) => s + (c.budgetLimit || 0), 0);
-    const totalBudget = user.monthlyBudget ?? categoryBudgetSum;
+
+    let totalBudget;
+    let needsBudgetInput = false;
+    if (user.useDefaultBudget) {
+      totalBudget = user.monthlyBudget ?? categoryBudgetSum;
+    } else {
+      const monthly = await prisma.monthlyBudget.findUnique({
+        where: { userId_month_year: { userId: req.userId, month: cycleMonth, year: cycleYear } },
+      });
+      if (monthly) {
+        totalBudget = monthly.amount;
+      } else {
+        totalBudget = categoryBudgetSum || null;
+        needsBudgetInput = true;
+      }
+    }
 
     const now = new Date();
     const daysLeft = Math.max(0, Math.ceil((cycleEnd - now) / (1000 * 60 * 60 * 24)));
@@ -58,13 +75,17 @@ router.get("/cycle", async (req, res, next) => {
     res.json({
       cycleStart,
       cycleEnd,
+      cycleMonth,
+      cycleYear,
       totalSpent,
       totalIncome,
       totalBudget,
-      remaining: totalBudget - totalSpent + totalIncome,
+      remaining: (totalBudget || 0) - totalSpent + totalIncome,
       daysLeft,
       byCategory,
       hasOverallBudget: user.monthlyBudget != null,
+      useDefaultBudget: user.useDefaultBudget,
+      needsBudgetInput,
     });
   } catch (err) {
     next(err);

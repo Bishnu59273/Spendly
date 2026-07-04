@@ -1,22 +1,26 @@
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useUpdateProfile } from "../api/auth.js";
+import { useSetMonthlyBudget } from "../api/budgets.js";
 import Modal from "./Modal.jsx";
 
-export default function BudgetModal({ open, onClose, currency, initialValue = "", hint, onSaved }) {
-  const qc = useQueryClient();
-  const updateProfile = useUpdateProfile();
+export default function BudgetModal({
+  open, onClose, currency, initialValue = "", hint, onSaved,
+  month, year, useDefaultBudget = true,
+}) {
+  const setMonthlyBudget = useSetMonthlyBudget();
   const [input, setInput] = useState(initialValue);
+  const [isDefault, setIsDefault] = useState(useDefaultBudget);
 
   useEffect(() => {
-    if (open) setInput(initialValue);
-  }, [open, initialValue]);
+    if (open) {
+      setInput(initialValue);
+      setIsDefault(useDefaultBudget);
+    }
+  }, [open, initialValue, useDefaultBudget]);
 
   const save = async () => {
     const val = parseFloat(input) || null;
     if (!val) return;
-    await updateProfile.mutateAsync({ monthlyBudget: val });
-    qc.invalidateQueries({ queryKey: ["summary"] });
+    await setMonthlyBudget.mutateAsync({ month, year, amount: val, isDefault });
     onClose();
     onSaved?.();
   };
@@ -55,14 +59,23 @@ export default function BudgetModal({ open, onClose, currency, initialValue = ""
             }}
           />
         </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-2)", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={isDefault}
+            onChange={(e) => setIsDefault(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: "pointer" }}
+          />
+          Default (every month)
+        </label>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button className="sp-btn sp-btn-ghost" onClick={onClose}>Cancel</button>
           <button
             className="sp-btn sp-btn-primary"
             onClick={save}
-            disabled={!input || updateProfile.isPending}
+            disabled={!input || setMonthlyBudget.isPending}
           >
-            {updateProfile.isPending ? "Saving…" : "Save budget"}
+            {setMonthlyBudget.isPending ? "Saving…" : "Save budget"}
           </button>
         </div>
       </div>

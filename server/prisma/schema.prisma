@@ -17,7 +17,9 @@ model User {
   currency      String         @default("INR")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   monthlyBudget Float?         @map("monthly_budget")
+  useDefaultBudget Boolean     @default(true) @map("use_default_budget")
   budgets       Budget[]
+  monthlyBudgets MonthlyBudget[]
   categories    Category[]
   expenses      Expense[]
   feedback      Feedback[]
@@ -133,6 +135,20 @@ model Budget {
   @@unique([userId, categoryId, month, year])
   @@index([userId, month, year], map: "idx_budgets_user")
   @@map("budgets")
+}
+
+model MonthlyBudget {
+  id        String   @id @default(dbgenerated("concat('mbud_', (gen_random_uuid())::text)"))
+  userId    String   @map("user_id")
+  month     Int
+  year      Int
+  amount    Float
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, month, year])
+  @@index([userId, month, year], map: "idx_monthly_budgets_user")
+  @@map("monthly_budgets")
 }
 
 model Goal {
