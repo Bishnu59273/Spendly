@@ -175,16 +175,16 @@ function RecentTxns({ expenses, currency, onViewAll }) {
                 display: "grid",
                 placeItems: "center",
                 background:
-                  e.type === "INCOME"
-                    ? "#16a34a22"
-                    : (e.category?.color || "#888") + "22",
+                  e.categoryId
+                    ? (e.category?.color || "#888") + "22"
+                    : "#16a34a22",
                 fontSize: 18,
                 flex: "none",
               }}
             >
-              {e.type === "INCOME"
-                ? e.source?.icon || "💰"
-                : e.category?.icon || "💸"}
+              {e.categoryId
+                ? e.category?.icon || "💸"
+                : e.source?.icon || "💰"}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -198,11 +198,11 @@ function RecentTxns({ expenses, currency, onViewAll }) {
                 }}
               >
                 {e.note ||
-                  (e.type === "INCOME" ? e.source?.name : e.category?.name) ||
+                  (e.categoryId ? e.category?.name : e.source?.name) ||
                   "Transaction"}
               </div>
               <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                {e.type === "INCOME" ? e.source?.name : e.category?.name} ·{" "}
+                {e.categoryId ? e.category?.name : e.source?.name} ·{" "}
                 {formatDate(e.date)}
               </div>
             </div>
@@ -266,14 +266,13 @@ export default function Dashboard({ user }) {
 
   const byCategory = summary?.byCategory || [];
   const totalSpent = summary?.totalSpent || 0;
-  const totalIncome = summary?.totalIncome || 0;
   const totalBudget = summary?.totalBudget || 0;
-  const remaining =
-    summary?.remaining ?? totalBudget - totalSpent + totalIncome;
+  const remaining = summary?.remaining ?? totalBudget - totalSpent;
   const daysLeft = summary?.daysLeft ?? "—";
   const topCategory = [...byCategory].sort((a, b) => b.spent - a.spent)[0];
   const pctUsed =
     totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : null;
+  const categoryTotalSpent = byCategory.reduce((s, c) => s + c.spent, 0);
 
   const donutData = byCategory
     .filter((c) => c.spent > 0)
@@ -291,7 +290,7 @@ export default function Dashboard({ user }) {
 
     const rentKeywords = ["rent", "vara"];
     const filtered = expenses.filter((e) => {
-      if (e.type === "INCOME") return false;
+      if (e.type === "INCOME" && !e.categoryId) return false;
       if (!includeRent) {
         const note = e.note?.toLowerCase() ?? "";
         if (rentKeywords.some((kw) => note.includes(kw))) return false;
@@ -302,7 +301,8 @@ export default function Dashboard({ user }) {
     const byDay = {};
     filtered.forEach((e) => {
       const key = e.date.substring(0, 10);
-      byDay[key] = (byDay[key] || 0) + e.amount;
+      const amt = e.type === "INCOME" ? -e.amount : e.amount;
+      byDay[key] = (byDay[key] || 0) + amt;
     });
 
     const MONTHS = [
@@ -325,7 +325,7 @@ export default function Dashboard({ user }) {
       days.push({
         label: d.getUTCDate().toString(),
         dateLabel: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`,
-        total: byDay[key] || 0,
+        total: Math.max(0, byDay[key] || 0),
         isToday: key === todayKey,
       });
     }
@@ -615,9 +615,9 @@ export default function Dashboard({ user }) {
                                 fontWeight: 700,
                               }}
                             >
-                              {totalSpent > 0
+                              {categoryTotalSpent > 0
                                 ? Math.round(
-                                    (activeCat.spent / totalSpent) * 100,
+                                    (activeCat.spent / categoryTotalSpent) * 100,
                                   )
                                 : 0}
                               %
@@ -638,7 +638,7 @@ export default function Dashboard({ user }) {
                               className="sp-display sp-num"
                               style={{ fontSize: 26, fontWeight: 700 }}
                             >
-                              {formatCurrency(totalSpent, user.currency)}
+                              {formatCurrency(categoryTotalSpent, user.currency)}
                             </div>
                           </>
                         )}

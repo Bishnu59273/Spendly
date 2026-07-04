@@ -131,10 +131,11 @@ export default function Expenses({ user }) {
             >
               {(() => {
                 const isIncome = e.type === "INCOME";
-                const iconBg = isIncome ? "#16a34a22" : (e.category?.color || "#888") + "22";
-                const iconChar = isIncome ? (e.source?.icon || "💰") : (e.category?.icon || "💸");
-                const label = isIncome ? (e.source?.name || "Income") : (e.category?.name || "Expense");
-                const dotColor = isIncome ? "#16a34a" : (e.category?.color || "#888");
+                const hasCategory = !!e.categoryId;
+                const iconBg = hasCategory ? (e.category?.color || "#888") + "22" : "#16a34a22";
+                const iconChar = hasCategory ? (e.category?.icon || "💸") : (e.source?.icon || "💰");
+                const label = hasCategory ? (e.category?.name || "Expense") : (e.source?.name || "Income");
+                const dotColor = hasCategory ? (e.category?.color || "#888") : "#16a34a";
                 return (
                   <>
                     <div className="sp-exp-txn" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -182,7 +183,7 @@ export default function Expenses({ user }) {
                 <button
                   className="sp-icon-btn"
                   style={{ width: 30, height: 30, background: "transparent", border: "none" }}
-                  onClick={() => setDeleteTarget({ id: e.id, label: e.note || (e.type === "INCOME" ? e.source?.name : e.category?.name) || "transaction" })}
+                  onClick={() => setDeleteTarget({ id: e.id, label: e.note || (e.categoryId ? e.category?.name : e.source?.name) || "transaction" })}
                   title="Delete"
                 >
                   <Trash2 style={{ width: 14, height: 14, color: "var(--neg)" }} />

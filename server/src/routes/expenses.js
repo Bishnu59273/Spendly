@@ -80,7 +80,7 @@ router.get("/export", async (req, res, next) => {
       new Date(e.date).toISOString().split("T")[0],
       e.type || "EXPENSE",
       e.amount,
-      e.type === "INCOME" ? (e.source?.name || "") : (e.category?.name || ""),
+      e.categoryId ? (e.category?.name || "") : (e.source?.name || ""),
       e.tags.map((t) => t.tag.name).join("|"),
       e.note || "",
     ]);
@@ -100,9 +100,15 @@ router.post("/", async (req, res, next) => {
     const data = expenseSchema.parse(req.body);
 
     if (data.type === "INCOME") {
-      if (!data.sourceId) return res.status(400).json({ error: "sourceId is required for income" });
-      const src = await prisma.incomeSource.findFirst({ where: { id: data.sourceId, userId: req.userId } });
-      if (!src) return res.status(400).json({ error: "Invalid income source" });
+      if (data.categoryId) {
+        const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: req.userId } });
+        if (!cat) return res.status(400).json({ error: "Invalid category" });
+      } else if (data.sourceId) {
+        const src = await prisma.incomeSource.findFirst({ where: { id: data.sourceId, userId: req.userId } });
+        if (!src) return res.status(400).json({ error: "Invalid income source" });
+      } else {
+        return res.status(400).json({ error: "categoryId or sourceId is required for income" });
+      }
     } else {
       if (!data.categoryId) return res.status(400).json({ error: "categoryId is required for expenses" });
       const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: req.userId } });
@@ -117,8 +123,8 @@ router.post("/", async (req, res, next) => {
         date: new Date(data.date),
         isRecurring: data.isRecurring,
         recurringDay: data.recurringDay,
-        categoryId: data.type === "EXPENSE" ? data.categoryId : null,
-        sourceId: data.type === "INCOME" ? data.sourceId : null,
+        categoryId: data.type === "EXPENSE" ? data.categoryId : (data.categoryId || null),
+        sourceId: data.type === "INCOME" && !data.categoryId ? data.sourceId : null,
         userId: req.userId,
         tags: {
           create: data.tagIds.map((tagId) => ({ tagId })),
@@ -139,6 +145,32 @@ router.patch("/:id", async (req, res, next) => {
 
     const data = expenseSchema.partial().parse(req.body);
     const { tagIds, ...rest } = data;
+
+    const finalType = rest.type ?? existing.type;
+    const finalCategoryId = "categoryId" in rest ? rest.categoryId : existing.categoryId;
+    const finalSourceId = "sourceId" in rest ? rest.sourceId : existing.sourceId;
+
+    if (finalType === "INCOME") {
+      if (finalCategoryId) {
+        const cat = await prisma.category.findFirst({ where: { id: finalCategoryId, userId: req.userId } });
+        if (!cat) return res.status(400).json({ error: "Invalid category" });
+        rest.categoryId = finalCategoryId;
+        rest.sourceId = null;
+      } else if (finalSourceId) {
+        const src = await prisma.incomeSource.findFirst({ where: { id: finalSourceId, userId: req.userId } });
+        if (!src) return res.status(400).json({ error: "Invalid income source" });
+        rest.sourceId = finalSourceId;
+        rest.categoryId = null;
+      } else {
+        return res.status(400).json({ error: "categoryId or sourceId is required for income" });
+      }
+    } else {
+      if (!finalCategoryId) return res.status(400).json({ error: "categoryId is required for expenses" });
+      const cat = await prisma.category.findFirst({ where: { id: finalCategoryId, userId: req.userId } });
+      if (!cat) return res.status(400).json({ error: "Invalid category" });
+      rest.categoryId = finalCategoryId;
+      rest.sourceId = null;
+    }
 
     const expense = await prisma.expense.update({
       where: { id: req.params.id },

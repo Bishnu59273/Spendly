@@ -32,21 +32,26 @@ router.get("/cycle", async (req, res, next) => {
 
     const spendingOnly = allTransactions.filter((t) => t.type !== "INCOME");
     const incomeOnly   = allTransactions.filter((t) => t.type === "INCOME");
-    const totalSpent   = spendingOnly.reduce((s, e) => s + e.amount, 0);
+    const grossSpent    = spendingOnly.reduce((s, e) => s + e.amount, 0);
     const totalIncome  = incomeOnly.reduce((s, e) => s + e.amount, 0);
+    const netSpent     = grossSpent - totalIncome;
+    const totalSpent   = Math.max(0, netSpent);
 
+    // Category-tied income (refunds) nets against that category; source-tied
+    // ("Others") income has no categoryId and never touches this map.
     const byCategoryMap = {};
-    for (const e of spendingOnly) {
+    for (const e of allTransactions) {
+      if (!e.categoryId) continue;
       if (!byCategoryMap[e.categoryId]) {
         byCategoryMap[e.categoryId] = { ...e.category, spent: 0 };
       }
-      byCategoryMap[e.categoryId].spent += e.amount;
+      byCategoryMap[e.categoryId].spent += e.type === "INCOME" ? -e.amount : e.amount;
     }
 
     const byCategory = Object.values(byCategoryMap).map((c) => {
       const budget = budgets.find((b) => b.categoryId === c.id) ||
         (c.budgetLimit ? { cap: c.budgetLimit } : null);
-      return { ...c, budget: budget?.cap || null };
+      return { ...c, spent: Math.max(0, c.spent), budget: budget?.cap || null };
     });
 
     // Priority: user's overall monthly budget → sum of per-month budget records → sum of category limits
@@ -80,7 +85,7 @@ router.get("/cycle", async (req, res, next) => {
       totalSpent,
       totalIncome,
       totalBudget,
-      remaining: (totalBudget || 0) - totalSpent + totalIncome,
+      remaining: (totalBudget || 0) - netSpent,
       daysLeft,
       byCategory,
       hasOverallBudget: user.monthlyBudget != null,

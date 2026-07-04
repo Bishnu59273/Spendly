@@ -107,6 +107,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const deleteSource = useDeleteIncomeSource();
 
   const [txType, setTxType] = useState("EXPENSE");
+  const [incomeMode, setIncomeMode] = useState("source");
   const [form, setForm] = useState({
     amount: "",
     categoryId: "",
@@ -160,6 +161,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     if (open) {
       const t = expense ? parseTime(expense.date) : nowTime();
       setTxType(expense?.type || "EXPENSE");
+      setIncomeMode(expense?.type === "INCOME" && expense?.categoryId ? "category" : "source");
       setForm({
         amount: expense?.amount?.toString() || "",
         categoryId: expense?.categoryId || categories[0]?.id || "",
@@ -215,7 +217,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       dateRef.current?.focus();
       return;
     }
-    if (txType === "INCOME" && !form.sourceId) {
+    if (txType === "INCOME" && incomeMode === "source" && !form.sourceId) {
       setInvalidField("source");
       sourceRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -223,7 +225,10 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       });
       return;
     }
-    if (txType === "EXPENSE" && !form.categoryId) {
+    if (
+      (txType === "EXPENSE" || (txType === "INCOME" && incomeMode === "category")) &&
+      !form.categoryId
+    ) {
       setInvalidField("category");
       categoryRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -235,7 +240,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     const payload = {
       amount: parseFloat(form.amount),
       type: txType,
-      ...(txType === "EXPENSE"
+      ...(txType === "EXPENSE" || (txType === "INCOME" && incomeMode === "category")
         ? { categoryId: form.categoryId }
         : { sourceId: form.sourceId }),
       date: buildDateTime(form.date, form.hour, form.minute, form.period),
@@ -694,7 +699,56 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
             </div>
           </div>
 
-          {txType === "INCOME" ? (
+          {txType === "INCOME" && (
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 3,
+                  background: "var(--surface-sunken)",
+                  borderRadius: 10,
+                  padding: 3,
+                  width: "fit-content",
+                  marginBottom: 8,
+                }}
+              >
+                {[
+                  { value: "category", label: "Category" },
+                  { value: "source", label: "Other source" },
+                ].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setIncomeMode(value);
+                      setInvalidField("");
+                    }}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: 7,
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      background: incomeMode === value ? "var(--surface)" : "transparent",
+                      color: incomeMode === value ? "var(--ink)" : "var(--ink-3)",
+                      boxShadow: incomeMode === value ? "var(--sh-xs)" : "none",
+                      transition: "all var(--d1) var(--e)",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginBottom: 12 }}>
+                {incomeMode === "category"
+                  ? "Refunds a category — reduces that category's spending everywhere."
+                  : "General income — only reduces your total spent, not any category."}
+              </div>
+            </div>
+          )}
+
+          {txType === "INCOME" && incomeMode === "source" ? (
             /* ── Source picker (income only) ─────────────────────── */
             <div ref={sourceRef}>
               <label
