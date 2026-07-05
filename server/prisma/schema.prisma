@@ -27,6 +27,8 @@ model User {
   tags          Tag[]
   incomeSources IncomeSource[]
   resetTokens   PasswordResetToken[]
+  announcementRead AnnouncementRead?
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -180,6 +182,38 @@ model Feedback {
 
   @@index([userId], map: "idx_feedback_user")
   @@map("feedback")
+}
+
+model Announcement {
+  id        String   @id @default(dbgenerated("concat('ann_', (gen_random_uuid())::text)"))
+  title     String
+  body      String
+  icon      String   @default("🔔")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id         String   @id @default(dbgenerated("concat('anr_', (gen_random_uuid())::text)"))
+  userId     String   @unique @map("user_id")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("announcement_reads")
+}
+
+model PushSubscription {
+  id        String   @id @default(dbgenerated("concat('psub_', (gen_random_uuid())::text)"))
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_push_subscriptions_user")
+  @@map("push_subscriptions")
 }
 
 model GoalSnapshot {

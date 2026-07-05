@@ -17,6 +17,7 @@ import Tags from "./pages/Tags.jsx";
 import Goals from "./pages/Goals.jsx";
 import Settings from "./pages/Settings.jsx";
 import Support from "./pages/Support.jsx";
+import Updates from "./pages/Updates.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 
 function PageTracker() {
@@ -91,6 +92,10 @@ export default function App() {
         <Route
           path="/support"
           element={<AuthGuard>{(user) => <Support user={user} />}</AuthGuard>}
+        />
+        <Route
+          path="/updates"
+          element={<AuthGuard>{() => <Updates />}</AuthGuard>}
         />
         <Route path="/" element={<LandingPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

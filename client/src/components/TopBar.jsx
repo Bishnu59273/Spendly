@@ -54,10 +54,11 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
 
       <div className="sp-topbar-spacer" />
 
+      {/* Always visible, even on mobile */}
+      <NotificationPanel />
+
       {/* Desktop-only right section */}
       <div className="sp-topbar-right sp-hide-mobile">
-        <NotificationPanel currency={user?.currency} />
-
         <button className="sp-icon-btn" onClick={handleShare} aria-label="Share Spendly">
           <Share2 style={{ width: 18, height: 18 }} />
         </button>

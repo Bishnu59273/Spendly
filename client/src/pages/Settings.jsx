@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff, Share2, Bell, BellOff } from "lucide-react";
 import { useUpdateProfile, useChangePassword } from "../api/auth.js";
 import { formatCurrency, CURRENCIES, getCurrencySymbol } from "../utils/format.js";
 import { useDarkMode } from "../hooks/useDarkMode.js";
+import { useVapidPublicKey, useSubscribePush, useUnsubscribePush } from "../api/push.js";
+import { isPushSupported, getPushStatus, subscribeToPush, unsubscribeFromPush } from "../utils/push.js";
 
 const inp = {
   width: "100%", height: 44, padding: "0 14px",
@@ -35,6 +37,39 @@ export default function Settings({ user }) {
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const canInstall = !isStandalone && (!!window.__pwaPrompt || isIOS);
+
+  const [pushStatus, setPushStatus] = useState("loading");
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState("");
+  const { data: vapidKey } = useVapidPublicKey();
+  const subscribePush = useSubscribePush();
+  const unsubscribePush = useUnsubscribePush();
+
+  useEffect(() => {
+    getPushStatus().then(setPushStatus).catch(() => setPushStatus("unsupported"));
+  }, []);
+
+  const handleTogglePush = async () => {
+    setPushError("");
+    setPushBusy(true);
+    try {
+      if (pushStatus === "subscribed") {
+        const endpoint = await unsubscribeFromPush();
+        if (endpoint) await unsubscribePush.mutateAsync(endpoint);
+        setPushStatus("unsubscribed");
+      } else {
+        if (!vapidKey) throw new Error("Could not load push configuration. Try again.");
+        const subscription = await subscribeToPush(vapidKey);
+        await subscribePush.mutateAsync(subscription);
+        setPushStatus("subscribed");
+      }
+    } catch (err) {
+      setPushError(err.message || "Something went wrong.");
+      getPushStatus().then(setPushStatus);
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -226,6 +261,63 @@ export default function Settings({ user }) {
             </button>
           </div>
         </div>
+
+        {/* Notifications */}
+        {pushStatus !== "unsupported" && (
+          <div className="sp-card sp-card-pad">
+            <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
+              <div className="sp-card-title">Notifications</div>
+            </div>
+            {pushStatus === "denied" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <BellOff size={18} style={{ color: "var(--ink-3)", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Notifications blocked</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
+                    Enable notifications for Spendly in your browser or device settings to turn this on.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Push notifications</div>
+                    <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3 }}>
+                      Get notified on this device when there's a new update to Spendly
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={pushBusy || pushStatus === "loading"}
+                    onClick={handleTogglePush}
+                    style={{
+                      position: "relative", width: 52, height: 30, borderRadius: 99, border: "none", cursor: "pointer",
+                      background: pushStatus === "subscribed" ? "var(--brand)" : "var(--line)",
+                      transition: "background var(--d1) var(--e)", flexShrink: 0,
+                      opacity: pushBusy || pushStatus === "loading" ? 0.6 : 1,
+                    }}
+                  >
+                    <span style={{
+                      position: "absolute", top: 3, left: pushStatus === "subscribed" ? 25 : 3,
+                      width: 24, height: 24, borderRadius: "50%", background: "var(--surface)",
+                      display: "grid", placeItems: "center",
+                      transition: "left var(--d1) var(--e)",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                    }}>
+                      {pushStatus === "subscribed"
+                        ? <Bell size={11} style={{ color: "var(--brand)" }} />
+                        : <BellOff size={11} style={{ color: "var(--ink-3)" }} />}
+                    </span>
+                  </button>
+                </div>
+                {pushError && (
+                  <div style={{ fontSize: 12.5, color: "var(--neg)", marginTop: 10 }}>{pushError}</div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Account */}
         <div className="sp-card sp-card-pad">
