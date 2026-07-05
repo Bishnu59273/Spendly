@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Moon, Sun, Save, Wallet, X, Download, CheckCircle, Lock, Eye, EyeOff, Share2, Bell, BellOff } from "lucide-react";
 import { useUpdateProfile, useChangePassword } from "../api/auth.js";
 import { formatCurrency, CURRENCIES, getCurrencySymbol } from "../utils/format.js";
@@ -47,6 +48,20 @@ export default function Settings({ user }) {
 
   useEffect(() => {
     getPushStatus().then(setPushStatus).catch(() => setPushStatus("unsupported"));
+  }, []);
+
+  const notificationsCardRef = useRef(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [highlightPush, setHighlightPush] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("highlight") !== "push") return;
+    notificationsCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightPush(true);
+    setSearchParams({}, { replace: true });
+    const t = setTimeout(() => setHighlightPush(false), 2600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTogglePush = async () => {
@@ -264,7 +279,14 @@ export default function Settings({ user }) {
 
         {/* Notifications */}
         {pushStatus !== "unsupported" && (
-          <div className="sp-card sp-card-pad">
+          <div
+            ref={notificationsCardRef}
+            className="sp-card sp-card-pad"
+            style={{
+              transition: "box-shadow 300ms ease",
+              ...(highlightPush && { boxShadow: "0 0 0 3px var(--brand), var(--sh-lg)" }),
+            }}
+          >
             <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
               <div className="sp-card-title">Notifications</div>
             </div>

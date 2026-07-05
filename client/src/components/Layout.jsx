@@ -15,6 +15,7 @@ import TopBar from "./TopBar.jsx";
 import SmartAddModal from "./SmartAddModal.jsx";
 import InstallBanner from "./InstallBanner.jsx";
 import FeedbackPrompt from "./FeedbackPrompt.jsx";
+import PushNotificationPrompt from "./PushNotificationPrompt.jsx";
 import TourOverlay from "./TourOverlay.jsx";
 
 const FORM_TYPE = {
@@ -465,6 +466,7 @@ export default function Layout({ user, children }) {
 
       <InstallBanner />
       <FeedbackPrompt />
+      <PushNotificationPrompt />
 
       {!tourDone && (
         <TourOverlay
