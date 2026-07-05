@@ -11,6 +11,7 @@ const TITLES = {
   "/tags":       { eyebrow: "Organise",           title: "Tags" },
   "/settings":   { eyebrow: "Account",            title: "Settings" },
   "/support":    { eyebrow: "We're here to help",  title: "Help & Support" },
+  "/updates":    { eyebrow: "What's new",          title: "Notifications" },
 };
 
 const ADD_LABELS = {

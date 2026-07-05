@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Bell } from "lucide-react";
 import { useAnnouncements, useMarkAnnouncementsSeen } from "../api/announcements.js";
 import Spinner from "../components/Spinner.jsx";
 
@@ -12,6 +13,7 @@ function formatDate(dateStr) {
 }
 
 export default function Updates() {
+  const navigate = useNavigate();
   const { data, isLoading } = useAnnouncements();
   const markSeen = useMarkAnnouncementsSeen();
 
@@ -23,13 +25,26 @@ export default function Updates() {
   const announcements = data?.announcements || [];
 
   return (
-    <div className="sp-card sp-card-pad" style={{ maxWidth: 640, margin: "0 auto" }}>
-      <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
-        <div>
-          <div className="sp-card-title">What's new</div>
-          <div className="sp-card-sub">Recent changes and updates to Spendly</div>
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <button
+        onClick={() => navigate(-1)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6, marginBottom: 14,
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          color: "var(--ink-3)", fontSize: 13.5, fontWeight: 600,
+        }}
+      >
+        <ArrowLeft size={15} />
+        Back
+      </button>
+
+      <div className="sp-card sp-card-pad">
+        <div className="sp-card-head" style={{ padding: 0, marginBottom: 18 }}>
+          <div>
+            <div className="sp-card-title">What's new</div>
+            <div className="sp-card-sub">Recent changes and updates to Spendly</div>
+          </div>
         </div>
-      </div>
 
       {isLoading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
@@ -74,6 +89,7 @@ export default function Updates() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
