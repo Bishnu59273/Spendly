@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "./client.js";
+import { unsubscribeFromPush } from "../utils/push.js";
 
 function saveToken(data) {
   if (data?.token) localStorage.setItem("spendly_token", data.token);
@@ -9,6 +10,14 @@ function clearSessionKeys() {
   Object.keys(localStorage)
     .filter((k) => k.startsWith("sp_"))
     .forEach((k) => localStorage.removeItem(k));
+}
+
+// A prior account's push subscription can linger in the browser (it isn't
+// tied to our login state) if they never hit the logout button — e.g. a
+// token expired and force-redirected to /login. Clear it out so a new
+// session on this device doesn't inherit someone else's subscription.
+function clearStalePush() {
+  unsubscribeFromPush().catch(() => {});
 }
 
 export function useMe() {
@@ -25,6 +34,7 @@ export function useLogin() {
     mutationFn: (data) => api.post("/auth/login", data).then((r) => r.data),
     onSuccess: (data) => {
       clearSessionKeys();
+      clearStalePush();
       saveToken(data);
       qc.invalidateQueries({ queryKey: ["me"] });
     },
@@ -37,6 +47,7 @@ export function useRegister() {
     mutationFn: (data) => api.post("/auth/register", data).then((r) => r.data),
     onSuccess: (data) => {
       clearSessionKeys();
+      clearStalePush();
       saveToken(data);
       qc.invalidateQueries({ queryKey: ["me"] });
     },
@@ -46,7 +57,17 @@ export function useRegister() {
 export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post("/auth/logout"),
+    mutationFn: async () => {
+      // Push subscriptions live at the browser level, not per-login — unsubscribe
+      // here so the next account on this device/browser starts with a clean slate.
+      try {
+        const endpoint = await unsubscribeFromPush();
+        if (endpoint) await api.post("/push/unsubscribe", { endpoint });
+      } catch {
+        // best-effort — don't block logout on push cleanup failing
+      }
+      return api.post("/auth/logout");
+    },
     onSuccess: () => {
       localStorage.removeItem("spendly_token");
       qc.clear();
