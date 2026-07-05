@@ -466,7 +466,7 @@ export default function Layout({ user, children }) {
 
       <InstallBanner />
       <FeedbackPrompt />
-      <PushNotificationPrompt />
+      <PushNotificationPrompt tourDone={tourDone} />
 
       {!tourDone && (
         <TourOverlay

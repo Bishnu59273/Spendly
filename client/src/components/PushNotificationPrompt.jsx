@@ -12,12 +12,13 @@ function shouldShow() {
   return true;
 }
 
-export default function PushNotificationPrompt() {
+export default function PushNotificationPrompt({ tourDone }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isPushSupported() || !shouldShow()) return;
+    // Wait until the new-user tour is done so this doesn't interrupt onboarding
+    if (!tourDone || !isPushSupported() || !shouldShow()) return;
     let cancelled = false;
     const t = setTimeout(() => {
       getPushStatus().then((status) => {
@@ -25,7 +26,7 @@ export default function PushNotificationPrompt() {
       });
     }, 4000);
     return () => { cancelled = true; clearTimeout(t); };
-  }, []);
+  }, [tourDone]);
 
   const dismiss = () => {
     localStorage.setItem(STORAGE_REMIND, String(Date.now() + REMIND_MS));
