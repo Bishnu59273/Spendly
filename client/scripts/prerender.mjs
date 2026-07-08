@@ -21,10 +21,17 @@ const ROUTES = [
 async function launchBrowser() {
   if (process.env.VERCEL || process.env.CI) {
     // Vercel's build image has no Chrome; use the statically-linked build.
+    // @sparticuz/chromium only unpacks its bundled shared libs (libnss3 etc.)
+    // and sets LD_LIBRARY_PATH when it detects an AWS Lambda Node 20/22
+    // runtime — Vercel build containers set neither var, so fake it BEFORE
+    // the import (the env check runs at module load).
+    process.env.AWS_LAMBDA_JS_RUNTIME ||= "nodejs20.x";
     const sparticuz = (await import("@sparticuz/chromium")).default;
     return chromium.launch({
       executablePath: await sparticuz.executablePath(),
-      args: sparticuz.args,
+      // Drop sparticuz's --headless='shell' (a puppeteer-ism); playwright
+      // passes its own --headless flag.
+      args: sparticuz.args.filter((a) => !a.startsWith("--headless")),
     });
   }
   try {
