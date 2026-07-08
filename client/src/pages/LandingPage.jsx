@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMe } from "../api/auth.js";
 import { useTestimonials } from "../api/feedback.js";
+import Seo from "../components/Seo.jsx";
 
 // Direction B — WARM palette tokens
 const green = "oklch(0.6 0.12 150)";
@@ -427,6 +428,11 @@ export default function LandingPage() {
         color: dark,
       }}
     >
+      <Seo
+        path="/"
+        title="Spendly — Free Expense Tracker for Salaried Professionals, Students & Bachelors India"
+        description="Free expense tracker for salaried professionals, students, and bachelors in India. Budget by your payday or pocket money — track every rupee, set savings goals, and see where your money goes. No subscription, no credit card required."
+      />
       <style>{`
         .lp-nav-links { display: flex; }
         .lp-hero { display: grid; grid-template-columns: 1fr 0.9fr; gap: 44px; align-items: center; padding: 68px 0 60px; }

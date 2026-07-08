@@ -14,7 +14,8 @@ cleanupOutdatedCaches();
 
 // In dev, injectManifest has no build to draw a manifest from, so
 // createHandlerBoundToURL would throw on a URL that isn't precached.
-if (manifest.some((entry) => (entry.url || entry) === "/index.html")) {
+// The generated manifest lists it as "index.html" (no leading slash).
+if (manifest.some((entry) => ["/index.html", "index.html"].includes(entry.url || entry))) {
   registerRoute(
     new NavigationRoute(createHandlerBoundToURL("/index.html"), {
       denylist: [/^\/api\//, /^\/sitemap\.xml$/, /^\/robots\.txt$/],

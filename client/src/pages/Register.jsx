@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useRegister } from "../api/auth.js";
 import { CURRENCIES, getCurrencySymbol } from "../utils/format.js";
 import { trackEvent } from "../utils/analytics.js";
+import Seo from "../components/Seo.jsx";
 
 const inp = {
   width: "100%", height: 46, padding: "0 14px",
@@ -47,6 +48,11 @@ export default function Register() {
       minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
       background: "var(--bg)", padding: 24,
     }}>
+      <Seo
+        path="/register"
+        title="Create a Free Spendly Account — Expense Tracker India"
+        description="Sign up free for Spendly. Track every rupee by your payday, set savings goals, and see where your money goes. No subscription, no credit card required."
+      />
       <div style={{ width: "100%", maxWidth: 460 }}>
         {/* Brand mark */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>

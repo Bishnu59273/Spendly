@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "../api/auth.js";
+import Seo from "../components/Seo.jsx";
 
 const inp = {
   width: "100%", height: 46, padding: "0 14px",
@@ -48,6 +49,11 @@ export default function Login() {
       minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
       background: "var(--bg)", padding: 24,
     }}>
+      <Seo
+        path="/login"
+        title="Log in to Spendly — Free Expense Tracker"
+        description="Log in to your Spendly account to track expenses by salary cycle, manage budgets, and reach your savings goals."
+      />
       <div style={{ width: "100%", maxWidth: 420 }}>
         {/* Brand mark */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
