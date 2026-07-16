@@ -182,7 +182,7 @@ input, select, textarea { font: inherit; }
   flex-direction: column;
   background: var(--bg);
   border-right: 1px solid var(--line);
-  padding: 18px 14px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 14px 18px;
 }
 .sp-brand {
   display: flex;
@@ -277,12 +277,16 @@ input, select, textarea { font: inherit; }
 .sp-main { position: relative; z-index: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; }
 
 .sp-topbar {
-  height: var(--header-h);
+  /* iOS standalone PWA: viewport-fit=cover draws under the status bar,
+     so reserve the safe-area strip or the clock overlaps and steals taps */
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   flex: none;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 36px;
+  padding-left: 36px;
+  padding-right: 36px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -551,7 +555,7 @@ body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !
   .sp-sidebar-desktop-only { display: none; }
 
   /* Topbar */
-  .sp-topbar { padding-left: 16px; padding-right: 16px; height: 60px; gap: 10px; }
+  .sp-topbar { padding-left: 16px; padding-right: 16px; height: calc(60px + env(safe-area-inset-top, 0px)); gap: 10px; }
   .sp-topbar-spacer { display: none; }
   .sp-topbar-titles { flex: 1; min-width: 0; overflow: hidden; }
   .sp-topbar-eyebrow { display: none; }
