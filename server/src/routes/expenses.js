@@ -7,7 +7,7 @@ import { parseCycleStart } from "../lib/cycleHelper.js";
 const router = Router();
 router.use(authMiddleware);
 
-const expenseSchema = z.object({
+export const expenseSchema = z.object({
   amount: z.number().positive(),
   type: z.enum(["EXPENSE", "INCOME"]).default("EXPENSE"),
   note: z.string().optional().nullable(),
@@ -17,7 +17,131 @@ const expenseSchema = z.object({
   tagIds: z.array(z.string()).optional().default([]),
   isRecurring: z.boolean().optional().default(false),
   recurringDay: z.number().int().min(1).max(31).optional().nullable(),
+  clientMutationId: z.string().optional(),
 });
+
+const EXPENSE_INCLUDE = { category: true, source: true, tags: { include: { tag: true } } };
+
+export async function createExpenseRecord(userId, data) {
+  if (data.clientMutationId) {
+    const existing = await prisma.expense.findFirst({
+      where: { userId, clientMutationId: data.clientMutationId },
+      include: EXPENSE_INCLUDE,
+    });
+    if (existing) return { record: existing };
+  }
+
+  if (data.type === "INCOME") {
+    if (data.categoryId) {
+      const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId } });
+      if (!cat) return { error: "Invalid category", statusCode: 400 };
+    } else if (data.sourceId) {
+      const src = await prisma.incomeSource.findFirst({ where: { id: data.sourceId, userId } });
+      if (!src) return { error: "Invalid income source", statusCode: 400 };
+    } else {
+      return { error: "categoryId or sourceId is required for income", statusCode: 400 };
+    }
+  } else {
+    if (!data.categoryId) return { error: "categoryId is required for expenses", statusCode: 400 };
+    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId } });
+    if (!cat) return { error: "Invalid category", statusCode: 400 };
+  }
+
+  const expense = await prisma.expense.create({
+    data: {
+      amount: data.amount,
+      type: data.type,
+      note: data.note,
+      date: new Date(data.date),
+      isRecurring: data.isRecurring,
+      recurringDay: data.recurringDay,
+      categoryId: data.type === "EXPENSE" ? data.categoryId : (data.categoryId || null),
+      sourceId: data.type === "INCOME" && !data.categoryId ? data.sourceId : null,
+      userId,
+      clientMutationId: data.clientMutationId || null,
+      tags: {
+        create: data.tagIds.map((tagId) => ({ tagId })),
+      },
+    },
+    include: EXPENSE_INCLUDE,
+  });
+  return { record: expense };
+}
+
+export async function updateExpenseRecord(userId, id, data, expectedUpdatedAt) {
+  const existing = await prisma.expense.findFirst({ where: { id, userId } });
+  if (!existing) return { notFound: true };
+
+  if (expectedUpdatedAt !== undefined && new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()) {
+    const serverRecord = await prisma.expense.findUnique({ where: { id }, include: EXPENSE_INCLUDE });
+    return { conflict: true, serverRecord };
+  }
+
+  const { tagIds, clientMutationId, ...rest } = data;
+
+  const finalType = rest.type ?? existing.type;
+  const finalCategoryId = "categoryId" in rest ? rest.categoryId : existing.categoryId;
+  const finalSourceId = "sourceId" in rest ? rest.sourceId : existing.sourceId;
+
+  if (finalType === "INCOME") {
+    if (finalCategoryId) {
+      const cat = await prisma.category.findFirst({ where: { id: finalCategoryId, userId } });
+      if (!cat) return { error: "Invalid category", statusCode: 400 };
+      rest.categoryId = finalCategoryId;
+      rest.sourceId = null;
+    } else if (finalSourceId) {
+      const src = await prisma.incomeSource.findFirst({ where: { id: finalSourceId, userId } });
+      if (!src) return { error: "Invalid income source", statusCode: 400 };
+      rest.sourceId = finalSourceId;
+      rest.categoryId = null;
+    } else {
+      return { error: "categoryId or sourceId is required for income", statusCode: 400 };
+    }
+  } else {
+    if (!finalCategoryId) return { error: "categoryId is required for expenses", statusCode: 400 };
+    const cat = await prisma.category.findFirst({ where: { id: finalCategoryId, userId } });
+    if (!cat) return { error: "Invalid category", statusCode: 400 };
+    rest.categoryId = finalCategoryId;
+    rest.sourceId = null;
+  }
+
+  const expense = await prisma.expense.update({
+    where: { id },
+    data: {
+      ...rest,
+      date: rest.date ? new Date(rest.date) : undefined,
+      ...(tagIds !== undefined && {
+        tags: {
+          deleteMany: {},
+          create: tagIds.map((tagId) => ({ tagId })),
+        },
+      }),
+    },
+    include: EXPENSE_INCLUDE,
+  });
+  return { record: expense };
+}
+
+export async function deleteExpenseRecord(userId, id) {
+  const existing = await prisma.expense.findFirst({ where: { id, userId } });
+  if (!existing) return { notFound: true };
+
+  await prisma.expense.delete({ where: { id } });
+
+  // If this was a savings deduction, reverse the goal's saved amount
+  if (existing.goalId) {
+    const goal = await prisma.goal.findFirst({ where: { id: existing.goalId, userId } });
+    if (goal) {
+      const newSaved = Math.max(0, goal.saved - existing.amount);
+      await prisma.goal.update({ where: { id: goal.id }, data: { saved: newSaved } });
+      await prisma.goalSnapshot.create({
+        data: { goalId: goal.id, savedAmount: newSaved },
+      });
+    }
+  }
+
+  return { ok: true };
+}
 
 // Last N expenses by createdAt — used for notifications
 router.get("/recent", async (req, res, next) => {
@@ -27,7 +151,7 @@ router.get("/recent", async (req, res, next) => {
       where: { userId: req.userId },
       orderBy: { createdAt: "desc" },
       take: limit,
-      include: { category: true, source: true, tags: { include: { tag: true } } },
+      include: EXPENSE_INCLUDE,
     });
     res.json(expenses);
   } catch (err) {
@@ -53,11 +177,7 @@ router.get("/", async (req, res, next) => {
     const expenses = await prisma.expense.findMany({
       where,
       orderBy: { date: "desc" },
-      include: {
-        category: true,
-        source: true,
-        tags: { include: { tag: true } },
-      },
+      include: EXPENSE_INCLUDE,
     });
     res.json(expenses);
   } catch (err) {
@@ -73,7 +193,7 @@ router.get("/export", async (req, res, next) => {
     const expenses = await prisma.expense.findMany({
       where: { userId: req.userId, date: { gte: cycleStart, lte: cycleEnd } },
       orderBy: { date: "desc" },
-      include: { category: true, source: true, tags: { include: { tag: true } } },
+      include: EXPENSE_INCLUDE,
     });
 
     const rows = expenses.map((e) => [
@@ -98,41 +218,9 @@ router.get("/export", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const data = expenseSchema.parse(req.body);
-
-    if (data.type === "INCOME") {
-      if (data.categoryId) {
-        const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: req.userId } });
-        if (!cat) return res.status(400).json({ error: "Invalid category" });
-      } else if (data.sourceId) {
-        const src = await prisma.incomeSource.findFirst({ where: { id: data.sourceId, userId: req.userId } });
-        if (!src) return res.status(400).json({ error: "Invalid income source" });
-      } else {
-        return res.status(400).json({ error: "categoryId or sourceId is required for income" });
-      }
-    } else {
-      if (!data.categoryId) return res.status(400).json({ error: "categoryId is required for expenses" });
-      const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: req.userId } });
-      if (!cat) return res.status(400).json({ error: "Invalid category" });
-    }
-
-    const expense = await prisma.expense.create({
-      data: {
-        amount: data.amount,
-        type: data.type,
-        note: data.note,
-        date: new Date(data.date),
-        isRecurring: data.isRecurring,
-        recurringDay: data.recurringDay,
-        categoryId: data.type === "EXPENSE" ? data.categoryId : (data.categoryId || null),
-        sourceId: data.type === "INCOME" && !data.categoryId ? data.sourceId : null,
-        userId: req.userId,
-        tags: {
-          create: data.tagIds.map((tagId) => ({ tagId })),
-        },
-      },
-      include: { category: true, source: true, tags: { include: { tag: true } } },
-    });
-    res.status(201).json(expense);
+    const result = await createExpenseRecord(req.userId, data);
+    if (result.error) return res.status(result.statusCode).json({ error: result.error });
+    res.status(201).json(result.record);
   } catch (err) {
     next(err);
   }
@@ -140,53 +228,11 @@ router.post("/", async (req, res, next) => {
 
 router.patch("/:id", async (req, res, next) => {
   try {
-    const existing = await prisma.expense.findFirst({ where: { id: req.params.id, userId: req.userId } });
-    if (!existing) return res.status(404).json({ error: "Not found" });
-
     const data = expenseSchema.partial().parse(req.body);
-    const { tagIds, ...rest } = data;
-
-    const finalType = rest.type ?? existing.type;
-    const finalCategoryId = "categoryId" in rest ? rest.categoryId : existing.categoryId;
-    const finalSourceId = "sourceId" in rest ? rest.sourceId : existing.sourceId;
-
-    if (finalType === "INCOME") {
-      if (finalCategoryId) {
-        const cat = await prisma.category.findFirst({ where: { id: finalCategoryId, userId: req.userId } });
-        if (!cat) return res.status(400).json({ error: "Invalid category" });
-        rest.categoryId = finalCategoryId;
-        rest.sourceId = null;
-      } else if (finalSourceId) {
-        const src = await prisma.incomeSource.findFirst({ where: { id: finalSourceId, userId: req.userId } });
-        if (!src) return res.status(400).json({ error: "Invalid income source" });
-        rest.sourceId = finalSourceId;
-        rest.categoryId = null;
-      } else {
-        return res.status(400).json({ error: "categoryId or sourceId is required for income" });
-      }
-    } else {
-      if (!finalCategoryId) return res.status(400).json({ error: "categoryId is required for expenses" });
-      const cat = await prisma.category.findFirst({ where: { id: finalCategoryId, userId: req.userId } });
-      if (!cat) return res.status(400).json({ error: "Invalid category" });
-      rest.categoryId = finalCategoryId;
-      rest.sourceId = null;
-    }
-
-    const expense = await prisma.expense.update({
-      where: { id: req.params.id },
-      data: {
-        ...rest,
-        date: rest.date ? new Date(rest.date) : undefined,
-        ...(tagIds !== undefined && {
-          tags: {
-            deleteMany: {},
-            create: tagIds.map((tagId) => ({ tagId })),
-          },
-        }),
-      },
-      include: { category: true, source: true, tags: { include: { tag: true } } },
-    });
-    res.json(expense);
+    const result = await updateExpenseRecord(req.userId, req.params.id, data);
+    if (result.notFound) return res.status(404).json({ error: "Not found" });
+    if (result.error) return res.status(result.statusCode).json({ error: result.error });
+    res.json(result.record);
   } catch (err) {
     next(err);
   }
@@ -194,23 +240,8 @@ router.patch("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const existing = await prisma.expense.findFirst({ where: { id: req.params.id, userId: req.userId } });
-    if (!existing) return res.status(404).json({ error: "Not found" });
-
-    await prisma.expense.delete({ where: { id: req.params.id } });
-
-    // If this was a savings deduction, reverse the goal's saved amount
-    if (existing.goalId) {
-      const goal = await prisma.goal.findFirst({ where: { id: existing.goalId, userId: req.userId } });
-      if (goal) {
-        const newSaved = Math.max(0, goal.saved - existing.amount);
-        await prisma.goal.update({ where: { id: goal.id }, data: { saved: newSaved } });
-        await prisma.goalSnapshot.create({
-          data: { goalId: goal.id, savedAmount: newSaved },
-        });
-      }
-    }
-
+    const result = await deleteExpenseRecord(req.userId, req.params.id);
+    if (result.notFound) return res.status(404).json({ error: "Not found" });
     res.json({ ok: true });
   } catch (err) {
     next(err);

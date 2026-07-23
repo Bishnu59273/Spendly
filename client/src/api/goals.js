@@ -1,5 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "./client.js";
+import { registerEntitySync } from "../lib/syncEngine.js";
+import { useOfflineCreate, useOfflineUpdate, useOfflineDelete } from "../lib/offlineMutations.js";
+
+registerEntitySync("goal", {
+  invalidateKeys: [["goals"], ["goal-snapshots"], ["expenses"], ["summary"]],
+});
 
 export function useGoals() {
   return useQuery({
@@ -9,19 +15,21 @@ export function useGoals() {
 }
 
 export function useCreateGoal() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => api.post("/goals", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["goals"] }),
+  return useOfflineCreate({
+    entity: "goal",
+    endpoint: "/goals",
+    queryKeyRoot: ["goals"],
+    tempPrefix: "goal",
   });
 }
 
 export function useUpdateGoal() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...data }) => api.patch(`/goals/${id}`, data).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["goals"] });
+  return useOfflineUpdate({
+    entity: "goal",
+    endpoint: "/goals",
+    queryKeyRoot: ["goals"],
+    onSynced: () => {
       qc.invalidateQueries({ queryKey: ["goal-snapshots"] });
       qc.invalidateQueries({ queryKey: ["expenses"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
@@ -38,11 +46,7 @@ export function useGoalSnapshots(goalId) {
 }
 
 export function useDeleteGoal() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => api.delete(`/goals/${id}`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["goals"] }),
-  });
+  return useOfflineDelete({ entity: "goal", endpoint: "/goals", queryKeyRoot: ["goals"] });
 }
 
 export function useRecentExpenses(limit = 5) {

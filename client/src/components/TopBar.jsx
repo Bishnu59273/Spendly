@@ -2,6 +2,7 @@ import { Menu, Moon, Sun, Plus, Share2 } from "lucide-react";
 import { useState } from "react";
 import NotificationPanel from "./NotificationPanel.jsx";
 import ShareModal, { triggerShare } from "./ShareModal.jsx";
+import SyncStatusPill from "./SyncStatusPill.jsx";
 
 const TITLES = {
   "/dashboard":  { eyebrow: "Overview",          title: "Dashboard" },
@@ -56,6 +57,7 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
       <div className="sp-topbar-spacer" />
 
       {/* Always visible, even on mobile */}
+      <SyncStatusPill />
       <NotificationPanel />
 
       {/* Desktop-only right section */}

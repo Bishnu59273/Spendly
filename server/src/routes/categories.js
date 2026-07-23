@@ -6,12 +6,41 @@ import { authMiddleware } from "../middleware/auth.js";
 const router = Router();
 router.use(authMiddleware);
 
-const categorySchema = z.object({
+export const categorySchema = z.object({
   name: z.string().min(1),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   icon: z.string().min(1),
   budgetLimit: z.number().positive().optional().nullable(),
+  clientMutationId: z.string().optional(),
 });
+
+export async function createCategoryRecord(userId, data) {
+  if (data.clientMutationId) {
+    const existing = await prisma.category.findFirst({ where: { userId, clientMutationId: data.clientMutationId } });
+    if (existing) return { record: existing };
+  }
+  const cat = await prisma.category.create({ data: { ...data, userId } });
+  return { record: cat };
+}
+
+export async function updateCategoryRecord(userId, id, data, expectedUpdatedAt) {
+  const existing = await prisma.category.findFirst({ where: { id, userId } });
+  if (!existing) return { notFound: true };
+
+  if (expectedUpdatedAt !== undefined && new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()) {
+    return { conflict: true, serverRecord: existing };
+  }
+
+  const { clientMutationId, ...rest } = data;
+  const updated = await prisma.category.update({ where: { id }, data: rest });
+  return { record: updated };
+}
+
+export async function deleteCategoryRecord(userId, id) {
+  const result = await prisma.category.deleteMany({ where: { id, userId } });
+  if (result.count === 0) return { notFound: true };
+  return { ok: true };
+}
 
 router.get("/", async (req, res, next) => {
   try {
@@ -28,10 +57,8 @@ router.get("/", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const data = categorySchema.parse(req.body);
-    const cat = await prisma.category.create({
-      data: { ...data, userId: req.userId },
-    });
-    res.status(201).json(cat);
+    const result = await createCategoryRecord(req.userId, data);
+    res.status(201).json(result.record);
   } catch (err) {
     next(err);
   }
@@ -40,13 +67,9 @@ router.post("/", async (req, res, next) => {
 router.patch("/:id", async (req, res, next) => {
   try {
     const data = categorySchema.partial().parse(req.body);
-    const result = await prisma.category.updateMany({
-      where: { id: req.params.id, userId: req.userId },
-      data,
-    });
-    if (result.count === 0) return res.status(404).json({ error: "Not found" });
-    const updated = await prisma.category.findUnique({ where: { id: req.params.id } });
-    res.json(updated);
+    const result = await updateCategoryRecord(req.userId, req.params.id, data);
+    if (result.notFound) return res.status(404).json({ error: "Not found" });
+    res.json(result.record);
   } catch (err) {
     next(err);
   }
@@ -54,10 +77,8 @@ router.patch("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const result = await prisma.category.deleteMany({
-      where: { id: req.params.id, userId: req.userId },
-    });
-    if (result.count === 0) return res.status(404).json({ error: "Not found" });
+    const result = await deleteCategoryRecord(req.userId, req.params.id);
+    if (result.notFound) return res.status(404).json({ error: "Not found" });
     res.json({ ok: true });
   } catch (err) {
     next(err);

@@ -1,5 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import api from "./client.js";
+import { registerEntitySync } from "../lib/syncEngine.js";
+import { useOfflineCreate, useOfflineUpdate, useOfflineDelete } from "../lib/offlineMutations.js";
+
+registerEntitySync("category", { invalidateKeys: [["categories"]] });
 
 export function useCategories() {
   return useQuery({
@@ -9,25 +13,18 @@ export function useCategories() {
 }
 
 export function useCreateCategory() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => api.post("/categories", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  return useOfflineCreate({
+    entity: "category",
+    endpoint: "/categories",
+    queryKeyRoot: ["categories"],
+    tempPrefix: "cat",
   });
 }
 
 export function useUpdateCategory() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...data }) => api.patch(`/categories/${id}`, data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
-  });
+  return useOfflineUpdate({ entity: "category", endpoint: "/categories", queryKeyRoot: ["categories"] });
 }
 
 export function useDeleteCategory() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => api.delete(`/categories/${id}`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
-  });
+  return useOfflineDelete({ entity: "category", endpoint: "/categories", queryKeyRoot: ["categories"] });
 }

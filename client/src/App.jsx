@@ -4,7 +4,6 @@ import { trackPageView } from "./utils/analytics.js";
 import { useMe } from "./api/auth.js";
 import Layout from "./components/Layout.jsx";
 import Spinner from "./components/Spinner.jsx";
-import OfflineBanner from "./components/OfflineBanner.jsx";
 import DomainMigrationBanner from "./components/DomainMigrationBanner.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -59,7 +58,6 @@ export default function App() {
       <DomainMigrationBanner />
       <BrowserRouter>
       <PageTracker />
-      <OfflineBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

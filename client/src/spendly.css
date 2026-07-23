@@ -368,6 +368,32 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 }
 .sp-icon-btn:hover { color: var(--ink); border-color: var(--line-strong); }
 .sp-icon-btn svg { width: 18px; height: 18px; }
+
+.sp-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  flex: none;
+  border: none;
+  border-radius: var(--r-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  animation: sp-sync-pill-in 0.25s var(--e) both;
+}
+.sp-sync-pill[data-variant="synced"] svg { animation: sp-sync-pop 0.4s var(--e) both; }
+
+@keyframes sp-sync-pill-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes sp-sync-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  65%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
 .sp-notif-dot {
   position: absolute; top: 9px; right: 10px;
   width: 7px; height: 7px; border-radius: 50%;
@@ -582,6 +608,10 @@ body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !
   .sp-card-pad  { padding: 16px; }
   .sp-grid-thirds { grid-template-columns: 1fr; }
 
+  /* Sync status pill collapses to icon-only — label available via title tooltip */
+  .sp-sync-pill { width: 34px; padding: 0; justify-content: center; }
+  .sp-sync-pill-label { display: none; }
+
   /* Expenses: table → card rows */
   .sp-exp-header { display: none !important; }
   .sp-exp-row {
@@ -636,4 +666,13 @@ body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+.sp-spin {
+  animation: sp-spin-rotate 1s linear infinite;
+}
+
+@keyframes sp-spin-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

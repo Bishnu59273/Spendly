@@ -1,5 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import api from "./client.js";
+import { registerEntitySync } from "../lib/syncEngine.js";
+import { useOfflineCreate, useOfflineDelete } from "../lib/offlineMutations.js";
+
+registerEntitySync("incomeSource", { invalidateKeys: [["income-sources"]] });
 
 export function useIncomeSources() {
   return useQuery({
@@ -9,17 +13,14 @@ export function useIncomeSources() {
 }
 
 export function useCreateIncomeSource() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => api.post("/income-sources", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["income-sources"] }),
+  return useOfflineCreate({
+    entity: "incomeSource",
+    endpoint: "/income-sources",
+    queryKeyRoot: ["income-sources"],
+    tempPrefix: "src",
   });
 }
 
 export function useDeleteIncomeSource() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => api.delete(`/income-sources/${id}`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["income-sources"] }),
-  });
+  return useOfflineDelete({ entity: "incomeSource", endpoint: "/income-sources", queryKeyRoot: ["income-sources"] });
 }
