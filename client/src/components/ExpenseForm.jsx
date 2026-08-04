@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { X, Check, Calculator } from "lucide-react";
+import { X, Check, Calculator, Clock } from "lucide-react";
 import { useMe } from "../api/auth.js";
 import { getCurrencySymbol } from "../utils/format.js";
 import { useCategories, useCreateCategory } from "../api/categories.js";
@@ -12,6 +12,7 @@ import {
 } from "../api/incomeSources.js";
 import EmojiPicker from "./EmojiPicker.jsx";
 import InlineCalculator from "./InlineCalculator.jsx";
+import TimeWheelPicker from "./TimeWheelPicker.jsx";
 
 const CAT_COLORS = [
   "#F97316",
@@ -32,30 +33,26 @@ const today = () => new Date().toISOString().split("T")[0];
 
 function nowTime() {
   const d = new Date();
-  const h = d.getHours();
-  return {
-    hour: String(h % 12 || 12),
-    minute: String(d.getMinutes()).padStart(2, "0"),
-    period: h >= 12 ? "PM" : "AM",
-  };
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 function parseTime(dateStr) {
   const d = new Date(dateStr);
-  const h = d.getHours();
-  return {
-    hour: String(h % 12 || 12),
-    minute: String(d.getMinutes()).padStart(2, "0"),
-    period: h >= 12 ? "PM" : "AM",
-  };
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function buildDateTime(date, hour, minute, period) {
+function buildDateTime(date, time) {
   const [y, m, day] = date.split("-").map(Number);
-  let h = parseInt(hour) || 12;
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
-  return new Date(y, m - 1, day, h, parseInt(minute) || 0, 0).toISOString();
+  const [h, min] = (time || "00:00").split(":").map(Number);
+  return new Date(y, m - 1, day, h || 0, min || 0, 0).toISOString();
+}
+
+function formatTime12(time) {
+  const [hStr, mStr] = (time || "00:00").split(":");
+  const h24 = parseInt(hStr, 10) || 0;
+  const period = h24 >= 12 ? "PM" : "AM";
+  const h12 = h24 % 12 || 12;
+  return `${h12}:${mStr} ${period}`;
 }
 
 const fieldLabelStyle = {
@@ -78,20 +75,6 @@ const inputStyle = {
   color: "var(--ink)",
   fontSize: 14.5,
   outline: "none",
-};
-
-const numInputStyle = {
-  height: 44,
-  padding: "0 10px",
-  textAlign: "center",
-  borderRadius: "var(--r-sm)",
-  border: "1px solid var(--line)",
-  background: "var(--surface-2)",
-  color: "var(--ink)",
-  fontSize: 15,
-  fontWeight: 600,
-  outline: "none",
-  width: 62,
 };
 
 export default function ExpenseForm({ open, onClose, expense = null }) {
@@ -117,9 +100,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     tagIds: [],
     isRecurring: false,
     recurringDay: "",
-    hour: "12",
-    minute: "00",
-    period: "PM",
+    time: "12:00",
   });
   const [error, setError] = useState("");
   const [invalidField, setInvalidField] = useState("");
@@ -151,6 +132,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const [showSourceIconPicker, setShowSourceIconPicker] = useState(false);
 
   const [calcOpen, setCalcOpen] = useState(false);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
 
   const amountRef = useRef(null);
   const dateRef = useRef(null);
@@ -171,9 +153,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
         tagIds: expense?.tags?.map((t) => t.tagId) || [],
         isRecurring: expense?.isRecurring || false,
         recurringDay: expense?.recurringDay?.toString() || "",
-        hour: t.hour,
-        minute: t.minute,
-        period: t.period,
+        time: t,
       });
       setError("");
       setQuickAdd(false);
@@ -190,6 +170,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       setQuickSourceError("");
       setShowSourceIconPicker(false);
       setCalcOpen(false);
+      setTimePickerOpen(false);
     }
   }, [open, expense]);
 
@@ -243,7 +224,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       ...(txType === "EXPENSE" || (txType === "INCOME" && incomeMode === "category")
         ? { categoryId: form.categoryId }
         : { sourceId: form.sourceId }),
-      date: buildDateTime(form.date, form.hour, form.minute, form.period),
+      date: buildDateTime(form.date, form.time),
       note: form.note || null,
       tagIds: form.tagIds,
       isRecurring: form.isRecurring,
@@ -629,75 +610,32 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
 
             <div>
               <label style={fieldLabelStyle}>Time</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={form.hour}
-                  onChange={(e) => {
-                    let v = Math.min(
-                      12,
-                      Math.max(1, parseInt(e.target.value) || 1),
-                    );
-                    set("hour", String(v));
-                  }}
-                  style={numInputStyle}
+              <button
+                type="button"
+                onClick={() => setTimePickerOpen((v) => !v)}
+                style={{
+                  ...inputStyle,
+                  width: 140,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  cursor: "pointer",
+                  border: `1px solid ${timePickerOpen ? "var(--brand)" : "var(--line)"}`,
+                }}
+              >
+                <span>{formatTime12(form.time)}</span>
+                <Clock
+                  style={{ width: 15, height: 15, color: "var(--ink-3)", flexShrink: 0 }}
                 />
-                <span
-                  style={{
-                    fontWeight: 700,
-                    color: "var(--ink-3)",
-                    fontSize: 18,
-                  }}
-                >
-                  :
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={form.minute}
-                  onChange={(e) => {
-                    let v = Math.min(
-                      59,
-                      Math.max(0, parseInt(e.target.value) || 0),
-                    );
-                    set("minute", String(v).padStart(2, "0"));
-                  }}
-                  style={numInputStyle}
-                />
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 3 }}
-                >
-                  {["AM", "PM"].map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => set("period", p)}
-                      style={{
-                        height: 20,
-                        padding: "0 8px",
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        border: "none",
-                        background:
-                          form.period === p
-                            ? "var(--brand)"
-                            : "var(--surface-sunken)",
-                        color: form.period === p ? "#fff" : "var(--ink-3)",
-                        cursor: "pointer",
-                        transition: "all var(--d1) var(--e)",
-                      }}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              </button>
             </div>
           </div>
+
+          <TimeWheelPicker
+            open={timePickerOpen}
+            value={form.time}
+            onChange={(v) => set("time", v)}
+          />
 
           {txType === "INCOME" && (
             <div>

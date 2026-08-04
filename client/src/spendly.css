@@ -676,3 +676,11 @@ body:has(.sp-scrim.open) .sp-fab { opacity: 0 !important; pointer-events: none !
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.sp-wheel-col {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sp-wheel-col::-webkit-scrollbar {
+  display: none;
+}
