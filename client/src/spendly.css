@@ -394,10 +394,14 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   65%  { transform: scale(1.2); opacity: 1; }
   100% { transform: scale(1); }
 }
-.sp-notif-dot {
-  position: absolute; top: 9px; right: 10px;
-  width: 7px; height: 7px; border-radius: 50%;
+.sp-notif-badge {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
   background: var(--neg); border: 2px solid var(--surface);
+  color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
+  animation: sp-sync-pop 0.4s var(--e) both;
 }
 
 .sp-user-chip {
