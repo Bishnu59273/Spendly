@@ -63,6 +63,7 @@ export default function Settings({ user }) {
     salaryDay: user.salaryDay,
     currency: user.currency,
     monthlyBudget: user.monthlyBudget?.toString() || "",
+    upiId: user.upiId || "",
   });
   const [darkMode, toggleDark] = useDarkMode();
   const isDefaultBudget = user.useDefaultBudget ?? true;
@@ -152,6 +153,7 @@ export default function Settings({ user }) {
         monthlyBudget: form.monthlyBudget
           ? parseFloat(form.monthlyBudget)
           : null,
+        upiId: form.upiId || null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -319,6 +321,20 @@ export default function Settings({ user }) {
                 Current: {formatCurrency(user.monthlyBudget, form.currency)}
               </span>
             )}
+          </div>
+        </div>
+
+        <div>
+          <label style={lbl}>UPI ID</label>
+          <input
+            type="text"
+            value={form.upiId}
+            onChange={(e) => set("upiId", e.target.value)}
+            placeholder="yourname@bank"
+            style={inp}
+          />
+          <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
+            Shown to group members so they can pay you directly via UPI when settling up.
           </div>
         </div>
 

@@ -14,6 +14,7 @@ const USER_SELECT = {
   id: true, name: true, email: true,
   salaryDay: true, currency: true,
   monthlyBudget: true, useDefaultBudget: true, createdAt: true,
+  upiId: true,
 };
 
 const registerSchema = z.object({
@@ -104,6 +105,7 @@ router.patch("/me", authMiddleware, async (req, res, next) => {
       currency: z.string().optional(),
       monthlyBudget: z.number().positive().optional().nullable(),
       useDefaultBudget: z.boolean().optional(),
+      upiId: z.string().optional().nullable(),
     });
     const data = schema.parse(req.body);
     const user = await prisma.user.update({

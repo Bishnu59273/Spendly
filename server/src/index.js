@@ -16,6 +16,8 @@ import budgetsRouter from "./routes/budgets.js";
 import announcementsRouter from "./routes/announcements.js";
 import pushRouter from "./routes/push.js";
 import syncRouter from "./routes/sync.js";
+import groupsRouter from "./routes/groups.js";
+import groupExpensesRouter from "./routes/groupExpenses.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import prisma from "./lib/prisma.js";
 import { getCycleRange } from "./lib/cycleHelper.js";
@@ -40,6 +42,8 @@ app.use("/api/budgets", budgetsRouter);
 app.use("/api/announcements", announcementsRouter);
 app.use("/api/push", pushRouter);
 app.use("/api/sync", syncRouter);
+app.use("/api/groups", groupsRouter);
+app.use("/api/groups", groupExpensesRouter);
 
 app.use(errorHandler);
 

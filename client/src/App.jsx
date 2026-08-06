@@ -14,6 +14,9 @@ import Expenses from "./pages/Expenses.jsx";
 import Categories from "./pages/Categories.jsx";
 import Tags from "./pages/Tags.jsx";
 import Goals from "./pages/Goals.jsx";
+import Groups from "./pages/Groups.jsx";
+import GroupDetail from "./pages/GroupDetail.jsx";
+import JoinGroup from "./pages/JoinGroup.jsx";
 import Settings from "./pages/Settings.jsx";
 import Support from "./pages/Support.jsx";
 import Updates from "./pages/Updates.jsx";
@@ -29,6 +32,7 @@ function PageTracker() {
 
 function AuthGuard({ children }) {
   const { data: user, isLoading, isError } = useMe();
+  const location = useLocation();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -43,7 +47,10 @@ function AuthGuard({ children }) {
     );
   }
 
-  if (isError || !user) return <Navigate to="/login" replace />;
+  if (isError || !user) {
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirect}`} replace />;
+  }
 
   return (
     <Layout user={user}>
@@ -82,6 +89,18 @@ export default function App() {
         <Route
           path="/goals"
           element={<AuthGuard>{(user) => <Goals user={user} />}</AuthGuard>}
+        />
+        <Route
+          path="/groups"
+          element={<AuthGuard>{(user) => <Groups user={user} />}</AuthGuard>}
+        />
+        <Route
+          path="/groups/:groupId"
+          element={<AuthGuard>{(user) => <GroupDetail user={user} />}</AuthGuard>}
+        />
+        <Route
+          path="/join/:code"
+          element={<AuthGuard>{(user) => <JoinGroup user={user} />}</AuthGuard>}
         />
         <Route
           path="/settings"

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useRegister } from "../api/auth.js";
 import { CURRENCIES, getCurrencySymbol } from "../utils/format.js";
@@ -19,6 +19,7 @@ const lbl = {
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const register = useRegister();
   const [form, setForm] = useState({
     name: "", email: "", password: "", salaryDay: 1, currency: "INR",
@@ -37,7 +38,8 @@ export default function Register() {
     try {
       await register.mutateAsync({ ...form, salaryDay: parseInt(form.salaryDay) });
       trackEvent("sign_up", { method: "email" });
-      navigate("/dashboard");
+      const redirect = searchParams.get("redirect");
+      navigate(redirect ? decodeURIComponent(redirect) : "/dashboard");
     } catch (err) {
       setError(err.response?.data?.error || "Registration failed");
     }
@@ -150,7 +152,10 @@ export default function Register() {
 
         <p style={{ textAlign: "center", fontSize: 13.5, color: "var(--ink-3)", marginTop: 20 }}>
           Already have an account?{" "}
-          <Link to="/login" style={{ color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>
+          <Link
+            to={searchParams.get("redirect") ? `/login?redirect=${searchParams.get("redirect")}` : "/login"}
+            style={{ color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}
+          >
             Sign in
           </Link>
         </p>

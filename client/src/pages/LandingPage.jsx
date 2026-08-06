@@ -14,6 +14,10 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Users,
+  UserPlus,
+  Split,
+  HandCoins,
 } from "lucide-react";
 import { useMe } from "../api/auth.js";
 import { useTestimonials } from "../api/feedback.js";
@@ -42,6 +46,8 @@ const SCREENSHOTS = {
   expenses: "/expense.jpeg",
   overview: "/categories.jpeg",
   goals: "/goals.jpeg",
+  groupDetail: "/group-detail.jpeg",
+  settleUp: "/settle-up.jpeg",
 };
 
 function PhoneFrame({ screenshot, children, height = 440, width = 232 }) {
@@ -72,7 +78,7 @@ function PhoneFrame({ screenshot, children, height = 440, width = 232 }) {
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              objectFit: "contain",
               objectPosition: "top",
               display: "block",
             }}
@@ -127,6 +133,37 @@ const STEPS = [
     color: gold,
     title: "Feel in control",
     desc: "Open the app and instantly know exactly where you stand.",
+  },
+];
+
+const GROUP_STEPS = [
+  {
+    n: "01",
+    color: green,
+    Icon: Users,
+    title: "Create a group",
+    desc: "Give it a name like ‘Our Flat’ or ‘Goa Trip’ — you’re the owner.",
+  },
+  {
+    n: "02",
+    color: amber,
+    Icon: UserPlus,
+    title: "Invite your people",
+    desc: "Share the invite link or the 7-character code. They just need a free Spendly account to join.",
+  },
+  {
+    n: "03",
+    color: gold,
+    Icon: Split,
+    title: "Split any bill",
+    desc: "Log an expense and split it equally, by custom amounts, or by percentage — whatever’s fair for that one.",
+  },
+  {
+    n: "04",
+    color: "oklch(0.72 0.09 230)",
+    Icon: HandCoins,
+    title: "Settle up with UPI",
+    desc: "See exactly who owes whom, pay with one tap via UPI, and the other person confirms it before it counts.",
   },
 ];
 
@@ -439,6 +476,8 @@ export default function LandingPage() {
         .lp-phone-hero { display: flex; justify-content: center; }
         .lp-phones { display: flex; justify-content: center; gap: 24px; flex-wrap: nowrap; }
         .lp-phone-card { flex-shrink: 0; }
+        .lp-groups-section { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 44px; align-items: center; }
+        .lp-groups-phones { display: flex; justify-content: center; gap: 20px; flex-wrap: nowrap; }
         .lp-cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
         .lp-footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
         @media (max-width: 767px) {
@@ -448,6 +487,9 @@ export default function LandingPage() {
           .lp-phones { gap: 12px; overflow-x: auto; justify-content: flex-start; padding-bottom: 8px; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
           .lp-phones::-webkit-scrollbar { display: none; }
           .lp-phone-card { flex-shrink: 0; }
+          .lp-groups-section { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .lp-groups-phones { gap: 12px; overflow-x: auto; justify-content: flex-start; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+          .lp-groups-phones::-webkit-scrollbar { display: none; }
           .lp-cta-buttons { flex-direction: column; align-items: center; }
           .lp-cta-buttons a { width: 100%; max-width: 320px; justify-content: center; }
           .lp-footer-inner { flex-direction: column; text-align: center; }
@@ -455,6 +497,7 @@ export default function LandingPage() {
         @media (min-width: 768px) and (max-width: 1023px) {
           .lp-hero { grid-template-columns: 1fr 1fr !important; padding: 52px 0 48px !important; }
           .lp-phones { gap: 16px; }
+          .lp-groups-section { grid-template-columns: 1fr !important; gap: 32px !important; }
         }
       `}</style>
 
@@ -518,6 +561,12 @@ export default function LandingPage() {
               style={{ color: "inherit", textDecoration: "none" }}
             >
               Features
+            </a>
+            <a
+              href="#groups"
+              style={{ color: "inherit", textDecoration: "none" }}
+            >
+              Split expenses
             </a>
             <a
               href="#how-it-works"
@@ -604,7 +653,8 @@ export default function LandingPage() {
               <strong style={{ color: dark, fontWeight: 700 }}>
                 salaried professionals, students &amp; bachelors
               </strong>
-              . Budget by your payday or pocket money — not the calendar. No jargon, no guilt.
+              . Budget by your payday or pocket money — not the calendar. No
+              jargon, no guilt.
             </p>
 
             <div
@@ -885,12 +935,19 @@ export default function LandingPage() {
         {/* ── Features ── */}
         <section id="features" style={{ paddingBottom: 64 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <h2 style={{
-              fontFamily: "var(--display)", fontWeight: 800,
-              fontSize: "clamp(22px, 3vw, 32px)", letterSpacing: "-0.02em",
-              color: dark, margin: "0 0 8px",
-            }}>
-              Built around when <em style={{ fontStyle: "normal", color: green }}>you</em> get paid
+            <h2
+              style={{
+                fontFamily: "var(--display)",
+                fontWeight: 800,
+                fontSize: "clamp(22px, 3vw, 32px)",
+                letterSpacing: "-0.02em",
+                color: dark,
+                margin: "0 0 8px",
+              }}
+            >
+              Built around when{" "}
+              <em style={{ fontStyle: "normal", color: green }}>you</em> get
+              paid
             </h2>
             <p style={{ fontSize: 15, color: textMid, margin: 0 }}>
               Salary, stipend, or pocket money — your cycle, your rules.
@@ -981,7 +1038,8 @@ export default function LandingPage() {
               A peek inside the app
             </h2>
             <p style={{ fontSize: 15, color: textMuted, margin: "10px 0 0" }}>
-              Used by salaried professionals, students, and bachelors across India.
+              Used by salaried professionals, students, and bachelors across
+              India.
             </p>
           </div>
 
@@ -1293,6 +1351,233 @@ export default function LandingPage() {
       </section>
 
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: px }}>
+        {/* ── Group expense splitting ── */}
+        <section
+          id="groups"
+          className="lp-groups-section"
+          style={{ padding: isMobile ? "48px 0 44px" : "72px 0 64px" }}
+        >
+          <div>
+            <Pill>🤝 New: split expenses</Pill>
+
+            <h2
+              style={{
+                fontFamily: "var(--display)",
+                fontWeight: 800,
+                fontSize: "clamp(24px, 3.5vw, 34px)",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
+                margin: "18px 0 0",
+                color: dark,
+              }}
+            >
+              Split bills without the{" "}
+              <span style={{ color: green }}>group chat drama</span>.
+            </h2>
+            <p
+              style={{
+                fontSize: 15.5,
+                lineHeight: 1.65,
+                color: textMid,
+                margin: "12px 0 28px",
+                maxWidth: 460,
+              }}
+            >
+              Track shared expenses with flatmates or your partner. Split
+              fairly, see who owes what, and settle up instantly with UPI.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 18,
+                marginBottom: 22,
+              }}
+            >
+              {GROUP_STEPS.map(({ n, color, Icon, title, desc }) => (
+                <div
+                  key={n}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 14 }}
+                >
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      background: surface,
+                      border: `1px solid ${border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      position: "relative",
+                    }}
+                  >
+                    <Icon size={17} color={color} strokeWidth={2} />
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--display)",
+                          fontWeight: 800,
+                          fontSize: 13,
+                          color,
+                        }}
+                      >
+                        {n}
+                      </span>
+                      <h3
+                        style={{
+                          fontFamily: "var(--display)",
+                          fontWeight: 700,
+                          fontSize: 16.5,
+                          margin: 0,
+                          color: dark,
+                        }}
+                      >
+                        {title}
+                      </h3>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: textMid,
+                        margin: "4px 0 0",
+                      }}
+                    >
+                      {desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                background: greenSoft,
+                borderRadius: 16,
+                padding: "14px 16px",
+              }}
+            >
+              <span style={{ fontSize: 16, lineHeight: 1 }}>💡</span>
+              <p
+                style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.6,
+                  color: dark,
+                  margin: 0,
+                }}
+              >
+                Add your UPI ID in <strong>Settings</strong> so others can pay
+                you directly — with a scannable QR code or a one-tap link to
+                your UPI app.
+              </p>
+            </div>
+          </div>
+
+          {/* Screenshots — group dashboard + settle up */}
+          <div className="lp-groups-phones">
+            <PhoneFrame
+              screenshot={SCREENSHOTS.groupDetail}
+              height={460}
+              width={220}
+            >
+              <div style={{ padding: "16px 14px" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--display)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: dark,
+                    marginBottom: 10,
+                  }}
+                >
+                  Our Flat
+                </div>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  {[
+                    { name: "You", amt: "+₹500", color: green },
+                    { name: "Alex", amt: "−₹500", color: amber },
+                  ].map((r) => (
+                    <div
+                      key={r.name}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 12,
+                        background: surface,
+                        borderRadius: 10,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: dark }}>
+                        {r.name}
+                      </span>
+                      <span style={{ fontWeight: 800, color: r.color }}>
+                        {r.amt}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PhoneFrame>
+            <PhoneFrame
+              screenshot={SCREENSHOTS.settleUp}
+              height={460}
+              width={220}
+            >
+              <div style={{ padding: "16px 14px", textAlign: "center" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--display)",
+                    fontWeight: 800,
+                    fontSize: 24,
+                    color: dark,
+                    marginTop: 24,
+                  }}
+                >
+                  ₹500
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: textMuted,
+                    margin: "4px 0 20px",
+                  }}
+                >
+                  Alex owes You
+                </div>
+                <div
+                  style={{
+                    background: green,
+                    color: "#fff",
+                    borderRadius: 10,
+                    padding: "10px 0",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  Pay via UPI app
+                </div>
+              </div>
+            </PhoneFrame>
+          </div>
+        </section>
+
         {/* ── How it works ── */}
         <section
           id="how-it-works"

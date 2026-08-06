@@ -2,7 +2,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
-  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy, Share2,
+  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy, Share2, Users,
 } from "lucide-react";
 import { useLogout } from "../api/auth.js";
 import BudgetModal from "./BudgetModal.jsx";
@@ -43,6 +43,7 @@ const NAV = [
   { to: "/expenses",   icon: Receipt,          label: "Expenses",       tourId: "nav-expenses"   },
   { to: "/categories", icon: FolderOpen,       label: "Categories",     tourId: "nav-categories" },
   { to: "/goals",      icon: Target,           label: "Goals",          tourId: "nav-goals"      },
+  { to: "/groups",     icon: Users,            label: "Groups",         tourId: "nav-groups"     },
   { to: "/tags",       icon: Tag,              label: "Tags",           tourId: "nav-tags"       },
   { to: "/settings",   icon: Settings,         label: "Settings",       tourId: "nav-settings"   },
   { to: "/support",    icon: LifeBuoy,         label: "Help & Support", tourId: "nav-support"    },
@@ -126,6 +127,7 @@ function getInitials(name = "") {
 
 export default function Layout({ user, children }) {
   const { pathname } = useLocation();
+  const suppressOnboarding = pathname.startsWith("/join");
   const [menu, setMenu] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [budgetGateOpen, setBudgetGateOpen] = useState(false);
@@ -418,23 +420,25 @@ export default function Layout({ user, children }) {
         </div>
       </div>
 
-      {/* FAB */}
-      <button
-        className="sp-fab"
-        data-tour="fab-add"
-        aria-label={FAB_LABELS[getFormType(pathname)]}
-        onClick={() => {
-          if (getFormType(pathname) === "expense" && !user?.monthlyBudget) {
-            setBudgetGateOpen(true);
-          } else {
-            setAddOpen(true);
-          }
-        }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>
+      {/* FAB — hidden on group pages, which have their own add-expense CTA */}
+      {!pathname.startsWith("/groups") && !pathname.startsWith("/join") && (
+        <button
+          className="sp-fab"
+          data-tour="fab-add"
+          aria-label={FAB_LABELS[getFormType(pathname)]}
+          onClick={() => {
+            if (getFormType(pathname) === "expense" && !user?.monthlyBudget) {
+              setBudgetGateOpen(true);
+            } else {
+              setAddOpen(true);
+            }
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      )}
 
       <SmartAddModal open={addOpen} onClose={() => setAddOpen(false)} type={getFormType(pathname)} />
 
@@ -465,10 +469,10 @@ export default function Layout({ user, children }) {
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       <InstallBanner />
-      <FeedbackPrompt />
-      <PushNotificationPrompt tourDone={tourDone} />
+      {!suppressOnboarding && <FeedbackPrompt />}
+      {!suppressOnboarding && <PushNotificationPrompt tourDone={tourDone} />}
 
-      {!tourDone && (
+      {!tourDone && !suppressOnboarding && (
         <TourOverlay
           steps={TOUR_STEPS}
           onStep={handleTourStep}

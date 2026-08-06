@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "../api/auth.js";
 import Seo from "../components/Seo.jsx";
@@ -17,6 +17,7 @@ const lbl = {
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const login = useLogin();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -32,7 +33,8 @@ export default function Login() {
     setError("");
     try {
       await login.mutateAsync(form);
-      navigate("/dashboard");
+      const redirect = searchParams.get("redirect");
+      navigate(redirect ? decodeURIComponent(redirect) : "/dashboard");
     } catch (err) {
       if (!navigator.onLine) {
         setError("You're offline. Check your connection and try again.");
@@ -125,7 +127,10 @@ export default function Login() {
 
         <p style={{ textAlign: "center", fontSize: 13.5, color: "var(--ink-3)", marginTop: 20 }}>
           No account?{" "}
-          <Link to="/register" style={{ color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>
+          <Link
+            to={searchParams.get("redirect") ? `/register?redirect=${searchParams.get("redirect")}` : "/register"}
+            style={{ color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}
+          >
             Create one
           </Link>
         </p>

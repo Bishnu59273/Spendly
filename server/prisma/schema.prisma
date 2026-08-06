@@ -18,6 +18,7 @@ model User {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   monthlyBudget Float?         @map("monthly_budget")
   useDefaultBudget Boolean     @default(true) @map("use_default_budget")
+  upiId         String?        @map("upi_id")
   budgets       Budget[]
   monthlyBudgets MonthlyBudget[]
   categories    Category[]
@@ -29,6 +30,13 @@ model User {
   resetTokens   PasswordResetToken[]
   announcementRead AnnouncementRead?
   pushSubscriptions PushSubscription[]
+  groupsCreated        Group[]              @relation("GroupCreatedBy")
+  groupMemberships     GroupMember[]
+  groupExpensesPaid    GroupExpense[]       @relation("GroupExpensePaidBy")
+  groupExpensesCreated GroupExpense[]       @relation("GroupExpenseCreatedBy")
+  groupExpenseSplits   GroupExpenseSplit[]
+  settlementsFrom      Settlement[]         @relation("SettlementFrom")
+  settlementsTo        Settlement[]         @relation("SettlementTo")
 
   @@map("users")
 }
@@ -240,4 +248,86 @@ model GoalSnapshot {
 
   @@index([goalId, snapshotDate], map: "idx_goal_snapshots_goal_date")
   @@map("goal_snapshots")
+}
+
+model Group {
+  id          String         @id @default(dbgenerated("concat('grp_', (gen_random_uuid())::text)"))
+  name        String
+  icon        String         @default("🏠")
+  color       String         @default("#1d6b51")
+  inviteCode  String         @unique @map("invite_code")
+  createdById String         @map("created_by_id")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   User           @relation("GroupCreatedBy", fields: [createdById], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  members     GroupMember[]
+  expenses    GroupExpense[]
+  settlements Settlement[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(dbgenerated("concat('gmem_', (gen_random_uuid())::text)"))
+  groupId  String   @map("group_id")
+  userId   String   @map("user_id")
+  isOwner  Boolean  @default(false) @map("is_owner")
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([groupId, userId])
+  @@index([userId], map: "idx_group_members_user")
+  @@map("group_members")
+}
+
+model GroupExpense {
+  id          String              @id @default(dbgenerated("concat('gexp_', (gen_random_uuid())::text)"))
+  groupId     String              @map("group_id")
+  description String
+  amount      Float
+  splitType   String              @map("split_type")
+  paidById    String              @map("paid_by_id")
+  createdById String              @map("created_by_id")
+  date        DateTime            @db.Timestamptz(6)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  group       Group               @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  paidBy      User                @relation("GroupExpensePaidBy", fields: [paidById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy   User                @relation("GroupExpenseCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  splits      GroupExpenseSplit[]
+
+  @@index([groupId, date], map: "idx_group_expenses_group_date")
+  @@map("group_expenses")
+}
+
+model GroupExpenseSplit {
+  id             String       @id @default(dbgenerated("concat('gspl_', (gen_random_uuid())::text)"))
+  groupExpenseId String       @map("group_expense_id")
+  userId         String       @map("user_id")
+  shareAmount    Float        @map("share_amount")
+  sharePercent   Float?       @map("share_percent")
+  groupExpense   GroupExpense @relation(fields: [groupExpenseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([groupExpenseId, userId])
+  @@map("group_expense_splits")
+}
+
+model Settlement {
+  id            String    @id @default(dbgenerated("concat('gset_', (gen_random_uuid())::text)"))
+  groupId       String    @map("group_id")
+  fromUserId    String    @map("from_user_id")
+  toUserId      String    @map("to_user_id")
+  amount        Float
+  status        String    @default("PENDING")
+  initiatedById String    @map("initiated_by_id")
+  note          String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt    DateTime? @map("resolved_at") @db.Timestamptz(6)
+  group         Group     @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  fromUser      User      @relation("SettlementFrom", fields: [fromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  toUser        User      @relation("SettlementTo", fields: [toUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([groupId, status], map: "idx_settlements_group_status")
+  @@map("settlements")
 }

@@ -22,9 +22,9 @@ export const expenseSchema = z.object({
 
 const EXPENSE_INCLUDE = { category: true, source: true, tags: { include: { tag: true } } };
 
-export async function createExpenseRecord(userId, data) {
+export async function createExpenseRecord(userId, data, client = prisma) {
   if (data.clientMutationId) {
-    const existing = await prisma.expense.findFirst({
+    const existing = await client.expense.findFirst({
       where: { userId, clientMutationId: data.clientMutationId },
       include: EXPENSE_INCLUDE,
     });
@@ -33,21 +33,21 @@ export async function createExpenseRecord(userId, data) {
 
   if (data.type === "INCOME") {
     if (data.categoryId) {
-      const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId } });
+      const cat = await client.category.findFirst({ where: { id: data.categoryId, userId } });
       if (!cat) return { error: "Invalid category", statusCode: 400 };
     } else if (data.sourceId) {
-      const src = await prisma.incomeSource.findFirst({ where: { id: data.sourceId, userId } });
+      const src = await client.incomeSource.findFirst({ where: { id: data.sourceId, userId } });
       if (!src) return { error: "Invalid income source", statusCode: 400 };
     } else {
       return { error: "categoryId or sourceId is required for income", statusCode: 400 };
     }
   } else {
     if (!data.categoryId) return { error: "categoryId is required for expenses", statusCode: 400 };
-    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId } });
+    const cat = await client.category.findFirst({ where: { id: data.categoryId, userId } });
     if (!cat) return { error: "Invalid category", statusCode: 400 };
   }
 
-  const expense = await prisma.expense.create({
+  const expense = await client.expense.create({
     data: {
       amount: data.amount,
       type: data.type,
