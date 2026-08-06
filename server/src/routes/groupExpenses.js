@@ -8,6 +8,8 @@ import { createExpenseRecord } from "./expenses.js";
 
 const SETTLEMENT_LEDGER_NAME = "Group Settlement";
 const SETTLEMENT_LEDGER_ICON = "🤝";
+const GROUP_EXPENSE_LEDGER_NAME = "Group Expense";
+const GROUP_EXPENSE_LEDGER_ICON = "🧾";
 
 async function findOrCreateSettlementCategory(client, userId) {
   let category = await client.category.findFirst({ where: { userId, name: SETTLEMENT_LEDGER_NAME } });
@@ -19,14 +21,14 @@ async function findOrCreateSettlementCategory(client, userId) {
   return category;
 }
 
-async function findOrCreateSettlementIncomeSource(client, userId) {
-  let source = await client.incomeSource.findFirst({ where: { userId, name: SETTLEMENT_LEDGER_NAME } });
-  if (!source) {
-    source = await client.incomeSource.create({
-      data: { name: SETTLEMENT_LEDGER_NAME, icon: SETTLEMENT_LEDGER_ICON, userId },
+async function findOrCreateGroupExpenseCategory(client, userId) {
+  let category = await client.category.findFirst({ where: { userId, name: GROUP_EXPENSE_LEDGER_NAME } });
+  if (!category) {
+    category = await client.category.create({
+      data: { name: GROUP_EXPENSE_LEDGER_NAME, color: "#1d6b51", icon: GROUP_EXPENSE_LEDGER_ICON, userId },
     });
   }
-  return source;
+  return category;
 }
 
 const router = Router();
@@ -100,7 +102,7 @@ export async function createGroupExpenseRecord(userId, groupId, data) {
   if (resolved.error) return resolved;
 
   const expense = await prisma.$transaction(async (tx) => {
-    return tx.groupExpense.create({
+    const created = await tx.groupExpense.create({
       data: {
         groupId,
         description: data.description,
@@ -113,7 +115,21 @@ export async function createGroupExpenseRecord(userId, groupId, data) {
       },
       include: { splits: true },
     });
-  });
+
+    const group = await tx.group.findUnique({ where: { id: groupId }, select: { name: true } });
+    const category = await findOrCreateGroupExpenseCategory(tx, data.paidById);
+    await createExpenseRecord(data.paidById, {
+      amount: data.amount,
+      type: "EXPENSE",
+      categoryId: category.id,
+      note: `${data.description} — paid for "${group.name}"`,
+      date: data.date,
+      groupExpenseId: created.id,
+      tagIds: [],
+    }, tx);
+
+    return created;
+  }, { maxWait: 10000, timeout: 15000 });
 
   return { record: expense };
 }
@@ -135,7 +151,7 @@ export async function updateGroupExpenseRecord(userId, groupId, id, data) {
 
   const expense = await prisma.$transaction(async (tx) => {
     await tx.groupExpenseSplit.deleteMany({ where: { groupExpenseId: id } });
-    return tx.groupExpense.update({
+    const updated = await tx.groupExpense.update({
       where: { id },
       data: {
         description: data.description,
@@ -147,7 +163,31 @@ export async function updateGroupExpenseRecord(userId, groupId, id, data) {
       },
       include: { splits: true },
     });
-  });
+
+    const group = await tx.group.findUnique({ where: { id: groupId }, select: { name: true } });
+    const category = await findOrCreateGroupExpenseCategory(tx, data.paidById);
+    const note = `${data.description} — paid for "${group.name}"`;
+    const linkedExpense = await tx.expense.findFirst({ where: { groupExpenseId: id } });
+
+    if (linkedExpense) {
+      await tx.expense.update({
+        where: { id: linkedExpense.id },
+        data: { userId: data.paidById, amount: data.amount, date: data.date, note, categoryId: category.id, sourceId: null },
+      });
+    } else {
+      await createExpenseRecord(data.paidById, {
+        amount: data.amount,
+        type: "EXPENSE",
+        categoryId: category.id,
+        note,
+        date: data.date,
+        groupExpenseId: id,
+        tagIds: [],
+      }, tx);
+    }
+
+    return updated;
+  }, { maxWait: 10000, timeout: 15000 });
 
   return { record: expense };
 }
@@ -340,9 +380,9 @@ router.patch("/:groupId/settlements/:id", async (req, res, next) => {
       });
 
       const group = await tx.group.findUnique({ where: { id: req.params.groupId }, select: { name: true } });
-      const [debtorCategory, creditorSource] = await Promise.all([
+      const [debtorCategory, creditorCategory] = await Promise.all([
         findOrCreateSettlementCategory(tx, settlement.fromUserId),
-        findOrCreateSettlementIncomeSource(tx, settlement.toUserId),
+        findOrCreateSettlementCategory(tx, settlement.toUserId),
       ]);
 
       await createExpenseRecord(settlement.fromUserId, {
@@ -354,17 +394,19 @@ router.patch("/:groupId/settlements/:id", async (req, res, next) => {
         tagIds: [],
       }, tx);
 
+      // Category-tied (not source-tied) so it reads as a refund of money
+      // already counted as spent — nets against both Total Spent and Remaining Budget.
       await createExpenseRecord(settlement.toUserId, {
         amount: settlement.amount,
         type: "INCOME",
-        sourceId: creditorSource.id,
+        categoryId: creditorCategory.id,
         note: `Received from ${settlement.fromUser.name} — settled up in "${group.name}"`,
         date: now,
         tagIds: [],
       }, tx);
 
       return confirmed;
-    });
+    }, { maxWait: 10000, timeout: 15000 });
 
     res.json(updated);
   } catch (err) {

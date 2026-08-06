@@ -57,6 +57,7 @@ export async function createExpenseRecord(userId, data, client = prisma) {
       recurringDay: data.recurringDay,
       categoryId: data.type === "EXPENSE" ? data.categoryId : (data.categoryId || null),
       sourceId: data.type === "INCOME" && !data.categoryId ? data.sourceId : null,
+      groupExpenseId: data.groupExpenseId || null,
       userId,
       clientMutationId: data.clientMutationId || null,
       tags: {

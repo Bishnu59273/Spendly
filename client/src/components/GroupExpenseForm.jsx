@@ -142,6 +142,9 @@ export default function GroupExpenseForm({ open, onClose, groupId, members, curr
               </option>
             ))}
           </select>
+          <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 6 }}>
+            {paidById === currentUserId ? "You'll" : "They'll"} get the full amount logged as a personal expense on the Dashboard right away.
+          </div>
         </div>
       </div>
 

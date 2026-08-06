@@ -34,14 +34,11 @@ router.get("/cycle", async (req, res, next) => {
     const incomeOnly   = allTransactions.filter((t) => t.type === "INCOME");
     const grossSpent    = spendingOnly.reduce((s, e) => s + e.amount, 0);
     const totalIncome  = incomeOnly.reduce((s, e) => s + e.amount, 0);
-    // Only category-tied income (refunds) offsets spend; source-tied ("Other
-    // source") income is extra money and shouldn't reduce Total Spent.
+    // Category-tied income (refunds) offsets spend; source-tied ("Other
+    // source") income doesn't touch a category but is still real money in.
     const categoryTiedIncome = incomeOnly
       .filter((e) => e.categoryId)
       .reduce((s, e) => s + e.amount, 0);
-    // Source-tied ("Other source") income doesn't offset spend, but it does
-    // add to the money available to spend, so it boosts remaining budget.
-    const sourceTiedIncome = totalIncome - categoryTiedIncome;
     const netSpent     = grossSpent - categoryTiedIncome;
     const totalSpent   = Math.max(0, netSpent);
 
@@ -102,7 +99,7 @@ router.get("/cycle", async (req, res, next) => {
       totalSpent,
       totalIncome,
       totalBudget,
-      remaining: (totalBudget || 0) - grossSpent + sourceTiedIncome,
+      remaining: (totalBudget || 0) - grossSpent + totalIncome,
       daysLeft,
       byCategory,
       hasOverallBudget: user.monthlyBudget != null,

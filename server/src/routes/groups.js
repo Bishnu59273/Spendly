@@ -32,7 +32,7 @@ export async function createGroupRecord(userId, data) {
     const created = await tx.group.create({ data: { ...data, inviteCode, createdById: userId } });
     await tx.groupMember.create({ data: { groupId: created.id, userId, isOwner: true } });
     return created;
-  });
+  }, { maxWait: 10000, timeout: 15000 });
   return { record: group };
 }
 
