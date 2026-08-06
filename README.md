@@ -20,6 +20,14 @@ Everything is scoped to your pay cycle, not January 1 – January 31. Set your s
 
 Create savings goals with a target amount and track progress with a live ring chart. Add savings manually or check **Deduct from monthly budget** to have the amount automatically logged as an expense — keeping your budget and your goals in sync. Deleting that expense reverses the goal amount. A history chart shows your savings trajectory over time.
 
+### Group expenses — split bills with flatmates & partners
+
+Create a group, invite people with a short 7-character code or a shareable link, and log shared expenses split three ways — **equally**, by **custom amounts**, or by **percentage**. Spendly nets everyone's balances and simplifies them down to the fewest payments needed (the same greedy debt-simplification approach apps like Splitwise use), so a group of five people never ends up with fifteen separate IOUs.
+
+To settle up, pay directly via **UPI** — a deep link opens the payer's UPI app, or they can scan a QR code — then mark it paid. The other person must confirm before it counts (a two-step confirmation, so nothing is recorded on a false claim). Once confirmed, the payment is logged as a real personal expense (for whoever paid) or income (for whoever received it) — right alongside manually-logged transactions on the Dashboard.
+
+Unlike the rest of the app, group actions require an internet connection: every other mutation queues offline and syncs later, but group balances are shared and server-authoritative across multiple people, so they talk to the server directly and surface a clear "you're offline" message instead of queuing.
+
 ### Dashboard at a glance
 
 - Total spent vs budget (% used)
@@ -43,14 +51,17 @@ Primary savings goal with a progress ring and snapshot history chart, plus a gri
 
 ## Tech stack
 
-| Layer    | Technology                                                  |
-| -------- | ----------------------------------------------------------- |
-| Frontend | React 18, Vite, React Query, React Router                   |
-| Styling  | Custom design system — Bricolage Grotesque + Hanken Grotesk |
-| Backend  | Node.js, Express, Prisma ORM                                |
-| Database | PostgreSQL on Supabase (RLS enabled on all tables)          |
-| Auth     | JWT (Bearer token), bcrypt password hashing                 |
-| Hosting  | Vercel (frontend) · Render (API)                            |
+| Layer         | Technology                                                          |
+| ------------- | -------------------------------------------------------------------- |
+| Frontend      | React 18, Vite, React Query, React Router                            |
+| Styling       | Custom design system — Bricolage Grotesque + Hanken Grotesk          |
+| Backend       | Node.js, Express, Prisma ORM                                        |
+| Database      | PostgreSQL on Supabase (RLS enabled on all tables)                   |
+| Auth          | JWT (Bearer token), bcrypt password hashing                          |
+| Offline / PWA | IndexedDB (`idb`) + Workbox — most mutations queue offline and sync when back online |
+| Notifications | Web Push (VAPID) for in-app announcements, Resend for transactional email |
+| Payments      | UPI deep links + `qrcode.react` for group settle-up                  |
+| Hosting       | Vercel (frontend) · Render (API)                                     |
 
 ---
 
@@ -64,14 +75,24 @@ Primary savings goal with a progress ring and snapshot history chart, plus a gri
 
 **No build-time migrations** — Database schema is managed via Supabase MCP. The Render build command is `npm install && npx prisma generate` only — no `prisma migrate deploy` in CI.
 
+**Group expenses are a separate ledger** — `Group`, `GroupExpense`, `GroupExpenseSplit`, and `Settlement` are their own models, fully decoupled from personal `Expense`/`Budget`. A member's share of a shared bill never touches their personal budget — but once a settlement is *confirmed* (two-step: one side marks it paid, the other confirms), it's written as a real personal expense or income via the same `createExpenseRecord` path used for manual entries, wrapped in one transaction so a settlement can never end up confirmed with a missing ledger entry on either side.
+
+**No offline queue for groups** — group actions (expenses, settlements, invites) bypass the offline sync engine entirely and talk to the server directly, since balances are shared and server-authoritative across multiple people and can't be safely reconciled from a local queue.
+
 ---
 
 ## Pages
 
-| Route       | Description                                                    |
-| ----------- | -------------------------------------------------------------- |
-| `/`         | Dashboard — KPIs, charts, recent transactions                  |
-| `/expenses` | Full transaction list — filter, search, edit, export           |
-| `/goals`    | Savings goals — progress rings, history chart                  |
-| `/settings` | Profile, salary day, currency, monthly budget, change password |
-| `/support`  | Send feedback                                                  |
+| Route                | Description                                                        |
+| -------------------- | ------------------------------------------------------------------- |
+| `/`                  | Dashboard — KPIs, charts, recent transactions                       |
+| `/expenses`          | Full transaction list — filter, search, edit, export                |
+| `/categories`        | Manage expense categories — icons, colors, per-category budgets     |
+| `/tags`              | Manage tags for cross-category grouping                             |
+| `/goals`             | Savings goals — progress rings, history chart                       |
+| `/groups`            | Your groups — create one, join with a code, see balances at a glance |
+| `/groups/:groupId`   | Group dashboard — balances, suggested settlements, shared expenses  |
+| `/join/:code`        | Accept a group invite link                                         |
+| `/settings`          | Profile, salary day, currency, monthly budget, UPI ID, change password |
+| `/updates`           | Product announcements                                              |
+| `/support`           | Send feedback                                                      |
