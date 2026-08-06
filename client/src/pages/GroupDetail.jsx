@@ -95,7 +95,16 @@ function ManageGroupModal({ open, onClose, group, members, currentUserId, isOwne
 
   const saveName = async () => {
     if (!name.trim() || name === group.name) return;
-    await update.mutateAsync({ name: name.trim() });
+    setError("");
+    try {
+      await update.mutateAsync({ name: name.trim() });
+    } catch (err) {
+      if (!navigator.onLine) {
+        setError("You're offline. Renaming a group needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Couldn't rename this group");
+      }
+    }
   };
 
   const handleRemove = async (userId) => {
@@ -105,7 +114,11 @@ function ManageGroupModal({ open, onClose, group, members, currentUserId, isOwne
       setConfirmRemove(null);
       if (userId === currentUserId) onLeftOrDeleted();
     } catch (err) {
-      setError(err.response?.data?.error || "Couldn't remove this member");
+      if (!navigator.onLine) {
+        setError("You're offline. This needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Couldn't remove this member");
+      }
       setConfirmRemove(null);
     }
   };
@@ -116,7 +129,11 @@ function ManageGroupModal({ open, onClose, group, members, currentUserId, isOwne
       await deleteGroup.mutateAsync(group.id);
       onLeftOrDeleted();
     } catch (err) {
-      setError(err.response?.data?.error || "Couldn't delete this group");
+      if (!navigator.onLine) {
+        setError("You're offline. Deleting a group needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Couldn't delete this group");
+      }
     }
   };
 

@@ -25,14 +25,24 @@ function CreateGroupModal({ open, onClose, onCreated }) {
   const [icon, setIcon] = useState("🏠");
   const [color, setColor] = useState(GROUP_COLORS[0]);
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [error, setError] = useState("");
 
   const save = async () => {
     if (!name) return;
-    const group = await create.mutateAsync({ name, icon, color });
-    setName("");
-    setIcon("🏠");
-    setColor(GROUP_COLORS[0]);
-    onCreated(group);
+    setError("");
+    try {
+      const group = await create.mutateAsync({ name, icon, color });
+      setName("");
+      setIcon("🏠");
+      setColor(GROUP_COLORS[0]);
+      onCreated(group);
+    } catch (err) {
+      if (!navigator.onLine) {
+        setError("You're offline. Creating a group needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Something went wrong");
+      }
+    }
   };
 
   return (
@@ -74,6 +84,11 @@ function CreateGroupModal({ open, onClose, onCreated }) {
           ))}
         </div>
       </div>
+      {error && (
+        <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px", marginBottom: 14 }}>
+          {error}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 10 }}>
         <button className="sp-btn sp-btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
         <button className="sp-btn sp-btn-primary" style={{ flex: 1.4 }} onClick={save} disabled={!name || create.isPending}>
@@ -97,7 +112,11 @@ function JoinGroupModal({ open, onClose, onJoined }) {
       setCode("");
       onJoined(group);
     } catch (err) {
-      setError(err.response?.data?.error || "Couldn't find that invite code");
+      if (!navigator.onLine) {
+        setError("You're offline. Joining a group needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Couldn't find that invite code");
+      }
     }
   };
 

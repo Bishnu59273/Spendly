@@ -17,7 +17,11 @@ export default function JoinGroup() {
       const group = await join.mutateAsync(code);
       navigate(`/groups/${group.id}`);
     } catch (err) {
-      setError(err.response?.data?.error || "Couldn't join this group");
+      if (!navigator.onLine) {
+        setError("You're offline. Joining a group needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Couldn't join this group");
+      }
     }
   };
 

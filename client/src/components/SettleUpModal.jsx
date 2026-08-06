@@ -29,7 +29,11 @@ export default function SettleUpModal({ open, onClose, groupId, suggestion, memb
       await createSettlement.mutateAsync({ fromUserId, toUserId, amount });
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
+      if (!navigator.onLine) {
+        setError("You're offline. Settling up needs an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Something went wrong");
+      }
     }
   };
 

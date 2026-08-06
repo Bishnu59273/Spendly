@@ -96,7 +96,11 @@ export default function GroupExpenseForm({ open, onClose, groupId, members, curr
       else await create.mutateAsync(payload);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
+      if (!navigator.onLine) {
+        setError("You're offline. Group expenses need an internet connection — try again once you're back online.");
+      } else {
+        setError(err.response?.data?.error || "Something went wrong");
+      }
     }
   };
 
