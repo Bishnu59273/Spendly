@@ -15,7 +15,7 @@ async function findOrCreateSettlementCategory(client, userId) {
   let category = await client.category.findFirst({ where: { userId, name: SETTLEMENT_LEDGER_NAME } });
   if (!category) {
     category = await client.category.create({
-      data: { name: SETTLEMENT_LEDGER_NAME, color: "#1d6b51", icon: SETTLEMENT_LEDGER_ICON, userId },
+      data: { name: SETTLEMENT_LEDGER_NAME, color: "#1d6b51", icon: SETTLEMENT_LEDGER_ICON, userId, isSystemManaged: true },
     });
   }
   return category;
@@ -25,7 +25,7 @@ async function findOrCreateGroupExpenseCategory(client, userId) {
   let category = await client.category.findFirst({ where: { userId, name: GROUP_EXPENSE_LEDGER_NAME } });
   if (!category) {
     category = await client.category.create({
-      data: { name: GROUP_EXPENSE_LEDGER_NAME, color: "#1d6b51", icon: GROUP_EXPENSE_LEDGER_ICON, userId },
+      data: { name: GROUP_EXPENSE_LEDGER_NAME, color: "#1d6b51", icon: GROUP_EXPENSE_LEDGER_ICON, userId, isSystemManaged: true },
     });
   }
   return category;

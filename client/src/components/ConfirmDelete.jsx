@@ -1,6 +1,6 @@
 import { Trash2 } from "lucide-react";
 
-export default function ConfirmDelete({ open, onConfirm, onCancel, label = "this item", loading = false }) {
+export default function ConfirmDelete({ open, onConfirm, onCancel, label = "this item", loading = false, error }) {
   if (!open) return null;
 
   return (
@@ -47,6 +47,16 @@ export default function ConfirmDelete({ open, onConfirm, onCancel, label = "this
             </div>
           </div>
         </div>
+
+        {error && (
+          <div style={{
+            margin: "0 24px 16px", padding: "10px 14px", borderRadius: "var(--r-sm)",
+            background: "color-mix(in srgb, var(--neg) 10%, transparent)",
+            color: "var(--neg)", fontSize: 13,
+          }}>
+            {error}
+          </div>
+        )}
 
         {/* Actions */}
         <div style={{ padding: "16px 24px", display: "flex", gap: 10 }}>

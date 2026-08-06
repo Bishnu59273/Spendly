@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Lock } from "lucide-react";
 import {
   useCategories,
   useCreateCategory,
@@ -211,6 +211,7 @@ export default function Categories({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [editCat, setEditCat] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const byCategory = summary?.byCategory || [];
   const totalBudget = categories.reduce((s, c) => s + (c.budgetLimit || 0), 0);
@@ -281,38 +282,47 @@ export default function Categories({ user }) {
                     </div>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button
-                    className="sp-icon-btn"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      background: "transparent",
-                      border: "none",
-                    }}
-                    onClick={() => setEditCat(c)}
-                    title="Edit"
+                {c.isSystemManaged ? (
+                  <div
+                    style={{ width: 30, height: 30, display: "grid", placeItems: "center", color: "var(--ink-3)" }}
+                    title="Managed automatically by group expenses — can't be edited or deleted"
                   >
-                    <Edit2 style={{ width: 14, height: 14 }} />
-                  </button>
-                  <button
-                    className="sp-icon-btn"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      background: "transparent",
-                      border: "none",
-                    }}
-                    onClick={() =>
-                      setDeleteTarget({ id: c.id, label: `${c.name} category` })
-                    }
-                    title="Delete"
-                  >
-                    <Trash2
-                      style={{ width: 14, height: 14, color: "var(--neg)" }}
-                    />
-                  </button>
-                </div>
+                    <Lock style={{ width: 14, height: 14 }} />
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      className="sp-icon-btn"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        background: "transparent",
+                        border: "none",
+                      }}
+                      onClick={() => setEditCat(c)}
+                      title="Edit"
+                    >
+                      <Edit2 style={{ width: 14, height: 14 }} />
+                    </button>
+                    <button
+                      className="sp-icon-btn"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        background: "transparent",
+                        border: "none",
+                      }}
+                      onClick={() =>
+                        setDeleteTarget({ id: c.id, label: `${c.name} category` })
+                      }
+                      title="Delete"
+                    >
+                      <Trash2
+                        style={{ width: 14, height: 14, color: "var(--neg)" }}
+                      />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div
@@ -403,11 +413,17 @@ export default function Categories({ user }) {
         open={!!deleteTarget}
         label={deleteTarget?.label}
         loading={deleteCategory.isPending}
+        error={deleteError}
         onConfirm={async () => {
-          await deleteCategory.mutateAsync(deleteTarget.id);
-          setDeleteTarget(null);
+          setDeleteError("");
+          try {
+            await deleteCategory.mutateAsync(deleteTarget.id);
+            setDeleteTarget(null);
+          } catch (err) {
+            setDeleteError(err.response?.data?.error || "Something went wrong");
+          }
         }}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => { setDeleteTarget(null); setDeleteError(""); }}
       />
     </div>
   );

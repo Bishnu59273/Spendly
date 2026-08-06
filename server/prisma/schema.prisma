@@ -60,6 +60,7 @@ model Category {
   icon             String
   budgetLimit      Float?    @map("budget_limit")
   isDefault        Boolean   @default(false) @map("is_default")
+  isSystemManaged  Boolean   @default(false) @map("is_system_managed")
   userId           String    @map("user_id")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

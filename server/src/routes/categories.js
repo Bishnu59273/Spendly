@@ -27,6 +27,10 @@ export async function updateCategoryRecord(userId, id, data, expectedUpdatedAt) 
   const existing = await prisma.category.findFirst({ where: { id, userId } });
   if (!existing) return { notFound: true };
 
+  if (existing.isSystemManaged) {
+    return { error: "This category is managed automatically and can't be edited.", statusCode: 403 };
+  }
+
   if (expectedUpdatedAt !== undefined && new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()) {
     return { conflict: true, serverRecord: existing };
   }
@@ -37,8 +41,19 @@ export async function updateCategoryRecord(userId, id, data, expectedUpdatedAt) 
 }
 
 export async function deleteCategoryRecord(userId, id) {
-  const result = await prisma.category.deleteMany({ where: { id, userId } });
-  if (result.count === 0) return { notFound: true };
+  const existing = await prisma.category.findFirst({ where: { id, userId } });
+  if (!existing) return { notFound: true };
+
+  if (existing.isSystemManaged) {
+    return { error: "This category is managed automatically and can't be deleted.", statusCode: 403 };
+  }
+
+  const inUse = await prisma.expense.findFirst({ where: { categoryId: id } });
+  if (inUse) {
+    return { error: "This category still has expenses logged under it. Recategorize or delete those first.", statusCode: 409 };
+  }
+
+  await prisma.category.delete({ where: { id } });
   return { ok: true };
 }
 
@@ -69,6 +84,7 @@ router.patch("/:id", async (req, res, next) => {
     const data = categorySchema.partial().parse(req.body);
     const result = await updateCategoryRecord(req.userId, req.params.id, data);
     if (result.notFound) return res.status(404).json({ error: "Not found" });
+    if (result.error) return res.status(result.statusCode).json({ error: result.error });
     res.json(result.record);
   } catch (err) {
     next(err);
@@ -79,6 +95,7 @@ router.delete("/:id", async (req, res, next) => {
   try {
     const result = await deleteCategoryRecord(req.userId, req.params.id);
     if (result.notFound) return res.status(404).json({ error: "Not found" });
+    if (result.error) return res.status(result.statusCode).json({ error: result.error });
     res.json({ ok: true });
   } catch (err) {
     next(err);
