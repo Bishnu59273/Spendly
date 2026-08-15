@@ -19,6 +19,7 @@ model User {
   monthlyBudget Float?         @map("monthly_budget")
   useDefaultBudget Boolean     @default(true) @map("use_default_budget")
   upiId         String?        @map("upi_id")
+  tokenVersion  Int            @default(0) @map("token_version")
   budgets       Budget[]
   monthlyBudgets MonthlyBudget[]
   categories    Category[]

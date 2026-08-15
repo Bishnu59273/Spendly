@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 import { trackPageView } from "./utils/analytics.js";
 import { useMe } from "./api/auth.js";
@@ -59,6 +59,28 @@ function AuthGuard({ children }) {
   );
 }
 
+// Wraps /login and /register: a user who is already signed in shouldn't be
+// able to reach the auth forms again — send them straight to the app instead.
+function PublicRoute({ children }) {
+  const { data: user, isLoading } = useMe();
+  const [searchParams] = useSearchParams();
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (user) {
+    const redirect = searchParams.get("redirect");
+    return <Navigate to={redirect ? decodeURIComponent(redirect) : "/dashboard"} replace />;
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <>
@@ -66,8 +88,8 @@ export default function App() {
       <BrowserRouter>
       <PageTracker />
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route

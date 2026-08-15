@@ -30,8 +30,8 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-function signToken(userId) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+function signToken(userId, tokenVersion) {
+  return jwt.sign({ userId, tokenVersion }, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
 function setCookie(res, token) {
@@ -57,7 +57,7 @@ router.post("/register", async (req, res, next) => {
 
     await seedDefaultCategories(user.id);
 
-    const token = signToken(user.id);
+    const token = signToken(user.id, 0);
     setCookie(res, token);
     res.status(201).json({ token, user });
   } catch (err) {
@@ -74,10 +74,10 @@ router.post("/login", async (req, res, next) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
-    const token = signToken(user.id);
+    const token = signToken(user.id, user.tokenVersion);
     setCookie(res, token);
 
-    const { password: _, ...safeUser } = user;
+    const { password: _, tokenVersion: __, ...safeUser } = user;
     res.json({ token, user: safeUser });
   } catch (err) {
     next(err);
@@ -245,9 +245,20 @@ router.post("/reset-password", async (req, res, next) => {
   }
 });
 
-router.post("/logout", (req, res) => {
-  res.clearCookie("token");
-  res.json({ ok: true });
+router.post("/logout", authMiddleware, async (req, res, next) => {
+  try {
+    // Bumping tokenVersion invalidates every previously-issued JWT for this user,
+    // not just the cookie on this device — otherwise a copied token stays valid
+    // until its natural 7-day expiry even after "logging out".
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    res.clearCookie("token");
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
