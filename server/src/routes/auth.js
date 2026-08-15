@@ -15,7 +15,22 @@ const USER_SELECT = {
   salaryDay: true, currency: true,
   monthlyBudget: true, useDefaultBudget: true, createdAt: true,
   upiId: true,
+  tourCompleted: true, feedbackRemindAt: true, pushPromptRemindAt: true,
+  savingsBannerDismissedMonth: true,
+  _count: { select: { feedback: true } },
 };
+
+const FEEDBACK_REMIND_MS = 17 * 24 * 60 * 60 * 1000;
+const PUSH_REMIND_MS = 7 * 24 * 60 * 60 * 1000;
+
+function currentMonthKey() {
+  return new Date().toISOString().slice(0, 7);
+}
+
+function shapeUser(u) {
+  const { password, tokenVersion, _count, ...rest } = u;
+  return { ...rest, hasSubmittedFeedback: (_count?.feedback ?? 0) > 0 };
+}
 
 const registerSchema = z.object({
   name: z.string().min(1),
@@ -59,7 +74,7 @@ router.post("/register", async (req, res, next) => {
 
     const token = signToken(user.id, 0);
     setCookie(res, token);
-    res.status(201).json({ token, user });
+    res.status(201).json({ token, user: shapeUser(user) });
   } catch (err) {
     next(err);
   }
@@ -68,7 +83,10 @@ router.post("/register", async (req, res, next) => {
 router.post("/login", async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { _count: { select: { feedback: true } } },
+    });
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     const valid = await bcrypt.compare(password, user.password);
@@ -77,8 +95,7 @@ router.post("/login", async (req, res, next) => {
     const token = signToken(user.id, user.tokenVersion);
     setCookie(res, token);
 
-    const { password: _, tokenVersion: __, ...safeUser } = user;
-    res.json({ token, user: safeUser });
+    res.json({ token, user: shapeUser(user) });
   } catch (err) {
     next(err);
   }
@@ -91,7 +108,7 @@ router.get("/me", authMiddleware, async (req, res, next) => {
       select: USER_SELECT,
     });
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+    res.json(shapeUser(user));
   } catch (err) {
     next(err);
   }
@@ -113,7 +130,34 @@ router.patch("/me", authMiddleware, async (req, res, next) => {
       data,
       select: USER_SELECT,
     });
-    res.json(user);
+    res.json(shapeUser(user));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/onboarding", authMiddleware, async (req, res, next) => {
+  try {
+    const schema = z.object({
+      tourCompleted: z.literal(true).optional(),
+      feedbackRemindLater: z.literal(true).optional(),
+      pushPromptRemindLater: z.literal(true).optional(),
+      dismissSavingsBanner: z.literal(true).optional(),
+    });
+    const body = schema.parse(req.body);
+
+    const data = {};
+    if (body.tourCompleted) data.tourCompleted = true;
+    if (body.feedbackRemindLater) data.feedbackRemindAt = new Date(Date.now() + FEEDBACK_REMIND_MS);
+    if (body.pushPromptRemindLater) data.pushPromptRemindAt = new Date(Date.now() + PUSH_REMIND_MS);
+    if (body.dismissSavingsBanner) data.savingsBannerDismissedMonth = currentMonthKey();
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data,
+      select: USER_SELECT,
+    });
+    res.json(shapeUser(user));
   } catch (err) {
     next(err);
   }

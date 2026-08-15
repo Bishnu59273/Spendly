@@ -20,6 +20,10 @@ model User {
   useDefaultBudget Boolean     @default(true) @map("use_default_budget")
   upiId         String?        @map("upi_id")
   tokenVersion  Int            @default(0) @map("token_version")
+  tourCompleted Boolean        @default(false) @map("tour_completed")
+  feedbackRemindAt DateTime?   @map("feedback_remind_at") @db.Timestamptz(6)
+  pushPromptRemindAt DateTime? @map("push_prompt_remind_at") @db.Timestamptz(6)
+  savingsBannerDismissedMonth String? @map("savings_banner_dismissed_month")
   budgets       Budget[]
   monthlyBudgets MonthlyBudget[]
   categories    Category[]

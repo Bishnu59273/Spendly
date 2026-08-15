@@ -2,43 +2,39 @@ import { useState, useEffect } from "react";
 import { X, Star } from "lucide-react";
 import { useSubmitFeedback } from "../api/feedback.js";
 import { useHasAnyExpense } from "../api/expenses.js";
+import { useUpdateOnboarding } from "../api/auth.js";
 
-const STORAGE_DONE   = "sp_feedback_done";
-const STORAGE_REMIND = "sp_feedback_remind";
-const REMIND_MS      = 17 * 24 * 60 * 60 * 1000; // 17 days
-
-function shouldShow() {
-  if (localStorage.getItem(STORAGE_DONE)) return false;
-  const remind = localStorage.getItem(STORAGE_REMIND);
-  if (remind) return Date.now() > Number(remind);
+function shouldShow(user) {
+  if (user?.hasSubmittedFeedback) return false;
+  if (user?.feedbackRemindAt) return Date.now() > new Date(user.feedbackRemindAt).getTime();
   return true;
 }
 
-export default function FeedbackPrompt() {
+export default function FeedbackPrompt({ user }) {
   const [open, setOpen]         = useState(false);
   const [stars, setStars]       = useState(0);
   const [hovered, setHovered]   = useState(0);
   const [note, setNote]         = useState("");
   const [done, setDone]         = useState(false);
   const submit = useSubmitFeedback();
+  const updateOnboarding = useUpdateOnboarding();
   const { data: recentExpenses } = useHasAnyExpense();
 
   useEffect(() => {
     // Only prompt users who have actually logged at least one expense
     if ((recentExpenses?.length ?? 0) < 5) return;
-    const t = setTimeout(() => { if (shouldShow()) setOpen(true); }, 30_000);
+    const t = setTimeout(() => { if (shouldShow(user)) setOpen(true); }, 30_000);
     return () => clearTimeout(t);
-  }, [recentExpenses]);
+  }, [recentExpenses, user]);
 
   const handleRemind = () => {
-    localStorage.setItem(STORAGE_REMIND, String(Date.now() + REMIND_MS));
+    updateOnboarding.mutate({ feedbackRemindLater: true });
     setOpen(false);
   };
 
   const handleSubmit = async () => {
     if (!stars) return;
     await submit.mutateAsync({ stars, recommendation: note || undefined });
-    localStorage.setItem(STORAGE_DONE, "1");
     setDone(true);
     setTimeout(() => setOpen(false), 2200);
   };

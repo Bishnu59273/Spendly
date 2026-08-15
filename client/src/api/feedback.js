@@ -1,9 +1,11 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "./client.js";
 
 export function useSubmitFeedback() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) => api.post("/feedback", data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
   });
 }
 

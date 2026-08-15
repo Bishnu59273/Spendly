@@ -2,23 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, X } from "lucide-react";
 import { isPushSupported, getPushStatus } from "../utils/push.js";
+import { useUpdateOnboarding } from "../api/auth.js";
 
-const STORAGE_REMIND = "sp_push_prompt_remind";
-const REMIND_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-function shouldShow() {
-  const remind = localStorage.getItem(STORAGE_REMIND);
-  if (remind) return Date.now() > Number(remind);
+function shouldShow(user) {
+  if (user?.pushPromptRemindAt) return Date.now() > new Date(user.pushPromptRemindAt).getTime();
   return true;
 }
 
-export default function PushNotificationPrompt({ tourDone }) {
+export default function PushNotificationPrompt({ tourDone, user }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const updateOnboarding = useUpdateOnboarding();
 
   useEffect(() => {
     // Wait until the new-user tour is done so this doesn't interrupt onboarding
-    if (!tourDone || !isPushSupported() || !shouldShow()) return;
+    if (!tourDone || !isPushSupported() || !shouldShow(user)) return;
     let cancelled = false;
     const t = setTimeout(() => {
       getPushStatus().then((status) => {
@@ -26,10 +24,10 @@ export default function PushNotificationPrompt({ tourDone }) {
       });
     }, 4000);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [tourDone]);
+  }, [tourDone, user]);
 
   const dismiss = () => {
-    localStorage.setItem(STORAGE_REMIND, String(Date.now() + REMIND_MS));
+    updateOnboarding.mutate({ pushPromptRemindLater: true });
     setOpen(false);
   };
 

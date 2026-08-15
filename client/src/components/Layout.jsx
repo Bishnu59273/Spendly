@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
   Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy, Share2, Users,
 } from "lucide-react";
-import { useLogout } from "../api/auth.js";
+import { useLogout, useUpdateOnboarding } from "../api/auth.js";
 import BudgetModal from "./BudgetModal.jsx";
 import ShareModal, { triggerShare } from "./ShareModal.jsx";
 import { useGoals, useUpdateGoal } from "../api/goals.js";
@@ -134,6 +134,7 @@ export default function Layout({ user, children }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [dark, toggleDark] = useDarkMode();
   const logout = useLogout();
+  const updateOnboarding = useUpdateOnboarding();
   const { cycleStart: gateCycleStart } = getCycleRange(user?.salaryDay);
 
   const { data: goals = [] } = useGoals();
@@ -141,12 +142,9 @@ export default function Layout({ user, children }) {
   const primaryGoal = goals.find((g) => g.isPrimary);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const [bannerDismissed, setBannerDismissed] = useState(() => {
-    try {
-      const v = JSON.parse(localStorage.getItem("sp_savings_reminder") || "{}");
-      return v.month === currentMonth;
-    } catch { return false; }
-  });
+  const [bannerDismissed, setBannerDismissed] = useState(
+    () => user?.savingsBannerDismissedMonth === currentMonth,
+  );
   const [bannerAmount, setBannerAmount] = useState("");
   const [bannerAdding, setBannerAdding] = useState(false);
   const [bannerSuccess, setBannerSuccess] = useState(null);
@@ -154,7 +152,7 @@ export default function Layout({ user, children }) {
   const showBanner = !!primaryGoal && !bannerDismissed && !pathname.startsWith("/settings");
 
   const dismissBanner = () => {
-    localStorage.setItem("sp_savings_reminder", JSON.stringify({ month: currentMonth }));
+    updateOnboarding.mutate({ dismissSavingsBanner: true });
     setBannerDismissed(true);
   };
 
@@ -179,9 +177,7 @@ export default function Layout({ user, children }) {
     }
   };
 
-  const [tourDone, setTourDone] = useState(
-    () => !!localStorage.getItem("sp_tour_v1"),
-  );
+  const [tourDone, setTourDone] = useState(() => !!user?.tourCompleted);
   const [tourSidebarStep, setTourSidebarStep] = useState(false);
   const navigateTo = useNavigate();
 
@@ -195,7 +191,7 @@ export default function Layout({ user, children }) {
   };
 
   const handleTourDone = () => {
-    localStorage.setItem("sp_tour_v1", "1");
+    updateOnboarding.mutate({ tourCompleted: true });
     setMenu(false);
     setTourSidebarStep(false);
     setTourDone(true);
@@ -469,8 +465,8 @@ export default function Layout({ user, children }) {
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       <InstallBanner />
-      {!suppressOnboarding && <FeedbackPrompt />}
-      {!suppressOnboarding && <PushNotificationPrompt tourDone={tourDone} />}
+      {!suppressOnboarding && <FeedbackPrompt user={user} />}
+      {!suppressOnboarding && <PushNotificationPrompt tourDone={tourDone} user={user} />}
 
       {!tourDone && !suppressOnboarding && (
         <TourOverlay

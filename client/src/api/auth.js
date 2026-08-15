@@ -76,6 +76,14 @@ export function useLogout() {
   });
 }
 
+export function useUpdateOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => api.patch("/auth/onboarding", data).then((r) => r.data),
+    onSuccess: (data) => qc.setQueryData(["me"], data),
+  });
+}
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
