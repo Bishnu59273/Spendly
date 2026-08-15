@@ -20,6 +20,7 @@ import {
   formatCurrency,
   CURRENCIES,
   getCurrencySymbol,
+  ordinalDay,
 } from "../utils/format.js";
 import { useDarkMode } from "../hooks/useDarkMode.js";
 import {
@@ -229,18 +230,18 @@ export default function Settings({ user }) {
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
         >
           <div>
-            <label style={lbl}>Budget Start Day</label>
-            <input
-              type="number"
-              min="1"
-              max="31"
-              required
+            <label style={lbl}>Payday</label>
+            <select
               value={form.salaryDay}
               onChange={(e) => set("salaryDay", e.target.value)}
-              style={inp}
-            />
+              style={{ ...inp, cursor: "pointer" }}
+            >
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                <option key={d} value={d}>{ordinalDay(d)}</option>
+              ))}
+            </select>
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
-              Day 1–31. Auto-caps if the month is shorter.
+              The day of the month you get paid. Your budget cycle starts here — auto-caps if a month is shorter.
             </div>
           </div>
           <div>

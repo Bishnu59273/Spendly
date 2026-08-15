@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useRegister } from "../api/auth.js";
-import { CURRENCIES, getCurrencySymbol } from "../utils/format.js";
+import { CURRENCIES, getCurrencySymbol, ordinalDay } from "../utils/format.js";
 import { trackEvent } from "../utils/analytics.js";
 import Seo from "../components/Seo.jsx";
 
@@ -117,13 +117,16 @@ export default function Register() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <div>
-                <label style={lbl}>Budget start day</label>
-                <input
-                  type="number" min="1" max="31" required
+                <label style={lbl}>Payday</label>
+                <select
                   value={form.salaryDay}
                   onChange={(e) => set("salaryDay", e.target.value)}
-                  style={inp}
-                />
+                  style={{ ...inp, cursor: "pointer" }}
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>{ordinalDay(d)}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label style={lbl}>Currency</label>
@@ -136,7 +139,7 @@ export default function Register() {
             </div>
 
             <div style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
-              The day each month your budget cycle begins — e.g. 1 for the 1st, 25 if you get paid on the 25th.
+              Which day of the month do you get paid? Your budget cycle will start on this day.
             </div>
 
             <button
