@@ -185,7 +185,7 @@ export default function Settings({ user }) {
 
   return (
     <div className="sp-grid-halves">
-      {/* Left — Profile form */}
+      {/* Left - Profile form */}
       <form
         onSubmit={handleSubmit}
         data-tour="settings-profile"
@@ -237,11 +237,14 @@ export default function Settings({ user }) {
               style={{ ...inp, cursor: "pointer" }}
             >
               {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>{ordinalDay(d)}</option>
+                <option key={d} value={d}>
+                  {ordinalDay(d)}
+                </option>
               ))}
             </select>
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
-              The day of the month you get paid. Your budget cycle starts here — auto-caps if a month is shorter.
+              The day of the month you get paid. Your budget cycle starts here -
+              auto-caps if a month is shorter.
             </div>
           </div>
           <div>
@@ -335,7 +338,8 @@ export default function Settings({ user }) {
             style={inp}
           />
           <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
-            Shown to group members so they can pay you directly via UPI when settling up.
+            Shown to group members so they can pay you directly via UPI when
+            settling up.
           </div>
         </div>
 

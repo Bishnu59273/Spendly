@@ -13,7 +13,7 @@ function clearSessionKeys() {
 }
 
 // A prior account's push subscription can linger in the browser (it isn't
-// tied to our login state) if they never hit the logout button — e.g. a
+// tied to our login state) if they never hit the logout button - e.g. a
 // token expired and force-redirected to /login. Clear it out so a new
 // session on this device doesn't inherit someone else's subscription.
 function clearStalePush() {
@@ -58,13 +58,13 @@ export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      // Push subscriptions live at the browser level, not per-login — unsubscribe
+      // Push subscriptions live at the browser level, not per-login - unsubscribe
       // here so the next account on this device/browser starts with a clean slate.
       try {
         const endpoint = await unsubscribeFromPush();
         if (endpoint) await api.post("/push/unsubscribe", { endpoint });
       } catch {
-        // best-effort — don't block logout on push cleanup failing
+        // best-effort - don't block logout on push cleanup failing
       }
       return api.post("/auth/logout");
     },
@@ -79,7 +79,8 @@ export function useLogout() {
 export function useUpdateOnboarding() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data) => api.patch("/auth/onboarding", data).then((r) => r.data),
+    mutationFn: (data) =>
+      api.patch("/auth/onboarding", data).then((r) => r.data),
     onSuccess: (data) => qc.setQueryData(["me"], data),
   });
 }
@@ -103,13 +104,15 @@ export function useChangePassword() {
 
 export function useForgotPassword() {
   return useMutation({
-    mutationFn: (data) => api.post("/auth/forgot-password", data).then((r) => r.data),
+    mutationFn: (data) =>
+      api.post("/auth/forgot-password", data).then((r) => r.data),
   });
 }
 
 export function useResetPassword() {
   return useMutation({
-    mutationFn: (data) => api.post("/auth/reset-password", data).then((r) => r.data),
+    mutationFn: (data) =>
+      api.post("/auth/reset-password", data).then((r) => r.data),
   });
 }
 
@@ -117,7 +120,9 @@ export function useValidateResetToken(token) {
   return useQuery({
     queryKey: ["reset-token", token],
     queryFn: () =>
-      api.get("/auth/reset-password/validate", { params: { token } }).then((r) => r.data),
+      api
+        .get("/auth/reset-password/validate", { params: { token } })
+        .then((r) => r.data),
     enabled: !!token,
     retry: false,
     refetchOnWindowFocus: false,

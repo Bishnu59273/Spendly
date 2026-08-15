@@ -19,10 +19,12 @@ export const goalSchema = z.object({
 
 export async function createGoalRecord(userId, data) {
   if (data.clientMutationId) {
-    const existing = await prisma.goal.findFirst({ where: { userId, clientMutationId: data.clientMutationId } });
+    const existing = await prisma.goal.findFirst({
+      where: { userId, clientMutationId: data.clientMutationId },
+    });
     if (existing) return { record: existing };
   }
-  // Only one primary goal allowed — demote others if this is primary
+  // Only one primary goal allowed - demote others if this is primary
   if (data.isPrimary) {
     await prisma.goal.updateMany({
       where: { userId, isPrimary: true },
@@ -33,11 +35,20 @@ export async function createGoalRecord(userId, data) {
   return { record: goal };
 }
 
-export async function updateGoalRecord(userId, id, data, expectedUpdatedAt, deductFromBudget) {
+export async function updateGoalRecord(
+  userId,
+  id,
+  data,
+  expectedUpdatedAt,
+  deductFromBudget,
+) {
   const existing = await prisma.goal.findFirst({ where: { id, userId } });
   if (!existing) return { notFound: true };
 
-  if (expectedUpdatedAt !== undefined && new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()) {
+  if (
+    expectedUpdatedAt !== undefined &&
+    new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()
+  ) {
     return { conflict: true, serverRecord: existing };
   }
 
@@ -116,7 +127,13 @@ router.patch("/:id", async (req, res, next) => {
   try {
     const { deductFromBudget, ...bodyRest } = req.body;
     const data = goalSchema.partial().parse(bodyRest);
-    const result = await updateGoalRecord(req.userId, req.params.id, data, undefined, deductFromBudget);
+    const result = await updateGoalRecord(
+      req.userId,
+      req.params.id,
+      data,
+      undefined,
+      deductFromBudget,
+    );
     if (result.notFound) return res.status(404).json({ error: "Not found" });
     res.json(result.record);
   } catch (err) {
@@ -126,7 +143,9 @@ router.patch("/:id", async (req, res, next) => {
 
 router.get("/:id/snapshots", async (req, res, next) => {
   try {
-    const existing = await prisma.goal.findFirst({ where: { id: req.params.id, userId: req.userId } });
+    const existing = await prisma.goal.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
     if (!existing) return res.status(404).json({ error: "Not found" });
 
     const rows = await prisma.goalSnapshot.findMany({

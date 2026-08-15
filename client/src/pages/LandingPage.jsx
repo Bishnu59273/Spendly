@@ -23,7 +23,7 @@ import { useMe } from "../api/auth.js";
 import { useTestimonials } from "../api/feedback.js";
 import Seo from "../components/Seo.jsx";
 
-// Direction B — WARM palette tokens
+// Direction B - WARM palette tokens
 const green = "oklch(0.6 0.12 150)";
 const greenSoft = "oklch(0.93 0.04 150)";
 const amber = "oklch(0.68 0.13 40)";
@@ -39,7 +39,7 @@ const border = "#ece2d2";
 
 const AVATAR_COLORS = [green, amber, gold];
 
-// Real app screenshots — drop PNG files into client/public/screenshots/
+// Real app screenshots - drop PNG files into client/public/screenshots/
 // Set to null to fall back to the CSS mockup for that slot
 const SCREENSHOTS = {
   hero: "/dashboard.jpeg",
@@ -97,7 +97,7 @@ const FEATURES = [
     iconBg: greenSoft,
     iconColor: green,
     title: "Budget by payday",
-    desc: "Your month starts when you get paid — so the budget actually matches real life.",
+    desc: "Your month starts when you get paid - so the budget actually matches real life.",
   },
   {
     Icon: PieChart,
@@ -142,7 +142,7 @@ const GROUP_STEPS = [
     color: green,
     Icon: Users,
     title: "Create a group",
-    desc: "Give it a name like ‘Our Flat’ or ‘Goa Trip’ — you’re the owner.",
+    desc: "Give it a name like ‘Our Flat’ or ‘Goa Trip’ - you’re the owner.",
   },
   {
     n: "02",
@@ -156,7 +156,7 @@ const GROUP_STEPS = [
     color: gold,
     Icon: Split,
     title: "Split any bill",
-    desc: "Log an expense and split it equally, by custom amounts, or by percentage — whatever’s fair for that one.",
+    desc: "Log an expense and split it equally, by custom amounts, or by percentage - whatever’s fair for that one.",
   },
   {
     n: "04",
@@ -467,8 +467,8 @@ export default function LandingPage() {
     >
       <Seo
         path="/"
-        title="Spendly — Free Expense Tracker for Salaried Professionals, Students & Bachelors India"
-        description="Free expense tracker for salaried professionals, students, and bachelors in India. Budget by your payday or pocket money — track every rupee, set savings goals, and see where your money goes. No subscription, no credit card required."
+        title="Spendly - Free Expense Tracker for Salaried Professionals, Students & Bachelors India"
+        description="Free expense tracker for salaried professionals, students, and bachelors in India. Budget by your payday or pocket money - track every rupee, set savings goals, and see where your money goes. No subscription, no credit card required."
       />
       <style>{`
         .lp-nav-links { display: flex; }
@@ -653,7 +653,7 @@ export default function LandingPage() {
               <strong style={{ color: dark, fontWeight: 700 }}>
                 salaried professionals, students &amp; bachelors
               </strong>
-              . Budget by your payday or pocket money — not the calendar. No
+              . Budget by your payday or pocket money - not the calendar. No
               jargon, no guilt.
             </p>
 
@@ -730,7 +730,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Phone mockup — hidden on mobile via CSS */}
+          {/* Phone mockup - hidden on mobile via CSS */}
           <div className="lp-phone-hero">
             <div
               style={{
@@ -950,7 +950,7 @@ export default function LandingPage() {
               paid
             </h2>
             <p style={{ fontSize: 15, color: textMid, margin: 0 }}>
-              Salary, stipend, or pocket money — your cycle, your rules.
+              Salary, stipend, or pocket money - your cycle, your rules.
             </p>
           </div>
           <div
@@ -1044,7 +1044,7 @@ export default function LandingPage() {
           </div>
 
           <div className="lp-phones">
-            {/* Phone 1 — expenses list */}
+            {/* Phone 1 - expenses list */}
             <PhoneFrame screenshot={SCREENSHOTS.expenses}>
               <div style={{ padding: "16px 14px" }}>
                 <div
@@ -1138,7 +1138,7 @@ export default function LandingPage() {
               </div>
             </PhoneFrame>
 
-            {/* Phone 2 — dashboard overview */}
+            {/* Phone 2 - dashboard overview */}
             <PhoneFrame screenshot={SCREENSHOTS.overview}>
               <div style={{ padding: "16px 14px" }}>
                 <div
@@ -1241,7 +1241,7 @@ export default function LandingPage() {
               </div>
             </PhoneFrame>
 
-            {/* Phone 3 — goals */}
+            {/* Phone 3 - goals */}
             <PhoneFrame screenshot={SCREENSHOTS.goals}>
               <div style={{ padding: "18px 16px" }}>
                 <div
@@ -1481,13 +1481,13 @@ export default function LandingPage() {
                 }}
               >
                 Add your UPI ID in <strong>Settings</strong> so others can pay
-                you directly — with a scannable QR code or a one-tap link to
+                you directly - with a scannable QR code or a one-tap link to
                 your UPI app.
               </p>
             </div>
           </div>
 
-          {/* Screenshots — group dashboard + settle up */}
+          {/* Screenshots - group dashboard + settle up */}
           <div className="lp-groups-phones">
             <PhoneFrame
               screenshot={SCREENSHOTS.groupDetail}

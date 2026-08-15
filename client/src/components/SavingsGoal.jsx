@@ -30,7 +30,7 @@ export default function SavingsGoal({ goal, currency = "INR", children }) {
   const pct =
     target > 0 ? Math.min(Math.round((saved / target) * 100), 100) : 0;
   const left = Math.max(target - saved, 0);
-  const months = goal.monthly > 0 ? Math.ceil(left / goal.monthly) : "—";
+  const months = goal.monthly > 0 ? Math.ceil(left / goal.monthly) : "-";
   const R = 76;
   const strokeW = 13;
   const C = 2 * Math.PI * R;
@@ -127,7 +127,7 @@ export default function SavingsGoal({ goal, currency = "INR", children }) {
             />
             <Mini
               label="On track in"
-              value={months !== "—" ? `${months} mo` : "—"}
+              value={months !== "-" ? `${months} mo` : "-"}
             />
           </div>
         </div>

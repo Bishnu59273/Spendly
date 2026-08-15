@@ -43,12 +43,16 @@ export default function ReinstallModal({ open, onClose }) {
           <div>
             <div
               className="sp-display"
-              style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}
+              style={{
+                fontWeight: 700,
+                fontSize: 18,
+                letterSpacing: "-0.02em",
+              }}
             >
               Install Spendly on your device
             </div>
             <div style={{ fontSize: 13, color: "var(--ink-2)", marginTop: 4 }}>
-              Your data is 100% safe — only the address changed
+              Your data is 100% safe - only the address changed
             </div>
           </div>
           <button
@@ -91,10 +95,23 @@ export default function ReinstallModal({ open, onClose }) {
             <Section icon={<Smartphone size={16} />} title="Android">
               <Steps
                 items={[
-                  { title: "Uninstall the old app", sub: "Remove the current Spendly icon from your home screen" },
-                  { title: "Open the link & log in", sub: "Open spendly.it.com in Chrome and sign in to your account" },
-                  { title: "Tap the install banner", sub: "A banner appears at the bottom of the screen — tap it to add Spendly to your home screen" },
-                  { title: "Banner not showing?", sub: "Tap the ⋮ menu → Settings → scroll down → tap Install app", warn: true },
+                  {
+                    title: "Uninstall the old app",
+                    sub: "Remove the current Spendly icon from your home screen",
+                  },
+                  {
+                    title: "Open the link & log in",
+                    sub: "Open spendly.it.com in Chrome and sign in to your account",
+                  },
+                  {
+                    title: "Tap the install banner",
+                    sub: "A banner appears at the bottom of the screen - tap it to add Spendly to your home screen",
+                  },
+                  {
+                    title: "Banner not showing?",
+                    sub: "Tap the ⋮ menu → Settings → scroll down → tap Install app",
+                    warn: true,
+                  },
                 ]}
               />
             </Section>
@@ -188,37 +205,99 @@ function Steps({ items }) {
       {items.map((step, i) => {
         if (typeof step === "string") {
           return (
-            <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
-              <span style={{
-                flexShrink: 0, width: 20, height: 20, borderRadius: "50%",
-                background: "color-mix(in srgb, var(--brand) 15%, transparent)",
-                color: "var(--brand)", fontSize: 11, fontWeight: 700,
-                display: "grid", placeItems: "center", marginTop: 1,
-              }}>{i + 1}</span>
-              <span style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}>{step}</span>
+            <div
+              key={i}
+              style={{ display: "flex", gap: 9, alignItems: "flex-start" }}
+            >
+              <span
+                style={{
+                  flexShrink: 0,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background:
+                    "color-mix(in srgb, var(--brand) 15%, transparent)",
+                  color: "var(--brand)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  display: "grid",
+                  placeItems: "center",
+                  marginTop: 1,
+                }}
+              >
+                {i + 1}
+              </span>
+              <span
+                style={{
+                  fontSize: 13,
+                  color: "var(--ink-2)",
+                  lineHeight: 1.55,
+                }}
+              >
+                {step}
+              </span>
             </div>
           );
         }
         const { title, sub, warn } = step;
         return (
-          <div key={i} style={{
-            display: "flex", gap: 9, alignItems: "flex-start",
-            ...(warn && {
-              background: "color-mix(in srgb, #f59e0b 10%, transparent)",
-              border: "1px solid color-mix(in srgb, #f59e0b 35%, transparent)",
-              borderRadius: "var(--r-sm)", padding: "8px 10px", marginTop: 2,
-            }),
-          }}>
-            <span style={{
-              flexShrink: 0, width: 20, height: 20, borderRadius: "50%",
-              background: warn ? "color-mix(in srgb, #f59e0b 25%, transparent)" : "color-mix(in srgb, var(--brand) 15%, transparent)",
-              color: warn ? "#d97706" : "var(--brand)",
-              fontSize: warn ? 13 : 11, fontWeight: 700,
-              display: "grid", placeItems: "center", marginTop: 1,
-            }}>{warn ? "!" : i + 1}</span>
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              gap: 9,
+              alignItems: "flex-start",
+              ...(warn && {
+                background: "color-mix(in srgb, #f59e0b 10%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, #f59e0b 35%, transparent)",
+                borderRadius: "var(--r-sm)",
+                padding: "8px 10px",
+                marginTop: 2,
+              }),
+            }}
+          >
+            <span
+              style={{
+                flexShrink: 0,
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: warn
+                  ? "color-mix(in srgb, #f59e0b 25%, transparent)"
+                  : "color-mix(in srgb, var(--brand) 15%, transparent)",
+                color: warn ? "#d97706" : "var(--brand)",
+                fontSize: warn ? 13 : 11,
+                fontWeight: 700,
+                display: "grid",
+                placeItems: "center",
+                marginTop: 1,
+              }}
+            >
+              {warn ? "!" : i + 1}
+            </span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: warn ? "#92400e" : "var(--ink)", marginBottom: 2 }}>{title}</div>
-              {sub && <div style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.55 }}>{sub}</div>}
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: warn ? "#92400e" : "var(--ink)",
+                  marginBottom: 2,
+                }}
+              >
+                {title}
+              </div>
+              {sub && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--ink-3)",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {sub}
+                </div>
+              )}
             </div>
           </div>
         );

@@ -5,7 +5,7 @@ import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 
-// PUBLIC — no auth, used by the landing page testimonials section
+// PUBLIC - no auth, used by the landing page testimonials section
 router.get("/testimonials", async (req, res, next) => {
   try {
     const entries = await prisma.feedback.findMany({
@@ -15,24 +15,30 @@ router.get("/testimonials", async (req, res, next) => {
       take: 50,
     });
 
-    // Deduplicate by userId — keep the longest meaningful text per user
+    // Deduplicate by userId - keep the longest meaningful text per user
     const byUser = new Map();
     for (const e of entries) {
       if (!e.recommendation || e.recommendation.trim().length < 20) continue;
       const existing = byUser.get(e.userId);
-      if (!existing || e.recommendation.length > existing.recommendation.length) {
+      if (
+        !existing ||
+        e.recommendation.length > existing.recommendation.length
+      ) {
         byUser.set(e.userId, e);
       }
     }
 
-    const testimonials = [...byUser.values()]
-      .slice(0, 5)
-      .map((e) => ({
-        text: e.recommendation.trim(),
-        stars: e.stars,
-        name: e.user.name,
-        initials: e.user.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2),
-      }));
+    const testimonials = [...byUser.values()].slice(0, 5).map((e) => ({
+      text: e.recommendation.trim(),
+      stars: e.stars,
+      name: e.user.name,
+      initials: e.user.name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2),
+    }));
 
     res.json(testimonials);
   } catch (err) {

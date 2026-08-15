@@ -17,7 +17,7 @@ export default function InstallBanner() {
       return;
     }
 
-    // Event may have fired before React mounted — check the global capture
+    // Event may have fired before React mounted - check the global capture
     if (window.__pwaPrompt) {
       setPrompt(window.__pwaPrompt);
       setVisible(true);

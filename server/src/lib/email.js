@@ -11,9 +11,9 @@ We received a request to reset your Spendly password.
 
 Reset your password: ${resetUrl}
 
-This link expires in 1 hour. If you didn't request this, you can safely ignore this email — your password won't change.
+This link expires in 1 hour. If you didn't request this, you can safely ignore this email - your password won't change.
 
-— The Spendly team`;
+- The Spendly team`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -62,8 +62,8 @@ This link expires in 1 hour. If you didn't request this, you can safely ignore t
         <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 20px;" />
 
         <p style="font-size:12.5px;color:#9ca3af;margin:0;line-height:1.8;text-align:center;">
-          If you didn't request this, you can safely ignore this email — your password won't change.<br>
-          <span style="color:#d1d5db;">— The Spendly team</span>
+          If you didn't request this, you can safely ignore this email - your password won't change.<br>
+          <span style="color:#d1d5db;">- The Spendly team</span>
         </p>
       </div>
     </div>

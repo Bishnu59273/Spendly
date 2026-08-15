@@ -5,20 +5,20 @@ import ShareModal, { triggerShare } from "./ShareModal.jsx";
 import SyncStatusPill from "./SyncStatusPill.jsx";
 
 const TITLES = {
-  "/dashboard":  { eyebrow: "Overview",          title: "Dashboard" },
-  "/expenses":   { eyebrow: "This pay cycle",     title: "Expenses" },
-  "/categories": { eyebrow: "Budget allocation",  title: "Categories" },
-  "/goals":      { eyebrow: "Saving toward",      title: "Goals" },
-  "/tags":       { eyebrow: "Organise",           title: "Tags" },
-  "/settings":   { eyebrow: "Account",            title: "Settings" },
-  "/support":    { eyebrow: "We're here to help",  title: "Help & Support" },
-  "/updates":    { eyebrow: "What's new",          title: "Notifications" },
+  "/dashboard": { eyebrow: "Overview", title: "Dashboard" },
+  "/expenses": { eyebrow: "This pay cycle", title: "Expenses" },
+  "/categories": { eyebrow: "Budget allocation", title: "Categories" },
+  "/goals": { eyebrow: "Saving toward", title: "Goals" },
+  "/tags": { eyebrow: "Organise", title: "Tags" },
+  "/settings": { eyebrow: "Account", title: "Settings" },
+  "/support": { eyebrow: "We're here to help", title: "Help & Support" },
+  "/updates": { eyebrow: "What's new", title: "Notifications" },
 };
 
 const ADD_LABELS = {
   "/categories": "New category",
-  "/goals":      "New goal",
-  "/tags":       "New tag",
+  "/goals": "New goal",
+  "/tags": "New tag",
 };
 
 function getAddLabel(pathname) {
@@ -29,11 +29,25 @@ function getAddLabel(pathname) {
 }
 
 function getInitials(name = "") {
-  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
-export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, setAddOpen }) {
-  const t = Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] || TITLES["/dashboard"];
+export default function TopBar({
+  user,
+  pathname,
+  dark,
+  onToggleDark,
+  onMenu,
+  setAddOpen,
+}) {
+  const t =
+    Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] ||
+    TITLES["/dashboard"];
   const addLabel = getAddLabel(pathname);
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -43,8 +57,12 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
 
   return (
     <header className="sp-topbar">
-      {/* Hamburger — mobile only */}
-      <button className="sp-icon-btn sp-menu-btn" style={{ display: "none" }} onClick={onMenu}>
+      {/* Hamburger - mobile only */}
+      <button
+        className="sp-icon-btn sp-menu-btn"
+        style={{ display: "none" }}
+        onClick={onMenu}
+      >
         <Menu style={{ width: 20, height: 20 }} />
       </button>
 
@@ -62,7 +80,11 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
 
       {/* Desktop-only right section */}
       <div className="sp-topbar-right sp-hide-mobile">
-        <button className="sp-icon-btn" onClick={handleShare} aria-label="Share Spendly">
+        <button
+          className="sp-icon-btn"
+          onClick={handleShare}
+          aria-label="Share Spendly"
+        >
           <Share2 style={{ width: 18, height: 18 }} />
         </button>
 
@@ -71,13 +93,17 @@ export default function TopBar({ user, pathname, dark, onToggleDark, onMenu, set
           onClick={onToggleDark}
           aria-label="Toggle theme"
         >
-          {dark
-            ? <Sun style={{ width: 18, height: 18 }} />
-            : <Moon style={{ width: 18, height: 18 }} />
-          }
+          {dark ? (
+            <Sun style={{ width: 18, height: 18 }} />
+          ) : (
+            <Moon style={{ width: 18, height: 18 }} />
+          )}
         </button>
 
-        <button className="sp-btn sp-btn-primary" onClick={() => setAddOpen(true)}>
+        <button
+          className="sp-btn sp-btn-primary"
+          onClick={() => setAddOpen(true)}
+        >
           <Plus style={{ width: 17, height: 17 }} />
           {addLabel}
         </button>

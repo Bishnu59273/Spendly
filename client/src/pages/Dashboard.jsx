@@ -174,17 +174,14 @@ function RecentTxns({ expenses, currency, onViewAll }) {
                 borderRadius: 11,
                 display: "grid",
                 placeItems: "center",
-                background:
-                  e.categoryId
-                    ? (e.category?.color || "#888") + "22"
-                    : "#16a34a22",
+                background: e.categoryId
+                  ? (e.category?.color || "#888") + "22"
+                  : "#16a34a22",
                 fontSize: 18,
                 flex: "none",
               }}
             >
-              {e.categoryId
-                ? e.category?.icon || "💸"
-                : e.source?.icon || "💰"}
+              {e.categoryId ? e.category?.icon || "💸" : e.source?.icon || "💰"}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -268,7 +265,7 @@ export default function Dashboard({ user }) {
   const totalSpent = summary?.totalSpent || 0;
   const totalBudget = summary?.totalBudget || 0;
   const remaining = summary?.remaining ?? totalBudget - totalSpent;
-  const daysLeft = summary?.daysLeft ?? "—";
+  const daysLeft = summary?.daysLeft ?? "-";
   const topCategory = [...byCategory].sort((a, b) => b.spent - a.spent)[0];
   const pctUsed =
     totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : null;
@@ -431,7 +428,7 @@ export default function Dashboard({ user }) {
           icon={Sparkles}
           tint="var(--cat-5)"
           label="Top category"
-          value={topCategory ? topCategory.name : "—"}
+          value={topCategory ? topCategory.name : "-"}
           sub={
             topCategory && (
               <span className="sp-pill sp-pill-muted sp-num">
@@ -619,7 +616,8 @@ export default function Dashboard({ user }) {
                             >
                               {categoryTotalSpent > 0
                                 ? Math.round(
-                                    (activeCat.spent / categoryTotalSpent) * 100,
+                                    (activeCat.spent / categoryTotalSpent) *
+                                      100,
                                   )
                                 : 0}
                               %
@@ -640,7 +638,10 @@ export default function Dashboard({ user }) {
                               className="sp-display sp-num"
                               style={{ fontSize: 26, fontWeight: 700 }}
                             >
-                              {formatCurrency(categoryTotalSpent, user.currency)}
+                              {formatCurrency(
+                                categoryTotalSpent,
+                                user.currency,
+                              )}
                             </div>
                           </>
                         )}
@@ -925,7 +926,9 @@ export default function Dashboard({ user }) {
         onClose={() => setBudgetOpen(false)}
         currency={user.currency}
         initialValue={
-          summary?.totalBudget ? summary.totalBudget.toString() : (user.monthlyBudget?.toString() ?? "")
+          summary?.totalBudget
+            ? summary.totalBudget.toString()
+            : (user.monthlyBudget?.toString() ?? "")
         }
         month={cycleStart.getMonth() + 1}
         year={cycleStart.getFullYear()}

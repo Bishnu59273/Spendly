@@ -18,7 +18,8 @@ export default defineConfig({
       manifest: {
         name: "Spendly",
         short_name: "Spendly",
-        description: "Personal expense manager — track spending by salary cycle.",
+        description:
+          "Personal expense manager - track spending by salary cycle.",
         start_url: "/dashboard",
         scope: "/",
         display: "standalone",
@@ -27,10 +28,30 @@ export default defineConfig({
         theme_color: "#1d6b51",
         lang: "en",
         icons: [
-          { src: "/pwa-64x64.png", sizes: "64x64", type: "image/png", purpose: "any" },
-          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-          { src: "/maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          {
+            src: "/pwa-64x64.png",
+            sizes: "64x64",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
         ],
       },
       devOptions: { enabled: true, type: "module" },

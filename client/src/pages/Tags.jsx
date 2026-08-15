@@ -97,7 +97,9 @@ function TagForm({ tag = null, onClose }) {
             fontSize: 22,
             borderRadius: "var(--r-sm)",
             border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
-            background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
+            background: showIconPicker
+              ? "var(--brand-soft)"
+              : "var(--surface-2)",
             cursor: "pointer",
             display: "grid",
             placeItems: "center",
@@ -172,7 +174,15 @@ function TagForm({ tag = null, onClose }) {
       </div>
 
       {error && (
-        <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--neg)",
+            background: "color-mix(in srgb, var(--neg) 10%, transparent)",
+            borderRadius: "var(--r-sm)",
+            padding: "10px 14px",
+          }}
+        >
           {error}
         </div>
       )}
@@ -238,7 +248,11 @@ export default function Tags({ user }) {
             <div className="sp-card-title">All tags</div>
             <div className="sp-card-sub">{tags.length} tags total</div>
           </div>
-          <button className="sp-btn sp-btn-ghost" style={{ height: 38 }} onClick={() => setShowCreate(true)}>
+          <button
+            className="sp-btn sp-btn-ghost"
+            style={{ height: 38 }}
+            onClick={() => setShowCreate(true)}
+          >
             <Plus style={{ width: 16, height: 16 }} /> New tag
           </button>
         </div>
@@ -334,7 +348,7 @@ export default function Tags({ user }) {
                     color: "var(--ink)",
                   }}
                 >
-                  {t.total > 0 ? formatCurrency(t.total, user?.currency) : "—"}
+                  {t.total > 0 ? formatCurrency(t.total, user?.currency) : "-"}
                 </div>
                 <div
                   style={{

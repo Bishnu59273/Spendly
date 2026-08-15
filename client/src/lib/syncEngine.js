@@ -13,7 +13,7 @@ import {
 const MAX_ATTEMPTS = 8;
 
 // Each offline-syncable entity registers the React Query keys to invalidate
-// once one of its queued ops resolves — populated by that entity's api/*.js
+// once one of its queued ops resolves - populated by that entity's api/*.js
 // module so query-key shape stays owned by the file that defines it.
 const entityRegistry = {};
 
@@ -75,7 +75,7 @@ export async function enqueueMutation(entry) {
   const clientOpId = entry.clientOpId || crypto.randomUUID();
   await addToOutbox({ ...entry, id: clientOpId, clientOpId });
   computeAndNotify();
-  processQueue(); // fire-and-forget — don't block the caller on network
+  processQueue(); // fire-and-forget - don't block the caller on network
   return clientOpId;
 }
 
@@ -91,14 +91,18 @@ export async function dropQueuedCreate(entity, tempId) {
   return removed;
 }
 
-// Manual retry for ops that hit MAX_ATTEMPTS and stopped auto-retrying —
+// Manual retry for ops that hit MAX_ATTEMPTS and stopped auto-retrying -
 // resets their attempt count and lets the next processQueue pass pick them
 // back up.
 export async function retryFailedOps() {
   const all = await getAllOutbox();
   for (const entry of all) {
     if (entry.status === "error") {
-      await updateOutboxEntry(entry.id, { status: "pending", attempts: 0, lastError: null });
+      await updateOutboxEntry(entry.id, {
+        status: "pending",
+        attempts: 0,
+        lastError: null,
+      });
     }
   }
   computeAndNotify();
@@ -164,7 +168,7 @@ async function syncOne(entry) {
     const res = await api.post("/sync/batch", body);
     result = res.data.results[0];
   } catch {
-    // Real network failure mid-sync — leave it queued, retry on the next pass.
+    // Real network failure mid-sync - leave it queued, retry on the next pass.
     return;
   }
 
@@ -176,11 +180,11 @@ async function syncOne(entry) {
     invalidate(entry.entity);
   } else if (result.status === "not_found" || result.status === "conflict") {
     // not_found: already gone server-side. conflict: server wins, stale
-    // queued edit is discarded (no merge UI) — either way, drop it.
+    // queued edit is discarded (no merge UI) - either way, drop it.
     await removeFromOutbox(entry.id);
     invalidate(entry.entity);
   } else {
-    // Genuine validation/server error — keep queued but cap retries.
+    // Genuine validation/server error - keep queued but cap retries.
     await updateOutboxEntry(entry.id, {
       status: "error",
       attempts: (entry.attempts || 0) + 1,

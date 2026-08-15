@@ -81,7 +81,8 @@ const inputStyle = {
 export default function ExpenseForm({ open, onClose, expense = null }) {
   const { data: me } = useMe();
   const currencySymbol = getCurrencySymbol(me?.currency);
-  const { cycleStart: currentCycleStart, cycleEnd: currentCycleEnd } = getCycleRange(me?.salaryDay ?? 1);
+  const { cycleStart: currentCycleStart, cycleEnd: currentCycleEnd } =
+    getCycleRange(me?.salaryDay ?? 1);
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
   const { data: incomeSources = [] } = useIncomeSources();
@@ -146,10 +147,16 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   useEffect(() => {
     if (open) {
       const t = expense ? parseTime(expense.date) : nowTime();
-      originalDateKeyRef.current = expense ? `${expense.date.split("T")[0]}T${t}` : null;
+      originalDateKeyRef.current = expense
+        ? `${expense.date.split("T")[0]}T${t}`
+        : null;
       setCrossCycleWarning(null);
       setTxType(expense?.type || "EXPENSE");
-      setIncomeMode(expense?.type === "INCOME" && expense?.categoryId ? "category" : "source");
+      setIncomeMode(
+        expense?.type === "INCOME" && expense?.categoryId
+          ? "category"
+          : "source",
+      );
       setForm({
         amount: expense?.amount?.toString() || "",
         categoryId: expense?.categoryId || categories[0]?.id || "",
@@ -213,7 +220,8 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       return;
     }
     if (
-      (txType === "EXPENSE" || (txType === "INCOME" && incomeMode === "category")) &&
+      (txType === "EXPENSE" ||
+        (txType === "INCOME" && incomeMode === "category")) &&
       !form.categoryId
     ) {
       setInvalidField("category");
@@ -226,14 +234,20 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
 
     if (me?.salaryDay) {
       const dateTimeKey = `${form.date}T${form.time}`;
-      const dateChanged = !expense || dateTimeKey !== originalDateKeyRef.current;
+      const dateChanged =
+        !expense || dateTimeKey !== originalDateKeyRef.current;
       const pickedDateTime = new Date(buildDateTime(form.date, form.time));
-      const inCurrentCycle = pickedDateTime >= currentCycleStart && pickedDateTime <= currentCycleEnd;
+      const inCurrentCycle =
+        pickedDateTime >= currentCycleStart &&
+        pickedDateTime <= currentCycleEnd;
 
       if (dateChanged && !inCurrentCycle) {
         const pickedCycle = getCycleRange(me.salaryDay, pickedDateTime);
         setCrossCycleWarning({
-          pickedLabel: formatCycleLabel(pickedCycle.cycleStart, pickedCycle.cycleEnd),
+          pickedLabel: formatCycleLabel(
+            pickedCycle.cycleStart,
+            pickedCycle.cycleEnd,
+          ),
           currentLabel: formatCycleLabel(currentCycleStart, currentCycleEnd),
         });
         return;
@@ -247,7 +261,8 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     const payload = {
       amount: parseFloat(form.amount),
       type: txType,
-      ...(txType === "EXPENSE" || (txType === "INCOME" && incomeMode === "category")
+      ...(txType === "EXPENSE" ||
+      (txType === "INCOME" && incomeMode === "category")
         ? { categoryId: form.categoryId }
         : { sourceId: form.sourceId }),
       date: buildDateTime(form.date, form.time),
@@ -656,7 +671,12 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
               >
                 <span>{formatTime12(form.time)}</span>
                 <Clock
-                  style={{ width: 15, height: 15, color: "var(--ink-3)", flexShrink: 0 }}
+                  style={{
+                    width: 15,
+                    height: 15,
+                    color: "var(--ink-3)",
+                    flexShrink: 0,
+                  }}
                 />
               </button>
             </div>
@@ -699,8 +719,10 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                       fontSize: 12,
                       fontWeight: 600,
                       cursor: "pointer",
-                      background: incomeMode === value ? "var(--surface)" : "transparent",
-                      color: incomeMode === value ? "var(--ink)" : "var(--ink-3)",
+                      background:
+                        incomeMode === value ? "var(--surface)" : "transparent",
+                      color:
+                        incomeMode === value ? "var(--ink)" : "var(--ink-3)",
                       boxShadow: incomeMode === value ? "var(--sh-xs)" : "none",
                       transition: "all var(--d1) var(--e)",
                     }}
@@ -709,10 +731,16 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 11.5,
+                  color: "var(--ink-3)",
+                  marginBottom: 12,
+                }}
+              >
                 {incomeMode === "category"
-                  ? "Refunds a category — reduces that category's spending everywhere."
-                  : "General income — only reduces your total spent, not any category."}
+                  ? "Refunds a category - reduces that category's spending everywhere."
+                  : "General income - only reduces your total spent, not any category."}
               </div>
             </div>
           )}
@@ -1582,42 +1610,81 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       </div>
 
       {crossCycleWarning && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 300,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 300,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <div
             onClick={() => setCrossCycleWarning(null)}
-            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              backdropFilter: "blur(2px)",
+            }}
           />
-          <div style={{
-            position: "relative", zIndex: 1,
-            width: "100%", maxWidth: 380, margin: "0 16px",
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-lg)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-            overflow: "hidden",
-          }}>
-            <div style={{
-              background: "color-mix(in srgb, var(--brand) 10%, transparent)",
-              padding: "24px 24px 20px",
-              display: "flex", alignItems: "center", gap: 14,
-            }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                background: "color-mix(in srgb, var(--brand) 15%, transparent)",
-                display: "grid", placeItems: "center",
-                color: "var(--brand)",
-              }}>
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              width: "100%",
+              maxWidth: 380,
+              margin: "0 16px",
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-lg)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                background: "color-mix(in srgb, var(--brand) 10%, transparent)",
+                padding: "24px 24px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  flexShrink: 0,
+                  background:
+                    "color-mix(in srgb, var(--brand) 15%, transparent)",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "var(--brand)",
+                }}
+              >
                 <AlertTriangle style={{ width: 20, height: 20 }} />
               </div>
               <div>
-                <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--display)",
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: "var(--ink)",
+                  }}
+                >
                   Different pay cycle
                 </div>
-                <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 3 }}>
-                  This date falls in <strong>{crossCycleWarning.pickedLabel}</strong>, not your current pay cycle (<strong>{crossCycleWarning.currentLabel}</strong>).
+                <div
+                  style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 3 }}
+                >
+                  This date falls in{" "}
+                  <strong>{crossCycleWarning.pickedLabel}</strong>, not your
+                  current pay cycle (
+                  <strong>{crossCycleWarning.currentLabel}</strong>).
                 </div>
               </div>
             </div>
@@ -1626,7 +1693,10 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
               <button
                 className="sp-btn sp-btn-ghost"
                 style={{ flex: 1 }}
-                onClick={() => { setCrossCycleWarning(null); dateRef.current?.focus(); }}
+                onClick={() => {
+                  setCrossCycleWarning(null);
+                  dateRef.current?.focus();
+                }}
               >
                 Change date
               </button>

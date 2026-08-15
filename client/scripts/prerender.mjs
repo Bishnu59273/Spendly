@@ -14,8 +14,16 @@ const dist = join(root, "dist");
 
 const ROUTES = [
   { path: "/", out: "index.html", mustContain: "payday" },
-  { path: "/login", out: "login/index.html", mustContain: "Sign in to your Spendly account" },
-  { path: "/register", out: "register/index.html", mustContain: "Create your account" },
+  {
+    path: "/login",
+    out: "login/index.html",
+    mustContain: "Sign in to your Spendly account",
+  },
+  {
+    path: "/register",
+    out: "register/index.html",
+    mustContain: "Create your account",
+  },
 ];
 
 async function launchBrowser() {
@@ -23,7 +31,7 @@ async function launchBrowser() {
     // Vercel's build image has no Chrome; use the statically-linked build.
     // @sparticuz/chromium only unpacks its bundled shared libs (libnss3 etc.)
     // and sets LD_LIBRARY_PATH when it detects an AWS Lambda Node 20/22
-    // runtime — Vercel build containers set neither var, so fake it BEFORE
+    // runtime - Vercel build containers set neither var, so fake it BEFORE
     // the import (the env check runs at module load).
     process.env.AWS_LAMBDA_JS_RUNTIME ||= "nodejs20.x";
     const sparticuz = (await import("@sparticuz/chromium")).default;
@@ -41,7 +49,10 @@ async function launchBrowser() {
   }
 }
 
-const server = await preview({ root, preview: { port: 4173, strictPort: false, open: false } });
+const server = await preview({
+  root,
+  preview: { port: 4173, strictPort: false, open: false },
+});
 const base = server.resolvedUrls.local[0].replace(/\/$/, "");
 console.log(`prerender: serving dist at ${base}`);
 
@@ -54,24 +65,35 @@ const context = await browser.newContext({
 // Abort API calls (queries settle instantly; useMe fails -> no auth redirect)
 // and analytics (no pageviews from build machines).
 await context.route("**/api/**", (r) => r.abort());
-await context.route(/googletagmanager\.com|google-analytics\.com/, (r) => r.abort());
+await context.route(/googletagmanager\.com|google-analytics\.com/, (r) =>
+  r.abort(),
+);
 
 for (const { path, out, mustContain } of ROUTES) {
   const page = await context.newPage();
   await page.goto(base + path, { waitUntil: "networkidle" });
-  await page.waitForSelector(`html[data-seo="${path}"]`, { state: "attached", timeout: 15_000 });
-  await page.waitForFunction(() => document.getElementById("root")?.children.length > 0);
+  await page.waitForSelector(`html[data-seo="${path}"]`, {
+    state: "attached",
+    timeout: 15_000,
+  });
+  await page.waitForFunction(
+    () => document.getElementById("root")?.children.length > 0,
+  );
 
   let html = await page.content();
   if (!/^<!doctype html>/i.test(html)) html = "<!doctype html>\n" + html;
   if (!html.toLowerCase().includes(mustContain.toLowerCase())) {
-    throw new Error(`prerender sanity check failed for ${path}: "${mustContain}" not in output`);
+    throw new Error(
+      `prerender sanity check failed for ${path}: "${mustContain}" not in output`,
+    );
   }
 
   const file = join(dist, out);
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, html, "utf8");
-  console.log(`prerender: ${path} -> ${out} (${(html.length / 1024).toFixed(1)} kB)`);
+  console.log(
+    `prerender: ${path} -> ${out} (${(html.length / 1024).toFixed(1)} kB)`,
+  );
   await page.close();
 }
 
@@ -81,16 +103,22 @@ await browser.close();
 // time; patch the inlined manifest entry so SW clients pick up new content.
 const swFile = join(dist, "sw.js");
 const sw = await readFile(swFile, "utf8");
-const newRev = createHash("md5").update(await readFile(join(dist, "index.html"))).digest("hex");
+const newRev = createHash("md5")
+  .update(await readFile(join(dist, "index.html")))
+  .digest("hex");
 const patched = sw.replace(
   /(\{[^{}]{0,160}?["']?url["']?\s*:\s*["']\/?index\.html["'][^{}]{0,160}?["']?revision["']?\s*:\s*["'])[0-9a-f]{32}(["'])|(\{[^{}]{0,160}?["']?revision["']?\s*:\s*["'])[0-9a-f]{32}(["'][^{}]{0,160}?["']?url["']?\s*:\s*["']\/?index\.html["'])/,
   (m, a, b, c, d) => (a !== undefined ? a + newRev + b : c + newRev + d),
 );
 if (patched === sw) {
-  throw new Error("prerender: could not patch index.html revision in dist/sw.js — manifest format changed?");
+  throw new Error(
+    "prerender: could not patch index.html revision in dist/sw.js - manifest format changed?",
+  );
 }
 await writeFile(swFile, patched, "utf8");
 console.log(`prerender: patched sw.js index.html revision -> ${newRev}`);
 
-await new Promise((res, rej) => server.httpServer.close((e) => (e ? rej(e) : res())));
+await new Promise((res, rej) =>
+  server.httpServer.close((e) => (e ? rej(e) : res())),
+);
 console.log("prerender: done");

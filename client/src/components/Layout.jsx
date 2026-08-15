@@ -1,8 +1,22 @@
 ﻿import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, FolderOpen, Tag, Target, Settings,
-  Wallet, ChevronRight, LogOut, Moon, Sun, X, PlusCircle, LifeBuoy, Share2, Users,
+  LayoutDashboard,
+  Receipt,
+  FolderOpen,
+  Tag,
+  Target,
+  Settings,
+  Wallet,
+  ChevronRight,
+  LogOut,
+  Moon,
+  Sun,
+  X,
+  PlusCircle,
+  LifeBuoy,
+  Share2,
+  Users,
 } from "lucide-react";
 import { useLogout, useUpdateOnboarding } from "../api/auth.js";
 import BudgetModal from "./BudgetModal.jsx";
@@ -20,8 +34,8 @@ import TourOverlay from "./TourOverlay.jsx";
 
 const FORM_TYPE = {
   "/categories": "category",
-  "/goals":      "goal",
-  "/tags":       "tag",
+  "/goals": "goal",
+  "/tags": "tag",
 };
 
 function getFormType(pathname) {
@@ -32,21 +46,41 @@ function getFormType(pathname) {
 }
 
 const FAB_LABELS = {
-  expense:  "Add expense",
+  expense: "Add expense",
   category: "New category",
-  goal:     "New goal",
-  tag:      "New tag",
+  goal: "New goal",
+  tag: "New tag",
 };
 
 const NAV = [
-  { to: "/dashboard",  icon: LayoutDashboard, label: "Dashboard",      tourId: "nav-dashboard"  },
-  { to: "/expenses",   icon: Receipt,          label: "Expenses",       tourId: "nav-expenses"   },
-  { to: "/categories", icon: FolderOpen,       label: "Categories",     tourId: "nav-categories" },
-  { to: "/goals",      icon: Target,           label: "Goals",          tourId: "nav-goals"      },
-  { to: "/groups",     icon: Users,            label: "Groups",         tourId: "nav-groups"     },
-  { to: "/tags",       icon: Tag,              label: "Tags",           tourId: "nav-tags"       },
-  { to: "/settings",   icon: Settings,         label: "Settings",       tourId: "nav-settings"   },
-  { to: "/support",    icon: LifeBuoy,         label: "Help & Support", tourId: "nav-support"    },
+  {
+    to: "/dashboard",
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    tourId: "nav-dashboard",
+  },
+  { to: "/expenses", icon: Receipt, label: "Expenses", tourId: "nav-expenses" },
+  {
+    to: "/categories",
+    icon: FolderOpen,
+    label: "Categories",
+    tourId: "nav-categories",
+  },
+  { to: "/goals", icon: Target, label: "Goals", tourId: "nav-goals" },
+  { to: "/groups", icon: Users, label: "Groups", tourId: "nav-groups" },
+  { to: "/tags", icon: Tag, label: "Tags", tourId: "nav-tags" },
+  {
+    to: "/settings",
+    icon: Settings,
+    label: "Settings",
+    tourId: "nav-settings",
+  },
+  {
+    to: "/support",
+    icon: LifeBuoy,
+    label: "Help & Support",
+    tourId: "nav-support",
+  },
 ];
 
 const TOUR_STEPS = [
@@ -59,7 +93,7 @@ const TOUR_STEPS = [
   {
     selector: '[data-tour="nav-expenses"]',
     title: "Expenses",
-    desc: "Every transaction you log lives here — filter, search, and review your spending history.",
+    desc: "Every transaction you log lives here - filter, search, and review your spending history.",
     side: "right",
   },
   {
@@ -84,7 +118,7 @@ const TOUR_STEPS = [
   {
     selector: '[data-tour="nav-tags"]',
     title: "Tags",
-    desc: "Add tags to expenses for flexible cross-category grouping — useful for trips, events, or any custom label.",
+    desc: "Add tags to expenses for flexible cross-category grouping - useful for trips, events, or any custom label.",
     side: "right",
   },
   {
@@ -96,7 +130,7 @@ const TOUR_STEPS = [
   {
     selector: '[data-tour="settings-profile"]',
     title: "Personalize Spendly",
-    desc: "Set your monthly budget limit here — it's what drives the Remaining Budget card on your dashboard.",
+    desc: "Set your monthly budget limit here - it's what drives the Remaining Budget card on your dashboard.",
     side: "bottom",
     navigate: "/settings",
   },
@@ -109,20 +143,25 @@ const TOUR_STEPS = [
   {
     selector: '[data-tour="support-form"]',
     title: "Get help anytime",
-    desc: "Send feedback, report a bug, or ask a question — we read and respond to everything.",
+    desc: "Send feedback, report a bug, or ask a question - we read and respond to everything.",
     side: "bottom",
     navigate: "/support",
   },
   {
     selector: '[data-tour="fab-add"]',
     title: "Add expense or income",
-    desc: "This button adapts to where you are — it adds an expense from the dashboard or expenses page, a category from Categories, a goal from Goals, and a tag from Tags.",
+    desc: "This button adapts to where you are - it adds an expense from the dashboard or expenses page, a category from Categories, a goal from Goals, and a tag from Tags.",
     side: "top",
   },
 ];
 
 function getInitials(name = "") {
-  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export default function Layout({ user, children }) {
@@ -149,7 +188,8 @@ export default function Layout({ user, children }) {
   const [bannerAdding, setBannerAdding] = useState(false);
   const [bannerSuccess, setBannerSuccess] = useState(null);
 
-  const showBanner = !!primaryGoal && !bannerDismissed && !pathname.startsWith("/settings");
+  const showBanner =
+    !!primaryGoal && !bannerDismissed && !pathname.startsWith("/settings");
 
   const dismissBanner = () => {
     updateOnboarding.mutate({ dismissSavingsBanner: true });
@@ -163,9 +203,13 @@ export default function Layout({ user, children }) {
     try {
       const newSaved = (primaryGoal.saved || 0) + amount;
       await updateGoal.mutateAsync({ id: primaryGoal.id, saved: newSaved });
-      const newPct = Math.min(Math.round((newSaved / primaryGoal.target) * 100), 100);
+      const newPct = Math.min(
+        Math.round((newSaved / primaryGoal.target) * 100),
+        100,
+      );
       const left = Math.max(primaryGoal.target - newSaved, 0);
-      const monthsLeft = primaryGoal.monthly > 0 ? Math.ceil(left / primaryGoal.monthly) : null;
+      const monthsLeft =
+        primaryGoal.monthly > 0 ? Math.ceil(left / primaryGoal.monthly) : null;
       setBannerSuccess({ added: amount, newPct, monthsLeft });
       setBannerAmount("");
       setTimeout(() => {
@@ -219,7 +263,8 @@ export default function Layout({ user, children }) {
 
         <nav className="sp-nav">
           {NAV.map(({ to, icon: Icon, label, tourId }) => {
-            const active = pathname === to || (to !== "/" && pathname.startsWith(to));
+            const active =
+              pathname === to || (to !== "/" && pathname.startsWith(to));
             return (
               <Link
                 key={to}
@@ -239,20 +284,46 @@ export default function Layout({ user, children }) {
           {/* Mobile-only controls */}
           <div className="sp-sidebar-mobile-only">
             {/* User row */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "12px 10px", marginBottom: 4,
-              borderRadius: "var(--r-sm)", background: "var(--surface-2)",
-              border: "1px solid var(--line)",
-            }}>
-              <div className="sp-avatar" style={{ width: 36, height: 36, fontSize: 13, flexShrink: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 10px",
+                marginBottom: 4,
+                borderRadius: "var(--r-sm)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--line)",
+              }}
+            >
+              <div
+                className="sp-avatar"
+                style={{ width: 36, height: 36, fontSize: 13, flexShrink: 0 }}
+              >
                 {getInitials(user?.name)}
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    color: "var(--ink)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {user?.name}
                 </div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div
+                  style={{
+                    fontSize: 11.5,
+                    color: "var(--ink-3)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {user?.email}
                 </div>
               </div>
@@ -262,16 +333,28 @@ export default function Layout({ user, children }) {
             <button
               onClick={() => triggerShare(() => setShareOpen(true))}
               style={{
-                display: "flex", alignItems: "center", gap: 12, width: "100%",
-                height: 42, padding: "0 14px",
-                borderRadius: "var(--r-sm)", color: "var(--brand)",
-                fontSize: 14, fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                width: "100%",
+                height: 42,
+                padding: "0 14px",
+                borderRadius: "var(--r-sm)",
+                color: "var(--brand)",
+                fontSize: 14,
+                fontWeight: 600,
                 background: "color-mix(in srgb, var(--brand) 8%, transparent)",
                 border: "none",
                 transition: "background var(--d1) var(--e)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--brand) 15%, transparent)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--brand) 8%, transparent)")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background =
+                  "color-mix(in srgb, var(--brand) 15%, transparent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background =
+                  "color-mix(in srgb, var(--brand) 8%, transparent)")
+              }
             >
               <Share2 style={{ width: 18, height: 18 }} />
               Refer a friend
@@ -281,61 +364,115 @@ export default function Layout({ user, children }) {
             <button
               onClick={toggleDark}
               style={{
-                display: "flex", alignItems: "center", gap: 12, width: "100%",
-                height: 42, padding: "0 14px",
-                borderRadius: "var(--r-sm)", color: "var(--ink-2)",
-                fontSize: 14, fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                width: "100%",
+                height: 42,
+                padding: "0 14px",
+                borderRadius: "var(--r-sm)",
+                color: "var(--ink-2)",
+                fontSize: 14,
+                fontWeight: 500,
                 transition: "background var(--d1) var(--e)",
                 justifyContent: "space-between",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--ink) 5%, transparent)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background =
+                  "color-mix(in srgb, var(--ink) 5%, transparent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
             >
               <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {dark ? <Moon style={{ width: 18, height: 18 }} /> : <Sun style={{ width: 18, height: 18 }} />}
+                {dark ? (
+                  <Moon style={{ width: 18, height: 18 }} />
+                ) : (
+                  <Sun style={{ width: 18, height: 18 }} />
+                )}
                 {dark ? "Dark mode" : "Light mode"}
               </span>
-              <div style={{
-                width: 40, height: 24, borderRadius: 99, flexShrink: 0,
-                background: dark ? "var(--brand)" : "var(--line)",
-                position: "relative", transition: "background var(--d1) var(--e)",
-              }}>
-                <div style={{
-                  position: "absolute", top: 3, left: dark ? 19 : 3,
-                  width: 18, height: 18, borderRadius: 50, background: "var(--surface)",
-                  transition: "left var(--d1) var(--e)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                }} />
+              <div
+                style={{
+                  width: 40,
+                  height: 24,
+                  borderRadius: 99,
+                  flexShrink: 0,
+                  background: dark ? "var(--brand)" : "var(--line)",
+                  position: "relative",
+                  transition: "background var(--d1) var(--e)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 3,
+                    left: dark ? 19 : 3,
+                    width: 18,
+                    height: 18,
+                    borderRadius: 50,
+                    background: "var(--surface)",
+                    transition: "left var(--d1) var(--e)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }}
+                />
               </div>
             </button>
-
           </div>
 
           {/* Desktop upsell card */}
           <div className="sp-upsell sp-sidebar-desktop-only">
             <div className="sp-upsell-title">Track your goals 🌱</div>
-            <div className="sp-upsell-desc">Stay on budget this cycle to hit your savings goal faster.</div>
-            <Link to="/goals" className="sp-upsell-btn" onClick={() => setMenu(false)}>
+            <div className="sp-upsell-desc">
+              Stay on budget this cycle to hit your savings goal faster.
+            </div>
+            <Link
+              to="/goals"
+              className="sp-upsell-btn"
+              onClick={() => setMenu(false)}
+            >
               View goals <ChevronRight style={{ width: 14, height: 14 }} />
             </Link>
           </div>
 
-          {/* Sign out — always visible */}
-          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 10, marginTop: 6 }}>
+          {/* Sign out - always visible */}
+          <div
+            style={{
+              borderTop: "1px solid var(--line)",
+              paddingTop: 10,
+              marginTop: 6,
+            }}
+          >
             <button
               onClick={() => logout.mutate()}
               style={{
-                display: "flex", alignItems: "center", gap: 10, width: "100%",
-                height: 44, padding: "0 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "100%",
+                height: 44,
+                padding: "0 14px",
                 borderRadius: "var(--r-sm)",
                 border: "1px solid var(--line)",
                 background: "var(--surface-2)",
                 color: "var(--ink-2)",
-                fontSize: 14, fontWeight: 600,
-                transition: "background var(--d1) var(--e), color var(--d1) var(--e), border-color var(--d1) var(--e)",
+                fontSize: 14,
+                fontWeight: 600,
+                transition:
+                  "background var(--d1) var(--e), color var(--d1) var(--e), border-color var(--d1) var(--e)",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--neg) 10%, transparent)"; e.currentTarget.style.color = "var(--neg)"; e.currentTarget.style.borderColor = "var(--neg)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface-2)"; e.currentTarget.style.color = "var(--ink-2)"; e.currentTarget.style.borderColor = "var(--line)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background =
+                  "color-mix(in srgb, var(--neg) 10%, transparent)";
+                e.currentTarget.style.color = "var(--neg)";
+                e.currentTarget.style.borderColor = "var(--neg)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--surface-2)";
+                e.currentTarget.style.color = "var(--ink-2)";
+                e.currentTarget.style.borderColor = "var(--line)";
+              }}
             >
               <LogOut style={{ width: 16, height: 16 }} />
               Sign out
@@ -357,66 +494,159 @@ export default function Layout({ user, children }) {
         <div className="sp-content">
           <div className="sp-content-inner">
             {showBanner && (
-              <div style={{
-                marginBottom: 16, borderRadius: "var(--r-md)",
-                border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
-                background: "var(--brand-soft)", padding: "14px 16px",
-                display: "flex", flexDirection: "column", gap: 10, position: "relative",
-              }}>
+              <div
+                style={{
+                  marginBottom: 16,
+                  borderRadius: "var(--r-md)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
+                  background: "var(--brand-soft)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  position: "relative",
+                }}
+              >
                 <button
                   onClick={dismissBanner}
-                  style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", display: "grid", placeItems: "center", padding: 4 }}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--ink-3)",
+                    display: "grid",
+                    placeItems: "center",
+                    padding: 4,
+                  }}
                 >
                   <X size={14} />
                 </button>
 
                 {!bannerSuccess ? (
                   <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 24 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        paddingRight: 24,
+                      }}
+                    >
                       <span style={{ fontSize: 20 }}>🐖</span>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>Time to log this month's savings</div>
-                        <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
-                          You're {Math.min(Math.round(((primaryGoal.saved || 0) / primaryGoal.target) * 100), 100)}% toward <strong>{primaryGoal.name}</strong>.
-                          {primaryGoal.monthly > 0 && ` Add your ${formatCurrency(primaryGoal.monthly, user.currency)} contribution.`}
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: "var(--ink)",
+                          }}
+                        >
+                          Time to log this month's savings
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--ink-3)",
+                            marginTop: 2,
+                          }}
+                        >
+                          You're{" "}
+                          {Math.min(
+                            Math.round(
+                              ((primaryGoal.saved || 0) / primaryGoal.target) *
+                                100,
+                            ),
+                            100,
+                          )}
+                          % toward <strong>{primaryGoal.name}</strong>.
+                          {primaryGoal.monthly > 0 &&
+                            ` Add your ${formatCurrency(primaryGoal.monthly, user.currency)} contribution.`}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div
+                      style={{ display: "flex", gap: 8, alignItems: "center" }}
+                    >
                       <input
                         type="number"
                         min="0"
-                        placeholder={primaryGoal.monthly > 0 ? `e.g. ${primaryGoal.monthly}` : "Amount saved"}
+                        placeholder={
+                          primaryGoal.monthly > 0
+                            ? `e.g. ${primaryGoal.monthly}`
+                            : "Amount saved"
+                        }
                         value={bannerAmount}
                         onChange={(e) => setBannerAmount(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleBannerAddSavings()}
-                        style={{ flex: 1, height: 36, padding: "0 10px", borderRadius: "var(--r-sm)", border: "1px solid color-mix(in srgb, var(--brand) 50%, transparent)", background: "var(--surface)", color: "var(--ink)", fontSize: 14, outline: "none" }}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleBannerAddSavings()
+                        }
+                        style={{
+                          flex: 1,
+                          height: 36,
+                          padding: "0 10px",
+                          borderRadius: "var(--r-sm)",
+                          border:
+                            "1px solid color-mix(in srgb, var(--brand) 50%, transparent)",
+                          background: "var(--surface)",
+                          color: "var(--ink)",
+                          fontSize: 14,
+                          outline: "none",
+                        }}
                       />
-                      <button onClick={handleBannerAddSavings} disabled={bannerAdding} className="sp-btn sp-btn-primary" style={{ height: 36, padding: "0 16px", fontSize: 13 }}>
+                      <button
+                        onClick={handleBannerAddSavings}
+                        disabled={bannerAdding}
+                        className="sp-btn sp-btn-primary"
+                        style={{ height: 36, padding: "0 16px", fontSize: 13 }}
+                      >
                         {bannerAdding ? "…" : "Add savings"}
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
                     <span style={{ fontSize: 28 }}>🎉</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "var(--brand)" }}>You're now {bannerSuccess.newPct}% funded!</div>
-                      <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3 }}>
-                        {formatCurrency(bannerSuccess.added, user.currency)} added to {primaryGoal.name}.
-                        {bannerSuccess.monthsLeft != null && ` Just ${bannerSuccess.monthsLeft} month${bannerSuccess.monthsLeft !== 1 ? "s" : ""} to go 🚀`}
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: "var(--brand)",
+                        }}
+                      >
+                        You're now {bannerSuccess.newPct}% funded!
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--ink-3)",
+                          marginTop: 3,
+                        }}
+                      >
+                        {formatCurrency(bannerSuccess.added, user.currency)}{" "}
+                        added to {primaryGoal.name}.
+                        {bannerSuccess.monthsLeft != null &&
+                          ` Just ${bannerSuccess.monthsLeft} month${bannerSuccess.monthsLeft !== 1 ? "s" : ""} to go 🚀`}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
             )}
-            {typeof children === "function" ? children({ addOpen, setAddOpen }) : children}
+            {typeof children === "function"
+              ? children({ addOpen, setAddOpen })
+              : children}
           </div>
         </div>
       </div>
 
-      {/* FAB — hidden on group pages, which have their own add-expense CTA */}
+      {/* FAB - hidden on group pages, which have their own add-expense CTA */}
       {!pathname.startsWith("/groups") && !pathname.startsWith("/join") && (
         <button
           className="sp-fab"
@@ -430,13 +660,23 @@ export default function Layout({ user, children }) {
             }
           }}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
       )}
 
-      <SmartAddModal open={addOpen} onClose={() => setAddOpen(false)} type={getFormType(pathname)} />
+      <SmartAddModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        type={getFormType(pathname)}
+      />
 
       <BudgetModal
         open={budgetGateOpen}
@@ -455,7 +695,9 @@ export default function Layout({ user, children }) {
         <div
           onClick={tourSidebarStep ? undefined : () => setMenu(false)}
           style={{
-            position: "fixed", inset: 0, zIndex: 94,
+            position: "fixed",
+            inset: 0,
+            zIndex: 94,
             background: tourSidebarStep ? "transparent" : "rgba(0,0,0,0.35)",
             backdropFilter: tourSidebarStep ? "none" : "blur(2px)",
           }}
@@ -466,7 +708,9 @@ export default function Layout({ user, children }) {
 
       <InstallBanner />
       {!suppressOnboarding && <FeedbackPrompt user={user} />}
-      {!suppressOnboarding && <PushNotificationPrompt tourDone={tourDone} user={user} />}
+      {!suppressOnboarding && (
+        <PushNotificationPrompt tourDone={tourDone} user={user} />
+      )}
 
       {!tourDone && !suppressOnboarding && (
         <TourOverlay
@@ -478,4 +722,3 @@ export default function Layout({ user, children }) {
     </div>
   );
 }
-

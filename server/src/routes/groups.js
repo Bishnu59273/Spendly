@@ -28,11 +28,18 @@ export async function requireMembership(groupId, userId) {
 
 export async function createGroupRecord(userId, data) {
   const inviteCode = await generateUniqueInviteCode();
-  const group = await prisma.$transaction(async (tx) => {
-    const created = await tx.group.create({ data: { ...data, inviteCode, createdById: userId } });
-    await tx.groupMember.create({ data: { groupId: created.id, userId, isOwner: true } });
-    return created;
-  }, { maxWait: 10000, timeout: 15000 });
+  const group = await prisma.$transaction(
+    async (tx) => {
+      const created = await tx.group.create({
+        data: { ...data, inviteCode, createdById: userId },
+      });
+      await tx.groupMember.create({
+        data: { groupId: created.id, userId, isOwner: true },
+      });
+      return created;
+    },
+    { maxWait: 10000, timeout: 15000 },
+  );
   return { record: group };
 }
 
@@ -48,7 +55,7 @@ router.get("/", async (req, res, next) => {
       memberships.map(async (m) => {
         const { balances } = await fetchGroupBalances(m.groupId);
         return { ...m.group, myBalance: balances[req.userId] ?? 0 };
-      })
+      }),
     );
 
     res.json(groups);
@@ -70,12 +77,16 @@ router.post("/", async (req, res, next) => {
 router.post("/join", async (req, res, next) => {
   try {
     const { code } = z.object({ code: z.string().min(1) }).parse(req.body);
-    const group = await prisma.group.findUnique({ where: { inviteCode: code.toUpperCase() } });
+    const group = await prisma.group.findUnique({
+      where: { inviteCode: code.toUpperCase() },
+    });
     if (!group) return res.status(404).json({ error: "Invite code not found" });
 
     const existing = await requireMembership(group.id, req.userId);
     if (!existing) {
-      await prisma.groupMember.create({ data: { groupId: group.id, userId: req.userId } });
+      await prisma.groupMember.create({
+        data: { groupId: group.id, userId: req.userId },
+      });
     }
     res.json(group);
   } catch (err) {
@@ -87,7 +98,13 @@ router.get("/invite/:code", async (req, res, next) => {
   try {
     const group = await prisma.group.findUnique({
       where: { inviteCode: req.params.code.toUpperCase() },
-      select: { id: true, name: true, icon: true, color: true, _count: { select: { members: true } } },
+      select: {
+        id: true,
+        name: true,
+        icon: true,
+        color: true,
+        _count: { select: { members: true } },
+      },
     });
     if (!group) return res.status(404).json({ error: "Invite code not found" });
 
@@ -127,10 +144,16 @@ router.patch("/:groupId", async (req, res, next) => {
   try {
     const membership = await requireMembership(req.params.groupId, req.userId);
     if (!membership) return res.status(404).json({ error: "Not found" });
-    if (!membership.isOwner) return res.status(403).json({ error: "Only the group owner can do this" });
+    if (!membership.isOwner)
+      return res
+        .status(403)
+        .json({ error: "Only the group owner can do this" });
 
     const data = groupSchema.partial().parse(req.body);
-    const group = await prisma.group.update({ where: { id: req.params.groupId }, data });
+    const group = await prisma.group.update({
+      where: { id: req.params.groupId },
+      data,
+    });
     res.json(group);
   } catch (err) {
     next(err);
@@ -141,10 +164,16 @@ router.post("/:groupId/regenerate-code", async (req, res, next) => {
   try {
     const membership = await requireMembership(req.params.groupId, req.userId);
     if (!membership) return res.status(404).json({ error: "Not found" });
-    if (!membership.isOwner) return res.status(403).json({ error: "Only the group owner can do this" });
+    if (!membership.isOwner)
+      return res
+        .status(403)
+        .json({ error: "Only the group owner can do this" });
 
     const inviteCode = await generateUniqueInviteCode();
-    const group = await prisma.group.update({ where: { id: req.params.groupId }, data: { inviteCode } });
+    const group = await prisma.group.update({
+      where: { id: req.params.groupId },
+      data: { inviteCode },
+    });
     res.json(group);
   } catch (err) {
     next(err);
@@ -175,7 +204,9 @@ router.delete("/:groupId/members/:userId", async (req, res, next) => {
 
     const isSelf = req.params.userId === req.userId;
     if (!isSelf && !membership.isOwner) {
-      return res.status(403).json({ error: "Only the group owner can remove other members" });
+      return res
+        .status(403)
+        .json({ error: "Only the group owner can remove other members" });
     }
 
     const target = await prisma.groupMember.findFirst({
@@ -185,7 +216,12 @@ router.delete("/:groupId/members/:userId", async (req, res, next) => {
 
     const { balances } = await fetchGroupBalances(req.params.groupId);
     if (Math.abs(balances[req.params.userId] ?? 0) > 0.01) {
-      return res.status(409).json({ error: "This member still has an outstanding balance — settle up before leaving/removing." });
+      return res
+        .status(409)
+        .json({
+          error:
+            "This member still has an outstanding balance - settle up before leaving/removing.",
+        });
     }
 
     await prisma.groupMember.delete({ where: { id: target.id } });
@@ -199,12 +235,19 @@ router.delete("/:groupId", async (req, res, next) => {
   try {
     const membership = await requireMembership(req.params.groupId, req.userId);
     if (!membership) return res.status(404).json({ error: "Not found" });
-    if (!membership.isOwner) return res.status(403).json({ error: "Only the group owner can do this" });
+    if (!membership.isOwner)
+      return res
+        .status(403)
+        .json({ error: "Only the group owner can do this" });
 
     const { balances } = await fetchGroupBalances(req.params.groupId);
-    const hasOutstanding = Object.values(balances).some((b) => Math.abs(b) > 0.01);
+    const hasOutstanding = Object.values(balances).some(
+      (b) => Math.abs(b) > 0.01,
+    );
     if (hasOutstanding) {
-      return res.status(409).json({ error: "Settle up all balances before deleting this group." });
+      return res
+        .status(409)
+        .json({ error: "Settle up all balances before deleting this group." });
     }
 
     await prisma.group.delete({ where: { id: req.params.groupId } });

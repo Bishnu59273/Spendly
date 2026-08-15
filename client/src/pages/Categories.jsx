@@ -64,7 +64,15 @@ function CategoryForm({ onClose, initial, currency }) {
         />
       </div>
       {error && (
-        <div style={{ fontSize: 13, color: "var(--neg)", background: "color-mix(in srgb, var(--neg) 10%, transparent)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--neg)",
+            background: "color-mix(in srgb, var(--neg) 10%, transparent)",
+            borderRadius: "var(--r-sm)",
+            padding: "10px 14px",
+          }}
+        >
           {error}
         </div>
       )}
@@ -74,18 +82,37 @@ function CategoryForm({ onClose, initial, currency }) {
           type="button"
           onClick={() => setShowIconPicker((v) => !v)}
           style={{
-            width: 46, height: 44, fontSize: 22,
+            width: 46,
+            height: 44,
+            fontSize: 22,
             borderRadius: "var(--r-sm)",
             border: `1px solid ${showIconPicker ? "var(--brand)" : "var(--line)"}`,
-            background: showIconPicker ? "var(--brand-soft)" : "var(--surface-2)",
-            cursor: "pointer", display: "grid", placeItems: "center",
+            background: showIconPicker
+              ? "var(--brand-soft)"
+              : "var(--surface-2)",
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
           }}
         >
           {icon}
         </button>
         {showIconPicker && (
-          <div style={{ marginTop: 8, borderRadius: "var(--r-sm)", border: "1px solid var(--line)", overflow: "hidden" }}>
-            <EmojiPicker value={icon} onChange={(v) => { setIcon(v); setShowIconPicker(false); }} />
+          <div
+            style={{
+              marginTop: 8,
+              borderRadius: "var(--r-sm)",
+              border: "1px solid var(--line)",
+              overflow: "hidden",
+            }}
+          >
+            <EmojiPicker
+              value={icon}
+              onChange={(v) => {
+                setIcon(v);
+                setShowIconPicker(false);
+              }}
+            />
           </div>
         )}
       </div>
@@ -284,8 +311,14 @@ export default function Categories({ user }) {
                 </div>
                 {c.isSystemManaged ? (
                   <div
-                    style={{ width: 30, height: 30, display: "grid", placeItems: "center", color: "var(--ink-3)" }}
-                    title="Managed automatically by group expenses — can't be edited or deleted"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      display: "grid",
+                      placeItems: "center",
+                      color: "var(--ink-3)",
+                    }}
+                    title="Managed automatically by group expenses - can't be edited or deleted"
                   >
                     <Lock style={{ width: 14, height: 14 }} />
                   </div>
@@ -313,7 +346,10 @@ export default function Categories({ user }) {
                         border: "none",
                       }}
                       onClick={() =>
-                        setDeleteTarget({ id: c.id, label: `${c.name} category` })
+                        setDeleteTarget({
+                          id: c.id,
+                          label: `${c.name} category`,
+                        })
                       }
                       title="Delete"
                     >
@@ -399,14 +435,21 @@ export default function Categories({ user }) {
         onClose={() => setShowForm(false)}
         title="New category"
       >
-        <CategoryForm onClose={() => setShowForm(false)} currency={user.currency} />
+        <CategoryForm
+          onClose={() => setShowForm(false)}
+          currency={user.currency}
+        />
       </Modal>
       <Modal
         open={!!editCat}
         onClose={() => setEditCat(null)}
         title="Edit category"
       >
-        <CategoryForm onClose={() => setEditCat(null)} initial={editCat} currency={user.currency} />
+        <CategoryForm
+          onClose={() => setEditCat(null)}
+          initial={editCat}
+          currency={user.currency}
+        />
       </Modal>
 
       <ConfirmDelete
@@ -423,7 +466,10 @@ export default function Categories({ user }) {
             setDeleteError(err.response?.data?.error || "Something went wrong");
           }
         }}
-        onCancel={() => { setDeleteTarget(null); setDeleteError(""); }}
+        onCancel={() => {
+          setDeleteTarget(null);
+          setDeleteError("");
+        }}
       />
     </div>
   );

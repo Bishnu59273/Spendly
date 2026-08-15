@@ -10,7 +10,7 @@ const VARIANTS = {
   error: { icon: AlertTriangle, bg: "var(--neg-soft)", fg: "var(--neg)" },
 };
 
-// Lives in the topbar (both desktop and mobile — same header, responsive
+// Lives in the topbar (both desktop and mobile - same header, responsive
 // CSS) instead of a full-width banner. Renders nothing when there's no
 // pending change and nothing was just synced, so it stays out of the way.
 export default function SyncStatusPill() {
@@ -54,10 +54,23 @@ export default function SyncStatusPill() {
       className="sp-sync-pill"
       data-variant={variant}
       onClick={isError ? () => retryFailedOps() : undefined}
-      title={isError ? `${label} — tap to retry` : label}
-      style={{ background: bg, color: fg, cursor: isError ? "pointer" : "default" }}
+      title={isError ? `${label} - tap to retry` : label}
+      style={{
+        background: bg,
+        color: fg,
+        cursor: isError ? "pointer" : "default",
+      }}
     >
-      <Icon className={variant === "syncing" ? "sp-spin" : variant === "synced" ? "sp-pop" : ""} style={{ width: 14, height: 14, flex: "none" }} />
+      <Icon
+        className={
+          variant === "syncing"
+            ? "sp-spin"
+            : variant === "synced"
+              ? "sp-pop"
+              : ""
+        }
+        style={{ width: 14, height: 14, flex: "none" }}
+      />
       <span className="sp-sync-pill-label">{label}</span>
     </button>
   );

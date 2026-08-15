@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },
     // Mutations manage their own online/offline branching and queuing
-    // (see syncEngine.js) — React Query's default networkMode:"online"
+    // (see syncEngine.js) - React Query's default networkMode:"online"
     // would otherwise pause mutationFn entirely while offline and never
     // call it, which defeats that logic.
     mutations: { networkMode: "always" },
@@ -34,5 +34,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <SWUpdater />
       <App />
     </QueryClientProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

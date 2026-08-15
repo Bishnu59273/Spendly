@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 
 const PAD = 10;
 const TOOLTIP_W = 272;
-const SPOT_T = "left 0.4s cubic-bezier(0.4,0,0.2,1), top 0.4s cubic-bezier(0.4,0,0.2,1), width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1)";
+const SPOT_T =
+  "left 0.4s cubic-bezier(0.4,0,0.2,1), top 0.4s cubic-bezier(0.4,0,0.2,1), width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1)";
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(v, hi));
@@ -12,7 +13,8 @@ function computePos(rect, preferredSide, vw, vh) {
   const GAP = 14;
   let side = preferredSide;
 
-  if (side === "right" && rect.right + GAP + TOOLTIP_W > vw - 10) side = "bottom";
+  if (side === "right" && rect.right + GAP + TOOLTIP_W > vw - 10)
+    side = "bottom";
   if (side === "top" && rect.top - GAP - 200 < 10) side = "bottom";
 
   let x, y;
@@ -40,7 +42,10 @@ export default function TourOverlay({ steps, onDone, onStep }) {
 
   const advance = useCallback(
     (to) => {
-      if (to >= steps.length) { onDone(); return; }
+      if (to >= steps.length) {
+        onDone();
+        return;
+      }
       setCurrent(to);
     },
     [steps.length, onDone],
@@ -55,7 +60,10 @@ export default function TourOverlay({ steps, onDone, onStep }) {
     const t = setTimeout(() => {
       if (cancelled) return;
       const el = document.querySelector(steps[current].selector);
-      if (!el) { advance(current + 1); return; }
+      if (!el) {
+        advance(current + 1);
+        return;
+      }
       el.scrollIntoView({ behavior: "smooth", block: "nearest" });
       setTimeout(() => {
         if (cancelled) return;
@@ -63,7 +71,10 @@ export default function TourOverlay({ steps, onDone, onStep }) {
         setTooltipVisible(true);
       }, 100);
     }, 350);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const recompute = useCallback(() => {
@@ -93,12 +104,17 @@ export default function TourOverlay({ steps, onDone, onStep }) {
       {/* Blocks all app clicks while tour is active */}
       {step.overlay !== false && (
         <div
-          style={{ position: "fixed", inset: 0, zIndex: 199, cursor: "default" }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 199,
+            cursor: "default",
+          }}
           onClick={(e) => e.stopPropagation()}
         />
       )}
 
-      {/* Spotlight — the div itself is the clear window; box-shadow is the dark overlay.
+      {/* Spotlight - the div itself is the clear window; box-shadow is the dark overlay.
           CSS transitions on left/top/width/height make it slide to each new target. */}
       {rect && step.overlay !== false && (
         <div
@@ -117,7 +133,7 @@ export default function TourOverlay({ steps, onDone, onStep }) {
         />
       )}
 
-      {/* Pulsing highlight ring — same position transitions so it slides with the spotlight */}
+      {/* Pulsing highlight ring - same position transitions so it slides with the spotlight */}
       {rect && (
         <div
           style={{
@@ -136,7 +152,7 @@ export default function TourOverlay({ steps, onDone, onStep }) {
         />
       )}
 
-      {/* Tooltip — kept in DOM always so opacity can cross-fade instead of mount/unmount */}
+      {/* Tooltip - kept in DOM always so opacity can cross-fade instead of mount/unmount */}
       <div
         style={{
           position: "fixed",
@@ -152,22 +168,31 @@ export default function TourOverlay({ steps, onDone, onStep }) {
           display: "flex",
           flexDirection: "column",
           gap: 10,
-          opacity: (pos && tooltipVisible) ? 1 : 0,
+          opacity: pos && tooltipVisible ? 1 : 0,
           transition: "opacity 0.22s ease",
-          pointerEvents: (pos && tooltipVisible) ? "auto" : "none",
+          pointerEvents: pos && tooltipVisible ? "auto" : "none",
         }}
       >
-        <div style={{
-          fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
-          textTransform: "uppercase", color: "var(--brand)",
-        }}>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--brand)",
+          }}
+        >
           {current + 1} of {steps.length}
         </div>
 
-        <div style={{
-          fontSize: 15, fontWeight: 700,
-          color: "var(--ink)", letterSpacing: "-0.01em",
-        }}>
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--ink)",
+            letterSpacing: "-0.01em",
+          }}
+        >
           {step.title}
         </div>
 
@@ -180,25 +205,35 @@ export default function TourOverlay({ steps, onDone, onStep }) {
             <div
               key={i}
               style={{
-                height: 6, borderRadius: 99, flexShrink: 0,
+                height: 6,
+                borderRadius: 99,
+                flexShrink: 0,
                 width: i === current ? 16 : 6,
-                background: i === current ? "var(--brand)" : "var(--line-strong)",
+                background:
+                  i === current ? "var(--brand)" : "var(--line-strong)",
                 transition: "width 0.2s, background 0.2s",
               }}
             />
           ))}
         </div>
 
-        <div style={{
-          display: "flex", alignItems: "center",
-          justifyContent: "space-between", marginTop: 2,
-        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 2,
+          }}
+        >
           <button
             onClick={onDone}
             style={{
-              fontSize: 12.5, color: "var(--ink-3)",
-              background: "none", border: "none",
-              cursor: "pointer", padding: "4px 0",
+              fontSize: 12.5,
+              color: "var(--ink-3)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px 0",
             }}
           >
             Skip tour

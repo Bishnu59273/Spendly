@@ -10,7 +10,10 @@ function getDb() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        const store = db.createObjectStore(STORE, { keyPath: "sequence", autoIncrement: true });
+        const store = db.createObjectStore(STORE, {
+          keyPath: "sequence",
+          autoIncrement: true,
+        });
         store.createIndex("byId", "id", { unique: true });
       },
     });
@@ -41,7 +44,7 @@ async function getBySequenceFor(id) {
   return db.getFromIndex(STORE, "byId", id);
 }
 
-// Re-reads a single entry by its own id — used right before syncing it, since
+// Re-reads a single entry by its own id - used right before syncing it, since
 // an earlier op in the same sync pass may have just rewritten this entry's
 // payload (see resolveTempIdInOutbox) and a stale in-memory copy would still
 // carry the unresolved temp id.
@@ -70,20 +73,27 @@ export async function removeFromOutbox(id) {
 export async function mergeIntoCreateOp(entity, tempId, patch) {
   const db = await getDb();
   const all = await db.getAll(STORE);
-  const createEntry = all.find((e) => e.entity === entity && e.op === "create" && e.tempId === tempId);
+  const createEntry = all.find(
+    (e) => e.entity === entity && e.op === "create" && e.tempId === tempId,
+  );
   if (!createEntry) return null;
-  const updated = { ...createEntry, payload: { ...createEntry.payload, ...patch } };
+  const updated = {
+    ...createEntry,
+    payload: { ...createEntry.payload, ...patch },
+  };
   await db.put(STORE, updated);
   return updated;
 }
 
 // Drops the queued create (and any queued edits/deletes targeting the same
-// not-yet-synced temp id) — used when a record is deleted before it ever synced.
+// not-yet-synced temp id) - used when a record is deleted before it ever synced.
 export async function removeCreateOpAndDependents(entity, tempId) {
   const db = await getDb();
   const all = await db.getAll(STORE);
   const toRemove = all.filter(
-    (e) => e.entity === entity && ((e.op === "create" && e.tempId === tempId) || e.targetId === tempId)
+    (e) =>
+      e.entity === entity &&
+      ((e.op === "create" && e.tempId === tempId) || e.targetId === tempId),
   );
   const tx = db.transaction(STORE, "readwrite");
   await Promise.all(toRemove.map((e) => tx.store.delete(e.sequence)));
@@ -93,13 +103,14 @@ export async function removeCreateOpAndDependents(entity, tempId) {
 
 function replaceTempId(value, tempId, realId) {
   if (value === tempId) return realId;
-  if (Array.isArray(value)) return value.map((v) => (v === tempId ? realId : v));
+  if (Array.isArray(value))
+    return value.map((v) => (v === tempId ? realId : v));
   return value;
 }
 
 // Once a queued create resolves to a real id, any still-queued op that
 // referenced the temp id (e.g. an expense create with categoryId set to an
-// offline-created category's temp id) must be rewritten in place — the temp
+// offline-created category's temp id) must be rewritten in place - the temp
 // id won't be resolvable once the create that minted it leaves the outbox.
 export async function resolveTempIdInOutbox(tempId, realId) {
   const db = await getDb();
@@ -119,7 +130,11 @@ export async function resolveTempIdInOutbox(tempId, realId) {
       changed = true;
     }
     if (changed) {
-      await tx.store.put({ ...entry, payload: newPayload, targetId: newTargetId });
+      await tx.store.put({
+        ...entry,
+        payload: newPayload,
+        targetId: newTargetId,
+      });
     }
   }
   await tx.done;

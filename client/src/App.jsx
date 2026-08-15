@@ -1,4 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { useEffect } from "react";
 import { trackPageView } from "./utils/analytics.js";
 import { useMe } from "./api/auth.js";
@@ -41,7 +48,15 @@ function AuthGuard({ children }) {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bg)",
+        }}
+      >
         <Spinner />
       </div>
     );
@@ -60,14 +75,22 @@ function AuthGuard({ children }) {
 }
 
 // Wraps /login and /register: a user who is already signed in shouldn't be
-// able to reach the auth forms again — send them straight to the app instead.
+// able to reach the auth forms again - send them straight to the app instead.
 function PublicRoute({ children }) {
   const { data: user, isLoading } = useMe();
   const [searchParams] = useSearchParams();
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bg)",
+        }}
+      >
         <Spinner />
       </div>
     );
@@ -75,7 +98,12 @@ function PublicRoute({ children }) {
 
   if (user) {
     const redirect = searchParams.get("redirect");
-    return <Navigate to={redirect ? decodeURIComponent(redirect) : "/dashboard"} replace />;
+    return (
+      <Navigate
+        to={redirect ? decodeURIComponent(redirect) : "/dashboard"}
+        replace
+      />
+    );
   }
 
   return children;
@@ -86,60 +114,86 @@ export default function App() {
     <>
       <DomainMigrationBanner />
       <BrowserRouter>
-      <PageTracker />
-      <Routes>
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route
-          path="/dashboard"
-          element={<AuthGuard>{(user) => <Dashboard user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/expenses"
-          element={<AuthGuard>{(user) => <Expenses user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/categories"
-          element={<AuthGuard>{(user) => <Categories user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/tags"
-          element={<AuthGuard>{(user) => <Tags user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/goals"
-          element={<AuthGuard>{(user) => <Goals user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/groups"
-          element={<AuthGuard>{(user) => <Groups user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/groups/:groupId"
-          element={<AuthGuard>{(user) => <GroupDetail user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/join/:code"
-          element={<AuthGuard>{(user) => <JoinGroup user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/settings"
-          element={<AuthGuard>{(user) => <Settings user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/support"
-          element={<AuthGuard>{(user) => <Support user={user} />}</AuthGuard>}
-        />
-        <Route
-          path="/updates"
-          element={<AuthGuard>{() => <Updates />}</AuthGuard>}
-        />
-        <Route path="/" element={<LandingPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+        <PageTracker />
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthGuard>{(user) => <Dashboard user={user} />}</AuthGuard>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <AuthGuard>{(user) => <Expenses user={user} />}</AuthGuard>
+            }
+          />
+          <Route
+            path="/categories"
+            element={
+              <AuthGuard>{(user) => <Categories user={user} />}</AuthGuard>
+            }
+          />
+          <Route
+            path="/tags"
+            element={<AuthGuard>{(user) => <Tags user={user} />}</AuthGuard>}
+          />
+          <Route
+            path="/goals"
+            element={<AuthGuard>{(user) => <Goals user={user} />}</AuthGuard>}
+          />
+          <Route
+            path="/groups"
+            element={<AuthGuard>{(user) => <Groups user={user} />}</AuthGuard>}
+          />
+          <Route
+            path="/groups/:groupId"
+            element={
+              <AuthGuard>{(user) => <GroupDetail user={user} />}</AuthGuard>
+            }
+          />
+          <Route
+            path="/join/:code"
+            element={
+              <AuthGuard>{(user) => <JoinGroup user={user} />}</AuthGuard>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <AuthGuard>{(user) => <Settings user={user} />}</AuthGuard>
+            }
+          />
+          <Route
+            path="/support"
+            element={<AuthGuard>{(user) => <Support user={user} />}</AuthGuard>}
+          />
+          <Route
+            path="/updates"
+            element={<AuthGuard>{() => <Updates />}</AuthGuard>}
+          />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
     </>
   );
 }

@@ -58,7 +58,7 @@ export default function DomainMigrationBanner() {
             >
               spendly.it.com
             </a>{" "}
-            — reinstall the app for the best experience
+            - reinstall the app for the best experience
           </span>
 
           <button

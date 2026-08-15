@@ -1,6 +1,15 @@
-import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from "workbox-precaching";
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
-import { NetworkFirst, StaleWhileRevalidate, CacheFirst, NetworkOnly } from "workbox-strategies";
+import {
+  NetworkFirst,
+  StaleWhileRevalidate,
+  CacheFirst,
+  NetworkOnly,
+} from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { BackgroundSyncPlugin } from "workbox-background-sync";
@@ -16,7 +25,11 @@ cleanupOutdatedCaches();
 // In dev, injectManifest has no build to draw a manifest from, so
 // createHandlerBoundToURL would throw on a URL that isn't precached.
 // The generated manifest lists it as "index.html" (no leading slash).
-if (manifest.some((entry) => ["/index.html", "index.html"].includes(entry.url || entry))) {
+if (
+  manifest.some((entry) =>
+    ["/index.html", "index.html"].includes(entry.url || entry),
+  )
+) {
   registerRoute(
     new NavigationRoute(createHandlerBoundToURL("/index.html"), {
       denylist: [/^\/api\//, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
@@ -40,7 +53,7 @@ registerRoute(
 //
 // The app already owns a full IndexedDB-backed sync queue (see
 // client/src/lib/syncEngine.js) that drives the UI's pending-changes
-// indicator and reconciles temp ids with real server ids — that queue is
+// indicator and reconciles temp ids with real server ids - that queue is
 // what actually guarantees delivery once the app is reopened online. This
 // layer is a *bonus*: if a mutating request fails while offline, Workbox
 // queues the raw request in its own store and the browser's Background Sync
@@ -50,11 +63,11 @@ registerRoute(
 // the app-level queue end up delivering the same op, the server's idempotent
 // create lookup makes the second one a no-op instead of a duplicate.
 //
-// Background Sync (the `sync` event) is Chromium-only — Safari/iOS silently
+// Background Sync (the `sync` event) is Chromium-only - Safari/iOS silently
 // gets no benefit from this block, which is why the app-level queue above is
 // the layer that must work everywhere on its own.
 //
-// The batch endpoint (/api/sync/batch) is deliberately NOT included here —
+// The batch endpoint (/api/sync/batch) is deliberately NOT included here -
 // it's driven solely by the app-level queue; queuing it here too would just
 // create a second, redundant retry path for the same batched ops.
 const MUTATING_ENTITY_PATHS = [
@@ -70,10 +83,15 @@ const bgSyncPlugin = new BackgroundSyncPlugin("spendly-mutations", {
   maxRetentionTime: 24 * 60, // minutes
 });
 
-const matchesMutatingEntityPath = ({ url }) => MUTATING_ENTITY_PATHS.some((re) => re.test(url.pathname));
+const matchesMutatingEntityPath = ({ url }) =>
+  MUTATING_ENTITY_PATHS.some((re) => re.test(url.pathname));
 
 for (const method of ["POST", "PATCH", "DELETE", "PUT"]) {
-  registerRoute(matchesMutatingEntityPath, new NetworkOnly({ plugins: [bgSyncPlugin] }), method);
+  registerRoute(
+    matchesMutatingEntityPath,
+    new NetworkOnly({ plugins: [bgSyncPlugin] }),
+    method,
+  );
 }
 
 registerRoute(
@@ -118,11 +136,14 @@ self.addEventListener("notificationclick", (event) => {
   const url = event.notification.data?.url || "/updates";
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(url) && "focus" in client) return client.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
-    }),
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(url) && "focus" in client)
+            return client.focus();
+        }
+        if (self.clients.openWindow) return self.clients.openWindow(url);
+      }),
   );
 });

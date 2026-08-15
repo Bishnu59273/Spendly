@@ -11,11 +11,18 @@ import { seedDefaultCategories } from "../../prisma/seed.js";
 const router = Router();
 
 const USER_SELECT = {
-  id: true, name: true, email: true,
-  salaryDay: true, currency: true,
-  monthlyBudget: true, useDefaultBudget: true, createdAt: true,
+  id: true,
+  name: true,
+  email: true,
+  salaryDay: true,
+  currency: true,
+  monthlyBudget: true,
+  useDefaultBudget: true,
+  createdAt: true,
   upiId: true,
-  tourCompleted: true, feedbackRemindAt: true, pushPromptRemindAt: true,
+  tourCompleted: true,
+  feedbackRemindAt: true,
+  pushPromptRemindAt: true,
   savingsBannerDismissedMonth: true,
   _count: { select: { feedback: true } },
 };
@@ -46,7 +53,9 @@ const loginSchema = z.object({
 });
 
 function signToken(userId, tokenVersion) {
-  return jwt.sign({ userId, tokenVersion }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ userId, tokenVersion }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
 function setCookie(res, token) {
@@ -61,12 +70,21 @@ function setCookie(res, token) {
 router.post("/register", async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
-    const existing = await prisma.user.findUnique({ where: { email: data.email } });
-    if (existing) return res.status(409).json({ error: "Email already registered" });
+    const existing = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (existing)
+      return res.status(409).json({ error: "Email already registered" });
 
     const hashed = await bcrypt.hash(data.password, 10);
     const user = await prisma.user.create({
-      data: { name: data.name, email: data.email, password: hashed, salaryDay: data.salaryDay, currency: data.currency },
+      data: {
+        name: data.name,
+        email: data.email,
+        password: hashed,
+        salaryDay: data.salaryDay,
+        currency: data.currency,
+      },
       select: USER_SELECT,
     });
 
@@ -148,9 +166,12 @@ router.patch("/onboarding", authMiddleware, async (req, res, next) => {
 
     const data = {};
     if (body.tourCompleted) data.tourCompleted = true;
-    if (body.feedbackRemindLater) data.feedbackRemindAt = new Date(Date.now() + FEEDBACK_REMIND_MS);
-    if (body.pushPromptRemindLater) data.pushPromptRemindAt = new Date(Date.now() + PUSH_REMIND_MS);
-    if (body.dismissSavingsBanner) data.savingsBannerDismissedMonth = currentMonthKey();
+    if (body.feedbackRemindLater)
+      data.feedbackRemindAt = new Date(Date.now() + FEEDBACK_REMIND_MS);
+    if (body.pushPromptRemindLater)
+      data.pushPromptRemindAt = new Date(Date.now() + PUSH_REMIND_MS);
+    if (body.dismissSavingsBanner)
+      data.savingsBannerDismissedMonth = currentMonthKey();
 
     const user = await prisma.user.update({
       where: { id: req.userId },
@@ -173,10 +194,14 @@ router.patch("/password", authMiddleware, async (req, res, next) => {
 
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     const valid = await bcrypt.compare(currentPassword, user.password);
-    if (!valid) return res.status(400).json({ error: "Current password is incorrect" });
+    if (!valid)
+      return res.status(400).json({ error: "Current password is incorrect" });
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({ where: { id: req.userId }, data: { password: hashed } });
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { password: hashed },
+    });
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -215,7 +240,12 @@ router.post("/forgot-password", async (req, res, next) => {
     });
 
     if (recentCount >= RESET_RATE_MAX) {
-      return res.status(429).json({ error: "Too many password reset requests. Please wait a few hours before trying again." });
+      return res
+        .status(429)
+        .json({
+          error:
+            "Too many password reset requests. Please wait a few hours before trying again.",
+        });
     }
 
     // Expire any currently active token so only one valid link exists at a time.
@@ -236,10 +266,19 @@ router.post("/forgot-password", async (req, res, next) => {
 
     const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
     try {
-      await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl,
+      });
     } catch (emailErr) {
-      console.error(`Failed to send password reset email to ${user.email}:`, emailErr);
-      return res.status(502).json({ error: "Could not send the reset email. Please try again." });
+      console.error(
+        `Failed to send password reset email to ${user.email}:`,
+        emailErr,
+      );
+      return res
+        .status(502)
+        .json({ error: "Could not send the reset email. Please try again." });
     }
 
     res.json({ ok: true });
@@ -274,13 +313,20 @@ router.post("/reset-password", async (req, res, next) => {
       if (record) {
         await prisma.passwordResetToken.delete({ where: { id: record.id } });
       }
-      return res.status(400).json({ error: "This reset link is invalid or has expired" });
+      return res
+        .status(400)
+        .json({ error: "This reset link is invalid or has expired" });
     }
 
     const hashed = await bcrypt.hash(password, 10);
     await prisma.$transaction([
-      prisma.user.update({ where: { id: record.userId }, data: { password: hashed } }),
-      prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
+      prisma.user.update({
+        where: { id: record.userId },
+        data: { password: hashed },
+      }),
+      prisma.passwordResetToken.deleteMany({
+        where: { userId: record.userId },
+      }),
     ]);
 
     res.json({ ok: true });
@@ -292,7 +338,7 @@ router.post("/reset-password", async (req, res, next) => {
 router.post("/logout", authMiddleware, async (req, res, next) => {
   try {
     // Bumping tokenVersion invalidates every previously-issued JWT for this user,
-    // not just the cookie on this device — otherwise a copied token stays valid
+    // not just the cookie on this device - otherwise a copied token stays valid
     // until its natural 7-day expiry even after "logging out".
     await prisma.user.update({
       where: { id: req.userId },
