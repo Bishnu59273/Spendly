@@ -21,6 +21,7 @@ import groupExpensesRouter from "./routes/groupExpenses.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import prisma from "./lib/prisma.js";
 import { getCycleRange } from "./lib/cycleHelper.js";
+import { runDailyCleanup } from "./lib/cleanup.js";
 
 const app = express();
 
@@ -88,6 +89,16 @@ cron.schedule("0 0 * * *", async () => {
     }
   } catch (err) {
     console.error("[cron] Error:", err);
+  }
+});
+
+// Daily cron: prune expired password-reset tokens and old goal snapshots
+cron.schedule("30 0 * * *", async () => {
+  console.log("[cron] Running DB cleanup...");
+  try {
+    await runDailyCleanup();
+  } catch (err) {
+    console.error("[cron] Cleanup error:", err);
   }
 });
 
