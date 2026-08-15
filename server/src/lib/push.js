@@ -1,13 +1,16 @@
 import webpush from "web-push";
 import prisma from "./prisma.js";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT,
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY,
-);
-
 export async function sendPushToAll(payload) {
+  // Configured lazily (not at module load) so this only depends on env vars
+  // being loaded by the time a caller actually sends a push, not by the time
+  // this file happens to get imported.
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY,
+  );
+
   const subscriptions = await prisma.pushSubscription.findMany();
   const body = JSON.stringify(payload);
 
