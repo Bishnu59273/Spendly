@@ -354,7 +354,7 @@ export default function Dashboard({ user }) {
         >
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <div style={{ textAlign: "center", minWidth: 230 }}>
+        <div style={{ textAlign: "center", minWidth: 250 }}>
           <div
             style={{
               fontSize: 11,
@@ -378,6 +378,7 @@ export default function Dashboard({ user }) {
           className="sp-icon-btn"
           style={{ width: 38, height: 38 }}
           onClick={() => setCycleRef(nextCycleRef(cycleStart, user.salaryDay))}
+          disabled={isCurrentCycle}
         >
           <ChevronRight style={{ width: 18, height: 18 }} />
         </button>

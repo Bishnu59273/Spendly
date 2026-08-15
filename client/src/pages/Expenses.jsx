@@ -18,6 +18,7 @@ export default function Expenses({ user }) {
 
   const { cycleStart, cycleEnd } = getCycleRange(user.salaryDay, cycleRef);
   const cycleStartParam = cycleStart.toISOString();
+  const isCurrentCycle = new Date() >= cycleStart && new Date() <= cycleEnd;
 
   const params = { cycleStart: cycleStartParam };
   if (categoryId !== "all") params.categoryId = categoryId;
@@ -45,11 +46,11 @@ export default function Expenses({ user }) {
         <button className="sp-icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCycleRef(prevCycleRef(cycleStart, user.salaryDay))}>
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <div style={{ textAlign: "center", minWidth: 220 }}>
+        <div style={{ textAlign: "center", minWidth: 240 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 2 }}>Pay Cycle</div>
           <div className="sp-display" style={{ fontSize: 18, fontWeight: 700 }}>{formatCycleLabel(cycleStart, cycleEnd)}</div>
         </div>
-        <button className="sp-icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCycleRef(nextCycleRef(cycleStart, user.salaryDay))}>
+        <button className="sp-icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCycleRef(nextCycleRef(cycleStart, user.salaryDay))} disabled={isCurrentCycle}>
           <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
       </div>

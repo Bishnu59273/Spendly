@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { X, Check, Calculator, Clock } from "lucide-react";
+import { X, Check, Calculator, Clock, AlertTriangle } from "lucide-react";
 import { useMe } from "../api/auth.js";
 import { getCurrencySymbol } from "../utils/format.js";
+import { getCycleRange, formatCycleLabel } from "../utils/cycle.js";
 import { useCategories, useCreateCategory } from "../api/categories.js";
 import { useTags, useCreateTag } from "../api/tags.js";
 import { useCreateExpense, useUpdateExpense } from "../api/expenses.js";
@@ -80,6 +81,7 @@ const inputStyle = {
 export default function ExpenseForm({ open, onClose, expense = null }) {
   const { data: me } = useMe();
   const currencySymbol = getCurrencySymbol(me?.currency);
+  const { cycleStart: currentCycleStart, cycleEnd: currentCycleEnd } = getCycleRange(me?.salaryDay ?? 1);
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
   const { data: incomeSources = [] } = useIncomeSources();
@@ -138,10 +140,14 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const dateRef = useRef(null);
   const categoryRef = useRef(null);
   const sourceRef = useRef(null);
+  const originalDateKeyRef = useRef(null);
+  const [crossCycleWarning, setCrossCycleWarning] = useState(null);
 
   useEffect(() => {
     if (open) {
       const t = expense ? parseTime(expense.date) : nowTime();
+      originalDateKeyRef.current = expense ? `${expense.date.split("T")[0]}T${t}` : null;
+      setCrossCycleWarning(null);
       setTxType(expense?.type || "EXPENSE");
       setIncomeMode(expense?.type === "INCOME" && expense?.categoryId ? "category" : "source");
       setForm({
@@ -218,6 +224,26 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       return;
     }
 
+    if (me?.salaryDay) {
+      const dateTimeKey = `${form.date}T${form.time}`;
+      const dateChanged = !expense || dateTimeKey !== originalDateKeyRef.current;
+      const pickedDateTime = new Date(buildDateTime(form.date, form.time));
+      const inCurrentCycle = pickedDateTime >= currentCycleStart && pickedDateTime <= currentCycleEnd;
+
+      if (dateChanged && !inCurrentCycle) {
+        const pickedCycle = getCycleRange(me.salaryDay, pickedDateTime);
+        setCrossCycleWarning({
+          pickedLabel: formatCycleLabel(pickedCycle.cycleStart, pickedCycle.cycleEnd),
+          currentLabel: formatCycleLabel(currentCycleStart, currentCycleEnd),
+        });
+        return;
+      }
+    }
+
+    await submitExpense();
+  };
+
+  const submitExpense = async () => {
     const payload = {
       amount: parseFloat(form.amount),
       type: txType,
@@ -240,6 +266,11 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     } catch (err) {
       setError(err.response?.data?.error || "Something went wrong");
     }
+  };
+
+  const handleConfirmCrossCycle = async () => {
+    setCrossCycleWarning(null);
+    await submitExpense();
   };
 
   const handleQuickAddCategory = async () => {
@@ -1549,6 +1580,68 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
           </button>
         </div>
       </div>
+
+      {crossCycleWarning && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 300,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div
+            onClick={() => setCrossCycleWarning(null)}
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
+          />
+          <div style={{
+            position: "relative", zIndex: 1,
+            width: "100%", maxWidth: 380, margin: "0 16px",
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-lg)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+            overflow: "hidden",
+          }}>
+            <div style={{
+              background: "color-mix(in srgb, var(--brand) 10%, transparent)",
+              padding: "24px 24px 20px",
+              display: "flex", alignItems: "center", gap: 14,
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                background: "color-mix(in srgb, var(--brand) 15%, transparent)",
+                display: "grid", placeItems: "center",
+                color: "var(--brand)",
+              }}>
+                <AlertTriangle style={{ width: 20, height: 20 }} />
+              </div>
+              <div>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>
+                  Different pay cycle
+                </div>
+                <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 3 }}>
+                  This date falls in <strong>{crossCycleWarning.pickedLabel}</strong>, not your current pay cycle (<strong>{crossCycleWarning.currentLabel}</strong>).
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: "16px 24px", display: "flex", gap: 10 }}>
+              <button
+                className="sp-btn sp-btn-ghost"
+                style={{ flex: 1 }}
+                onClick={() => { setCrossCycleWarning(null); dateRef.current?.focus(); }}
+              >
+                Change date
+              </button>
+              <button
+                className="sp-btn sp-btn-primary"
+                style={{ flex: 1.2 }}
+                onClick={handleConfirmCrossCycle}
+                disabled={isPending}
+              >
+                {isPending ? "Saving..." : "Save anyway"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

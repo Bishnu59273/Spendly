@@ -37,7 +37,16 @@ export function getCycleRange(salaryDay, referenceDate = new Date()) {
 
 export function formatCycleLabel(cycleStart, cycleEnd) {
   const opts = { month: "short", day: "numeric", timeZone: "UTC" };
-  return `${cycleStart.toLocaleDateString("en-US", opts)} – ${cycleEnd.toLocaleDateString("en-US", opts)}`;
+  const startYear = cycleStart.getUTCFullYear();
+  const endYear = cycleEnd.getUTCFullYear();
+  const startStr = cycleStart.toLocaleDateString("en-US", opts);
+  const endStr = cycleEnd.toLocaleDateString(
+    "en-US",
+    startYear === endYear ? opts : { ...opts, year: "numeric" },
+  );
+  return startYear === endYear
+    ? `${startStr} – ${endStr}, ${endYear}`
+    : `${startStr}, ${startYear} – ${endStr}`;
 }
 
 export function prevCycleRef(cycleStart) {

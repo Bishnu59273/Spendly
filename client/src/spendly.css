@@ -367,6 +367,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   transition: background var(--d1) var(--e), color var(--d1) var(--e), border-color var(--d1) var(--e);
 }
 .sp-icon-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+.sp-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 .sp-icon-btn svg { width: 18px; height: 18px; }
 
 .sp-sync-pill {
