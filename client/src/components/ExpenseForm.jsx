@@ -242,6 +242,17 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     setSuggestionApplied(true);
   };
 
+  const clearSuggestion = () => {
+    setForm((f) => ({
+      ...f,
+      amount: "",
+      categoryId: categories[0]?.id || "",
+      note: "",
+      tagIds: [],
+    }));
+    setSuggestionApplied(false);
+  };
+
   const handleSubmit = async () => {
     setError("");
     if (!form.amount) {
@@ -675,7 +686,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
                     {suggestionApplied && (
                       <button
                         type="button"
-                        onClick={() => setSuggestionApplied(false)}
+                        onClick={clearSuggestion}
                         style={{
                           border: "none",
                           background: "none",
