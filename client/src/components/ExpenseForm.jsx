@@ -154,13 +154,30 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
 
   const [calcOpen, setCalcOpen] = useState(false);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [suggestionApplied, setSuggestionApplied] = useState(false);
 
   const amountRef = useRef(null);
   const dateRef = useRef(null);
   const categoryRef = useRef(null);
   const sourceRef = useRef(null);
   const originalDateKeyRef = useRef(null);
+  const suggestionsScrollRef = useRef(null);
   const [crossCycleWarning, setCrossCycleWarning] = useState(null);
+
+  useEffect(() => {
+    const el = suggestionsScrollRef.current;
+    if (!el) return;
+    // Registered manually (not via JSX onWheel) so it isn't passive - lets a
+    // plain vertical mouse wheel drive this horizontal strip on desktop,
+    // where there's no touch/trackpad gesture to scroll it sideways.
+    const onWheel = (e) => {
+      if (e.deltaY === 0 || el.scrollWidth <= el.clientWidth) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  });
 
   useEffect(() => {
     if (open) {
@@ -202,6 +219,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
       setShowSourceIconPicker(false);
       setCalcOpen(false);
       setTimePickerOpen(false);
+      setSuggestionApplied(false);
     }
   }, [open, expense]);
 
@@ -221,6 +239,7 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
     if (s.amount != null) set("amount", String(s.amount));
     if (s.category?.id) set("categoryId", s.category.id);
     set("tagIds", s.tagIds || []);
+    setSuggestionApplied(true);
   };
 
   const handleSubmit = async () => {
@@ -642,104 +661,148 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
               ];
               return (
                 <div>
-                  <label style={fieldLabelStyle}>Quick fill</label>
-
-                  {topHabit && (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "12px 14px",
-                        borderRadius: "var(--r-sm)",
-                        background: "var(--brand-soft)",
-                        marginBottom: otherSuggestions.length ? 10 : 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 40,
-                          height: 40,
-                          flexShrink: 0,
-                          borderRadius: 99,
-                          background: "var(--surface-2)",
-                          display: "grid",
-                          placeItems: "center",
-                          fontSize: 18,
-                        }}
-                      >
-                        {topHabit.category?.icon || "🔁"}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: 14.5,
-                            color: "var(--ink)",
-                          }}
-                        >
-                          {topHabit.note} {currencySymbol}
-                          {topHabit.amount}
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                          You log this most days around{" "}
-                          {formatTypicalTime(topHabit.typicalMinuteOfDayUtc)}
-                        </div>
-                      </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <label style={{ ...fieldLabelStyle, marginBottom: 0 }}>
+                      Quick fill
+                    </label>
+                    {suggestionApplied && (
                       <button
                         type="button"
-                        onClick={() => applySuggestion(topHabit)}
+                        onClick={() => setSuggestionApplied(false)}
                         style={{
-                          flexShrink: 0,
-                          height: 34,
-                          padding: "0 16px",
-                          borderRadius: 99,
                           border: "none",
-                          background: "var(--brand)",
-                          color: "#fff",
+                          background: "none",
+                          color: "var(--brand)",
                           fontWeight: 700,
-                          fontSize: 13,
+                          fontSize: 12,
+                          padding: 0,
                         }}
                       >
-                        Use
+                        Clear
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {otherSuggestions.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {otherSuggestions.map((s, i) => (
-                        <button
-                          key={`${s.note}-${i}`}
-                          type="button"
-                          onClick={() => applySuggestion(s)}
+                  {!suggestionApplied && (
+                    <>
+                      {topHabit && (
+                        <div
                           style={{
-                            display: "inline-flex",
+                            display: "flex",
                             alignItems: "center",
-                            gap: 6,
-                            height: 30,
-                            padding: "0 12px",
-                            borderRadius: 99,
-                            border: "1px solid var(--line)",
-                            background: "var(--surface-2)",
-                            color: "var(--ink-2)",
-                            fontWeight: 600,
-                            fontSize: 12.5,
+                            gap: 12,
+                            padding: "12px 14px",
+                            borderRadius: "var(--r-sm)",
+                            background: "var(--brand-soft)",
+                            marginBottom: otherSuggestions.length ? 10 : 0,
                           }}
                         >
-                          <span>{s.category?.icon || "🔁"}</span>
-                          <span>{s.note}</span>
-                          {s.amount != null && (
-                            <span
-                              style={{ color: "var(--ink-3)", fontWeight: 500 }}
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              flexShrink: 0,
+                              borderRadius: 99,
+                              background: "var(--surface-2)",
+                              display: "grid",
+                              placeItems: "center",
+                              fontSize: 18,
+                            }}
+                          >
+                            {topHabit.category?.icon || "🔁"}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                fontSize: 14.5,
+                                color: "var(--ink)",
+                              }}
                             >
-                              {currencySymbol}
-                              {s.amount}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                              {topHabit.note} {currencySymbol}
+                              {topHabit.amount}
+                            </div>
+                            <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                              You log this most days around{" "}
+                              {formatTypicalTime(topHabit.typicalMinuteOfDayUtc)}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => applySuggestion(topHabit)}
+                            style={{
+                              flexShrink: 0,
+                              height: 34,
+                              padding: "0 16px",
+                              borderRadius: 99,
+                              border: "none",
+                              background: "var(--brand)",
+                              color: "#fff",
+                              fontWeight: 700,
+                              fontSize: 13,
+                            }}
+                          >
+                            Use
+                          </button>
+                        </div>
+                      )}
+
+                      {otherSuggestions.length > 0 && (
+                        <div
+                          ref={suggestionsScrollRef}
+                          className="sp-scroll-hide"
+                          style={{
+                            display: "flex",
+                            flexWrap: "nowrap",
+                            overflowX: "auto",
+                            gap: 8,
+                            paddingBottom: 2,
+                            WebkitOverflowScrolling: "touch",
+                          }}
+                        >
+                          {otherSuggestions.map((s, i) => (
+                            <button
+                              key={`${s.note}-${i}`}
+                              type="button"
+                              onClick={() => applySuggestion(s)}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                flexShrink: 0,
+                                gap: 6,
+                                height: 30,
+                                padding: "0 12px",
+                                borderRadius: 99,
+                                border: "1px solid var(--line)",
+                                background: "var(--surface-2)",
+                                color: "var(--ink-2)",
+                                fontWeight: 600,
+                                fontSize: 12.5,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              <span>{s.category?.icon || "🔁"}</span>
+                              <span>{s.note}</span>
+                              {s.amount != null && (
+                                <span
+                                  style={{ color: "var(--ink-3)", fontWeight: 500 }}
+                                >
+                                  {currencySymbol}
+                                  {s.amount}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               );

@@ -2,7 +2,11 @@ import prisma from "./prisma.js";
 
 const WINDOW_DAYS_DEFAULT = 90;
 const MIN_NOTE_LENGTH = 3;
-const MIN_OCCURRENCES = 3;
+// The rate/observed-days checks below already guard against coincidence (a
+// rate >= FREQUENT_MIN_RATE needs those occurrences reasonably close
+// together), so 2 is enough of a floor - requiring 3 was excluding real
+// patterns for accounts that are only a couple weeks old.
+const MIN_OCCURRENCES = 2;
 
 // Rate is measured against days-since-first-logged for THIS cluster, not the
 // fixed window - a habit that's 15 days old and logged on 14 of them is

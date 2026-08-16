@@ -1180,3 +1180,11 @@ body:has(.sp-scrim.open) .sp-fab {
 .sp-wheel-col::-webkit-scrollbar {
   display: none;
 }
+
+.sp-scroll-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sp-scroll-hide::-webkit-scrollbar {
+  display: none;
+}
