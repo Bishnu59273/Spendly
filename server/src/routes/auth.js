@@ -3,6 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import { rateLimit } from "express-rate-limit";
 import prisma from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
@@ -35,7 +36,7 @@ function currentMonthKey() {
 }
 
 function shapeUser(u) {
-  const { password, tokenVersion, _count, ...rest } = u;
+  const { password, tokenVersion, failedLoginAttempts, lockedUntil, _count, ...rest } = u;
   return { ...rest, hasSubmittedFeedback: (_count?.feedback ?? 0) > 0 };
 }
 
@@ -67,7 +68,34 @@ function setCookie(res, token) {
   });
 }
 
-router.post("/register", async (req, res, next) => {
+const LOGIN_LOCK_THRESHOLD = 5;
+const LOGIN_LOCK_DURATION_MS = 15 * 60 * 1000;
+
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many registration attempts. Please try again later." },
+  handler: (req, res, next, options) => {
+    console.warn(`[auth] Rate limit exceeded for IP ${req.ip} on /register`);
+    res.status(options.statusCode).json(options.message);
+  },
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts. Please try again later." },
+  handler: (req, res, next, options) => {
+    console.warn(`[auth] Rate limit exceeded for IP ${req.ip} on /login`);
+    res.status(options.statusCode).json(options.message);
+  },
+});
+
+router.post("/register", registerLimiter, async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
     const existing = await prisma.user.findUnique({
@@ -98,7 +126,7 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-router.post("/login", async (req, res, next) => {
+router.post("/login", loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
     const user = await prisma.user.findUnique({
@@ -107,8 +135,34 @@ router.post("/login", async (req, res, next) => {
     });
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      console.warn(`[auth] Login attempt blocked - account already locked: ${email}`);
+      return res
+        .status(429)
+        .json({ error: "Too many failed attempts. Please try again later." });
+    }
+
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!valid) {
+      const attempts = user.failedLoginAttempts + 1;
+      const locking = attempts >= LOGIN_LOCK_THRESHOLD;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: attempts,
+          lockedUntil: locking ? new Date(Date.now() + LOGIN_LOCK_DURATION_MS) : null,
+        },
+      });
+      if (locking) {
+        console.warn(`[auth] Account locked after ${attempts} failed attempts: ${email}`);
+      }
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
 
     const token = signToken(user.id, user.tokenVersion);
     setCookie(res, token);

@@ -20,6 +20,8 @@ model User {
   useDefaultBudget Boolean     @default(true) @map("use_default_budget")
   upiId         String?        @map("upi_id")
   tokenVersion  Int            @default(0) @map("token_version")
+  failedLoginAttempts Int      @default(0) @map("failed_login_attempts")
+  lockedUntil   DateTime?      @map("locked_until") @db.Timestamptz(6)
   tourCompleted Boolean        @default(false) @map("tour_completed")
   feedbackRemindAt DateTime?   @map("feedback_remind_at") @db.Timestamptz(6)
   pushPromptRemindAt DateTime? @map("push_prompt_remind_at") @db.Timestamptz(6)
