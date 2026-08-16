@@ -6,6 +6,7 @@ import { getCycleRange, formatCycleLabel } from "../utils/cycle.js";
 import { useCategories, useCreateCategory } from "../api/categories.js";
 import { useTags, useCreateTag } from "../api/tags.js";
 import { useCreateExpense, useUpdateExpense } from "../api/expenses.js";
+import { useHabitSuggestions } from "../api/suggestions.js";
 import {
   useIncomeSources,
   useCreateIncomeSource,
@@ -56,6 +57,20 @@ function formatTime12(time) {
   return `${h12}:${mStr} ${period}`;
 }
 
+// Converts a UTC minute-of-day (from the server) into the viewer's own local
+// time for display - the average was computed in UTC since the server's
+// timezone isn't necessarily the user's.
+function formatTypicalTime(minuteOfDayUtc) {
+  if (minuteOfDayUtc == null) return null;
+  const d = new Date();
+  d.setUTCHours(0, minuteOfDayUtc, 0, 0);
+  const h24 = d.getHours();
+  const m = d.getMinutes();
+  const period = h24 >= 12 ? "PM" : "AM";
+  const h12 = h24 % 12 || 12;
+  return m === 0 ? `${h12} ${period}` : `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 const fieldLabelStyle = {
   display: "block",
   fontSize: 11,
@@ -86,6 +101,9 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
   const { data: incomeSources = [] } = useIncomeSources();
+  const { data: habitSuggestions } = useHabitSuggestions({
+    enabled: open && !expense,
+  });
   const create = useCreateExpense();
   const update = useUpdateExpense();
   const createCategory = useCreateCategory();
@@ -196,6 +214,13 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
         ? form.tagIds.filter((t) => t !== id)
         : [...form.tagIds, id],
     );
+  };
+
+  const applySuggestion = (s) => {
+    set("note", s.note);
+    if (s.amount != null) set("amount", String(s.amount));
+    if (s.category?.id) set("categoryId", s.category.id);
+    set("tagIds", s.tagIds || []);
   };
 
   const handleSubmit = async () => {
@@ -604,6 +629,121 @@ export default function ExpenseForm({ open, onClose, expense = null }) {
               {error}
             </div>
           )}
+
+          {!expense &&
+            txType === "EXPENSE" &&
+            (habitSuggestions?.dailyHabits?.length > 0 ||
+              habitSuggestions?.frequentHabits?.length > 0) &&
+            (() => {
+              const [topHabit, ...restDaily] = habitSuggestions.dailyHabits;
+              const otherSuggestions = [
+                ...restDaily,
+                ...habitSuggestions.frequentHabits,
+              ];
+              return (
+                <div>
+                  <label style={fieldLabelStyle}>Quick fill</label>
+
+                  {topHabit && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px 14px",
+                        borderRadius: "var(--r-sm)",
+                        background: "var(--brand-soft)",
+                        marginBottom: otherSuggestions.length ? 10 : 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          flexShrink: 0,
+                          borderRadius: 99,
+                          background: "var(--surface-2)",
+                          display: "grid",
+                          placeItems: "center",
+                          fontSize: 18,
+                        }}
+                      >
+                        {topHabit.category?.icon || "🔁"}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 14.5,
+                            color: "var(--ink)",
+                          }}
+                        >
+                          {topHabit.note} {currencySymbol}
+                          {topHabit.amount}
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                          You log this most days around{" "}
+                          {formatTypicalTime(topHabit.typicalMinuteOfDayUtc)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => applySuggestion(topHabit)}
+                        style={{
+                          flexShrink: 0,
+                          height: 34,
+                          padding: "0 16px",
+                          borderRadius: 99,
+                          border: "none",
+                          background: "var(--brand)",
+                          color: "#fff",
+                          fontWeight: 700,
+                          fontSize: 13,
+                        }}
+                      >
+                        Use
+                      </button>
+                    </div>
+                  )}
+
+                  {otherSuggestions.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {otherSuggestions.map((s, i) => (
+                        <button
+                          key={`${s.note}-${i}`}
+                          type="button"
+                          onClick={() => applySuggestion(s)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            height: 30,
+                            padding: "0 12px",
+                            borderRadius: 99,
+                            border: "1px solid var(--line)",
+                            background: "var(--surface-2)",
+                            color: "var(--ink-2)",
+                            fontWeight: 600,
+                            fontSize: 12.5,
+                          }}
+                        >
+                          <span>{s.category?.icon || "🔁"}</span>
+                          <span>{s.note}</span>
+                          {s.amount != null && (
+                            <span
+                              style={{ color: "var(--ink-3)", fontWeight: 500 }}
+                            >
+                              {currencySymbol}
+                              {s.amount}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
           <div>
             <label style={fieldLabelStyle}>Description</label>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { parseCycleStart } from "../lib/cycleHelper.js";
+import { computeHabitSuggestions } from "../lib/habitSuggestions.js";
 
 const router = Router();
 router.use(authMiddleware);
@@ -193,6 +194,14 @@ router.get("/recent", async (req, res, next) => {
       include: EXPENSE_INCLUDE,
     });
     res.json(expenses);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/suggestions", async (req, res, next) => {
+  try {
+    res.json(await computeHabitSuggestions(req.userId));
   } catch (err) {
     next(err);
   }
