@@ -28,16 +28,18 @@ function buildEmailText(name) {
   const displayName = name || "there";
   return `Hi ${displayName},
 
-Today the whole country is celebrating freedom. It got us thinking about a smaller, quieter kind of freedom - the kind where you actually know where your money went last month.
+If you've been using Spendly for a couple of weeks, you've probably noticed you log some things over and over - a daily coffee, cigarettes, the same Metro ride to work.
 
-No dread when the credit card bill lands. No "wait, where did my salary go" three days after payday. Just knowing.
+Spendly now spots that pattern for you. Open the Add Expense form and you'll see a "Quick Fill" section at the top with your regulars already there - tap one and the note, amount, and category fill in instantly. No retyping.
 
-This Independence Day: declare independence from overspending. Log today's first expense - it takes 10 seconds.
+It picks up on two kinds of patterns:
+- Things you log almost daily get a featured card, with a heads-up on when you usually log it (e.g. "You log this most days around 4 PM")
+- Things you log often but not daily (like a weekly grocery run) show up as quick-tap chips below it
+
+If a suggestion isn't what you meant to log, just tap Clear and it goes back to normal.
 
 Open Spendly:
 https://spendly.it.com/dashboard
-
-Here's to a freer, more mindful year ahead.
 
 - Team Spendly
 https://spendly.it.com
@@ -52,7 +54,7 @@ function buildEmailHtml(name) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Happy Independence Day from Spendly</title>
+  <title>New in Spendly: stop retyping the same expense</title>
 </head>
 <body style="margin:0;padding:0;background:#e8f0ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:540px;margin:0 auto;padding:40px 16px 56px;">
@@ -60,25 +62,14 @@ function buildEmailHtml(name) {
     <!-- Card -->
     <div style="border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(29,107,81,0.14);">
 
-      <!-- Tricolor stripe -->
-      <div style="display:block;height:6px;line-height:0;font-size:0;">
-        <div style="display:inline-block;width:33.34%;height:6px;background:#FF9933;"></div><!--
-        --><div style="display:inline-block;width:33.33%;height:6px;background:#ffffff;"></div><!--
-        --><div style="display:inline-block;width:33.33%;height:6px;background:#138808;"></div>
-      </div>
-
-      <!-- Gradient header -->
-      <div style="background:linear-gradient(135deg,#1d6b51 0%,#2d8f6f 60%,#3aaa85 100%);padding:36px 32px 32px;text-align:center;">
-        <div style="display:inline-block;background:rgba(255,255,255,0.18);border-radius:14px;padding:8px 20px;margin-bottom:20px;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1d6b51 0%,#2d8f6f 60%,#3aaa85 100%);padding:32px 32px 28px;text-align:center;">
+        <div style="display:inline-block;background:rgba(255,255,255,0.18);border-radius:14px;padding:8px 20px;margin-bottom:18px;">
           <span style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.02em;">💸 Spendly</span>
         </div>
-        <div style="font-size:48px;line-height:1;margin-bottom:14px;">🪁</div>
-        <h1 style="margin:0 0 8px;font-size:25px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.25;">
-          Happy Independence Day!
+        <h1 style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.3;">
+          Quick Fill: stop retyping the same expense
         </h1>
-        <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.82);line-height:1.5;">
-          80 years of freedom for the nation. Time your money got some too.
-        </p>
       </div>
 
       <!-- White body -->
@@ -86,46 +77,40 @@ function buildEmailHtml(name) {
 
         <!-- Greeting -->
         <p style="font-size:15.5px;color:#374151;margin:0 0 20px;line-height:1.7;">
-          Hi <strong style="color:#111827;">${displayName}</strong> 👋,
+          Hi <strong style="color:#111827;">${displayName}</strong>,
         </p>
 
         <p style="font-size:14.5px;color:#374151;margin:0 0 16px;line-height:1.7;">
-          Today the whole country is celebrating freedom. It got us thinking about a smaller, quieter kind of freedom - the kind where you actually know where your money went last month.
+          If you've been using Spendly for a couple of weeks, you've probably noticed you log some things over and over - a daily coffee, cigarettes, the same Metro ride to work.
         </p>
 
         <p style="font-size:14.5px;color:#374151;margin:0 0 16px;line-height:1.7;">
-          No dread when the credit card bill lands. No "wait, where did my salary go" three days after payday. Just knowing.
+          Spendly now spots that pattern for you. Open the Add Expense form and you'll see a "Quick Fill" section at the top with your regulars already there - tap one and the note, amount, and category fill in instantly. No retyping.
         </p>
 
         <!-- Highlight box -->
         <div style="background:#f0f7f4;border-left:3px solid #1d6b51;border-radius:0 12px 12px 0;padding:18px 20px;margin:0 0 24px;">
-          <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#1d6b51;text-transform:uppercase;letter-spacing:0.08em;">This Independence Day</p>
-          <p style="margin:0;font-size:15px;font-weight:600;color:#111827;line-height:1.6;">
-            Declare independence from overspending. Log today's first expense - it takes 10 seconds.
+          <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#1d6b51;text-transform:uppercase;letter-spacing:0.08em;">How it works</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#111827;line-height:1.6;">
+            <strong>Daily habits</strong> (like your morning coffee) get a featured card, with a heads-up on when you usually log it.
+          </p>
+          <p style="margin:0;font-size:14px;color:#111827;line-height:1.6;">
+            <strong>Frequent-but-not-daily</strong> items (like a weekly grocery run) show up as quick-tap chips below it.
           </p>
         </div>
 
-        <!-- CTA button -->
-        <a
-          href="https://spendly.it.com/dashboard"
-          style="display:block;background:linear-gradient(135deg,#1d6b51,#2d8f6f);color:#ffffff;
-                 text-decoration:none;text-align:center;padding:16px 24px;border-radius:12px;
-                 font-size:16px;font-weight:700;letter-spacing:-0.01em;margin-bottom:24px;"
-        >
-          Open Spendly &rarr;
-        </a>
+        <p style="font-size:14.5px;color:#374151;margin:0 0 24px;line-height:1.7;">
+          If a suggestion isn't what you meant to log, just tap Clear and it goes back to normal.
+        </p>
 
-        <p style="font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.7;text-align:center;">
-          Free, no ads, no card required - just you and your money, finally on speaking terms.
+        <p style="font-size:14.5px;color:#374151;margin:0 0 24px;line-height:1.7;">
+          Open Spendly: <a href="https://spendly.it.com/dashboard" style="color:#1d6b51;font-weight:600;">spendly.it.com/dashboard</a>
         </p>
 
         <!-- Divider -->
         <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 20px;" />
 
         <!-- Signature -->
-        <p style="font-size:14px;color:#374151;margin:0 0 4px;line-height:1.7;">
-          Here's to a freer, more mindful year ahead. 🇮🇳
-        </p>
         <p style="font-size:14px;color:#374151;margin:0 0 20px;line-height:1.7;">
           - Team Spendly
         </p>
@@ -158,7 +143,7 @@ async function main() {
       await resend.emails.send({
         from: "Spendly <hello@spendly.it.com>",
         to: email,
-        subject: "🇮🇳 Happy Independence Day - time your money got some too",
+        subject: "New in Spendly: stop retyping the same expense",
         html: buildEmailHtml(name),
         text: buildEmailText(name),
         headers: {
