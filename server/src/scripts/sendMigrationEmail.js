@@ -81,7 +81,7 @@ function buildEmailHtml(name) {
         </p>
 
         <p style="font-size:14.5px;color:#374151;margin:0 0 16px;line-height:1.7;">
-          If you've been using Spendly for a couple of weeks, you've probably noticed you log some things over and over - a daily coffee, cigarettes, the same Metro ride to work.
+          If you've been using Spendly for a couple of weeks, you've probably noticed you log some things over and over - a daily coffee, KFC, the same Metro ride to work.
         </p>
 
         <p style="font-size:14.5px;color:#374151;margin:0 0 16px;line-height:1.7;">

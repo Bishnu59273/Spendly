@@ -9,7 +9,7 @@ config({ path: join(__dirname, "../../.env") });
 
 // --- Edit these before running ---
 const TITLE = "Quick Fill for repeat expenses";
-const BODY = `Logging the same coffee, cigarette pack, or Metro ride every day means retyping the same note, amount, and category each time.
+const BODY = `Logging the same coffee, KFC, or Metro ride every day means retyping the same note, amount, and category each time.
 
 Spendly now spots those patterns for you. Open the Add Expense form and you'll see a new Quick Fill section at the top. Things you log almost every day get a featured card with a heads-up on when you usually log it — tap Use and it's filled in. Things you log often but not daily, like a weekly grocery run, show up as smaller tap-to-fill chips right below it.
 
@@ -32,14 +32,18 @@ async function main() {
   const announcement = await prisma.announcement.create({
     data: { title: TITLE, body: BODY, icon: ICON },
   });
-  console.log(`Created announcement ${announcement.id}: "${announcement.title}"`);
+  console.log(
+    `Created announcement ${announcement.id}: "${announcement.title}"`,
+  );
 
   const { sent, failed, removed } = await sendPushToAll({
     title: `${ICON} ${TITLE}`,
     body: PUSH_BODY,
     url: "/updates",
   });
-  console.log(`Push sent: ${sent}, failed: ${failed}, stale subscriptions removed: ${removed}`);
+  console.log(
+    `Push sent: ${sent}, failed: ${failed}, stale subscriptions removed: ${removed}`,
+  );
 
   await prisma.$disconnect();
 }
